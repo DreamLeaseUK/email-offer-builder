@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="_ds/dreamlease-design-system-5be7b6ac-7112-41ef-a8c4-77b05a3af8c0/fonts/fonts.css">
+  <link rel="stylesheet" href="_ds/dreamlease-design-system-5be7b6ac-7112-41ef-a8c4-77b05a3af8c0/_ds_bundle.css">
+  <link rel="stylesheet" href="_ds/dreamlease-design-system-5be7b6ac-7112-41ef-a8c4-77b05a3af8c0/styles.css">
+  <script src="./image-slot.js"></script>
+  <style>
+    body { margin: 0; background: #EDEDEF; }
+    a { color: #E30613; } a:hover { color: #C1050F; }
+    /* Progressive enhancement for the fluid-hybrid grids: clients that honour media queries get full-width cards; others get centred cards. */
+    @media (max-width: 480px) { .card-cell { max-width: 100% !important; } }
+  </style>
+</helmet>
+<div class="dl-root" style="min-height:100vh;background:#EDEDEF;padding:32px 16px;box-sizing:border-box">
+  <div style="max-width:720px;margin:0 auto 12px;display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap">
+    <span style="font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#E30613">Offer mailer · email template v2</span>
+    <span style="font-size:12px;color:#787580">{{ metaLine }}</span>
+  </div>
+
+  <!-- ===== EMAIL: fixed 600, tables + inline styles, fallback font stack. Grids use the fluid-hybrid pattern (inline-block tables, max-width per card); Claude Code wraps each grid in the MSO conditional ghost table. The mobile preview models the progressive-enhancement media query (@media (max-width:480px) .card { max-width:100% !important }) by widening the card cells to 100%. ===== -->
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" width="{{ emailWidth }}" style="margin:0 auto;border-collapse:collapse;background:#FFFFFF;width:{{ emailWidth }}px;max-width:100%;font-family:{{ fontStack }};color:#787580">
+    <tbody>
+
+    <!-- Preheader (hidden) -->
+    <tr>
+      <td style="padding:0">
+        <div style="display:none;font-size:1px;line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden;mso-hide:all">{{ preheader }}&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;</div>
+      </td>
+    </tr>
+
+    <!-- Header -->
+    <tr>
+      <td style="padding:20px 24px 0 24px">
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse">
+          <tbody>
+            <tr>
+              <td align="right" style="font-size:12px;line-height:16px;mso-line-height-rule:exactly;color:#787580;padding-bottom:14px">
+                <a href="#hosted" style="color:#E30613;text-decoration:underline">View these offers online</a>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding-bottom:20px;border-bottom:1px solid #E1E0E4">
+                <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse">
+                  <tbody><tr><td style="background:#FFFFFF;padding:2px 4px 2px 0">
+                    <img src="assets/logo-2x.png" width="99" height="32" alt="DreamLease" style="display:block;border:0;width:99px;height:32px">
+                  </td></tr></tbody>
+                </table>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </td>
+    </tr>
+
+    <!-- Intro -->
+    <tr>
+      <td style="padding:28px 24px 8px 24px">
+        <p style="margin:0 0 14px 0;font-size:22px;line-height:28px;mso-line-height-rule:exactly;font-weight:700;color:#000000">Hi Priya,</p>
+        <p style="margin:0 0 14px 0;font-size:16px;line-height:26px;mso-line-height-rule:exactly;color:#787580">Thanks for your time on the call yesterday. As promised, here are the electric options that fit the budget we talked about, all on 36 months with 8,000 miles a year.</p>
+        <p style="margin:0 0 14px 0;font-size:16px;line-height:26px;mso-line-height-rule:exactly;color:#787580">Prices move quickly on these, so if one stands out let me know this week and I'll hold the quote for you.</p>
+      </td>
+    </tr>
+
+    <!-- ================= A. HERO CARD (single) — image on top, 552×414 ================= -->
+    <sc-if value="{{ showHero }}" hint-placeholder-val="{{ true }}">
+      <tr>
+        <td style="padding:12px 24px 8px 24px">
+          <sc-for list="{{ offers }}" as="offer" hint-placeholder-count="1">
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:separate;border:1px solid #E1E0E4;border-radius:16px;overflow:hidden;margin-bottom:20px">
+              <tbody>
+                <tr>
+                  <td style="padding:0;background:#FFFFFF;position:relative">
+                    <img src="assets/vehicle-placeholder.png" width="552" height="414" alt="{{ offer.alt }}" style="display:block;border:0;width:100%;max-width:552px;height:auto">
+                    <image-slot id="img-{{ offer.id }}" shape="rect" fit="contain" placeholder="{{ offer.imgPlaceholder }}" style="position:absolute;left:0;top:0;width:100%;height:100%"></image-slot>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding:20px 20px 22px 20px">
+                    <div style="font-size:0;line-height:0;text-align:left;margin-bottom:6px">
+                      <sc-if value="{{ offer.hasHot }}" hint-placeholder-val="{{ true }}">
+                        <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="display:inline-block;vertical-align:top;border-collapse:separate;margin:0 6px 6px 0">
+                          <tbody><tr><td width="126" style="background:#FF8811;border-radius:999px;padding:4px 12px;font-size:12px;line-height:16px;mso-line-height-rule:exactly;font-weight:700;color:#FFFFFF;text-align:center;white-space:nowrap;width:126px">{{ offer.hotBadge }}</td></tr></tbody>
+                        </table>
+                      </sc-if>
+                      <sc-for list="{{ offer.badges }}" as="b" hint-placeholder-count="1">
+                        <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="display:inline-block;vertical-align:top;border-collapse:separate;margin:0 6px 6px 0">
+                          <tbody><tr><td width="126" style="background:#FF8811;border-radius:999px;padding:4px 12px;font-size:12px;line-height:16px;mso-line-height-rule:exactly;font-weight:700;color:#FFFFFF;text-align:center;white-space:nowrap;width:126px">{{ b }}</td></tr></tbody>
+                        </table>
+                      </sc-for>
+                    </div>
+                    <p style="margin:0 0 4px 0;font-size:12px;line-height:16px;mso-line-height-rule:exactly;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#E30613">{{ offer.make }}</p>
+                    <p style="margin:0 0 4px 0;font-size:26px;line-height:32px;mso-line-height-rule:exactly;font-weight:700;color:#000000">{{ offer.model }}</p>
+                    <p style="margin:0 0 16px 0;font-size:14px;line-height:20px;mso-line-height-rule:exactly;color:#787580">{{ offer.derivative }}</p>
+
+                    <sc-if value="{{ offer.isSalsac }}" hint-placeholder-val="{{ false }}">
+                      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;margin-bottom:6px">
+                        <tbody><tr>
+                          <td width="50%" style="padding:0 8px 0 0;vertical-align:top">
+                            <p style="margin:0;font-size:30px;line-height:34px;mso-line-height-rule:exactly;font-weight:700;color:#E30613">{{ offer.net20 }}</p>
+                            <p style="margin:2px 0 0 0;font-size:13px;line-height:18px;mso-line-height-rule:exactly;color:#787580">per month net · 20% taxpayer</p>
+                          </td>
+                          <td width="50%" style="padding:0 0 0 16px;vertical-align:top;border-left:1px solid #E1E0E4">
+                            <p style="margin:0;font-size:30px;line-height:34px;mso-line-height-rule:exactly;font-weight:700;color:#E30613">{{ offer.net40 }}</p>
+                            <p style="margin:2px 0 0 0;font-size:13px;line-height:18px;mso-line-height-rule:exactly;color:#787580">per month net · 40% taxpayer</p>
+                          </td>
+                        </tr></tbody>
+                      </table>
+                      <p style="margin:0 0 14px 0;font-size:12px;line-height:18px;mso-line-height-rule:exactly;color:#787580">{{ offer.grossLine }} Net figures are illustrative and depend on your employer's scheme and your personal circumstances.</p>
+                    </sc-if>
+                    <sc-if value="{{ offer.notSalsac }}" hint-placeholder-val="{{ true }}">
+                      <p style="margin:0 0 14px 0;line-height:38px;mso-line-height-rule:exactly"><span style="font-size:34px;font-weight:700;color:#E30613">{{ offer.price }}</span> <span style="font-size:14px;font-weight:500;color:#787580">{{ offer.vatLabel }}</span></p>
+                    </sc-if>
+
+                    <p style="margin:0 0 16px 0;font-size:14px;line-height:20px;mso-line-height-rule:exactly;color:#393838">{{ offer.specLine }}</p>
+
+                    <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:separate;border-spacing:0;margin-bottom:18px">
+                      <tbody><tr>
+                        <sc-for list="{{ offer.stats }}" as="s" hint-placeholder-count="4">
+                          <td width="24%" style="background:#F6F6F7;border-radius:6px;padding:10px 10px 9px 10px;vertical-align:top">
+                            <p style="margin:0;font-size:10px;line-height:14px;mso-line-height-rule:exactly;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:#787580">{{ s.label }}</p>
+                            <p style="margin:2px 0 0 0;font-size:15px;line-height:20px;mso-line-height-rule:exactly;font-weight:700;color:#000000;white-space:nowrap">{{ s.value }}</p>
+                          </td>
+                          <sc-if value="{{ s.notLast }}" hint-placeholder-val="{{ true }}"><td width="8" style="font-size:0;line-height:0">&nbsp;</td></sc-if>
+                        </sc-for>
+                      </tr></tbody>
+                    </table>
+
+                    <!-- CTA row: two inline-block tables (fluid hybrid) so the brochure link drops under the button when there's no room -->
+                    <div style="font-size:0;line-height:0;text-align:left">
+                      <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="display:inline-block;vertical-align:middle;border-collapse:collapse;max-width:100%">
+                        <tbody><tr>
+                          <td style="padding:0;font-size:14px;line-height:20px">
+                            <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:separate;max-width:100%">
+                              <tbody><tr>
+                                <td style="background:#31BD51;border-radius:999px;padding:13px 30px;text-align:center;mso-padding-alt:0">
+                                  <a href="{{ offer.ctaHref }}" style="display:block;font-size:16px;line-height:20px;mso-line-height-rule:exactly;font-weight:600;color:#FFFFFF;text-decoration:none">{{ offer.ctaLabel }}</a>
+                                </td>
+                              </tr></tbody>
+                            </table>
+                            <sc-if value="{{ showViewLink }}" hint-placeholder-val="{{ false }}">
+                              <p style="margin:10px 0 0 0;font-size:13px;line-height:18px;mso-line-height-rule:exactly"><a href="{{ offer.url }}" style="color:#E30613;text-decoration:underline;font-weight:600">View this offer</a></p>
+                            </sc-if>
+                          </td>
+                        </tr></tbody>
+                      </table>
+                      <sc-if value="{{ hasBrochure }}" hint-placeholder-val="{{ false }}">
+                        <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="display:inline-block;vertical-align:middle;border-collapse:collapse">
+                          <tbody><tr>
+                            <td style="padding:10px 6px 10px 16px;vertical-align:middle"><sc-if value="{{ isPdf }}" hint-placeholder-val="{{ false }}"><img src="assets/icon-doc-2x.png" width="14" height="14" alt="PDF document" style="display:block;border:0;width:14px;height:14px"></sc-if><sc-if value="{{ isGated }}" hint-placeholder-val="{{ false }}"><img src="assets/icon-external-2x.png" width="14" height="14" alt="Opens manufacturer site" style="display:block;border:0;width:14px;height:14px"></sc-if></td>
+                            <td style="padding:10px 0;vertical-align:middle;font-size:13px;line-height:18px;mso-line-height-rule:exactly;white-space:nowrap"><a href="{{ offer.brochureHref }}" style="color:#787580;text-decoration:underline">{{ brochureLabel }}</a></td>
+                          </tr></tbody>
+                        </table>
+                      </sc-if>
+                    </div>
+                    <p style="margin:14px 0 0 0;font-size:12px;line-height:18px;mso-line-height-rule:exactly;color:#787580">{{ offer.smallPrint }}</p>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </sc-for>
+        </td>
+      </tr>
+    </sc-if>
+
+    <!-- ================= B. ROW CARD (stack) — image left 220×165, fluid hybrid: image + content wrap on narrow clients ================= -->
+    <sc-if value="{{ showRows }}" hint-placeholder-val="{{ false }}">
+      <tr>
+        <td style="padding:12px 24px 8px 24px">
+          <sc-for list="{{ offers }}" as="offer" hint-placeholder-count="2">
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:separate;border:1px solid #E1E0E4;border-radius:16px;overflow:hidden;margin-bottom:16px">
+              <tbody><tr>
+                <td style="padding:0;font-size:0;text-align:center">
+                  <table role="presentation" cellpadding="0" cellspacing="0" border="0" class="card-cell" style="display:inline-block;width:100%;max-width:250px;vertical-align:top;border-collapse:collapse">
+                    <tbody><tr>
+                      <td style="padding:16px 16px 0 16px;font-size:14px;text-align:left">
+                        <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:separate;border-radius:10px;overflow:hidden">
+                          <tbody><tr><td style="padding:0;background:#FFFFFF;position:relative">
+                            <img src="assets/vehicle-placeholder.png" width="220" height="165" alt="{{ offer.alt }}" style="display:block;border:0;width:100%;max-width:220px;height:auto">
+                            <image-slot id="img-{{ offer.id }}" shape="rect" fit="contain" placeholder="{{ offer.imgPlaceholder }}" style="position:absolute;left:0;top:0;width:100%;height:100%"></image-slot>
+                          </td></tr></tbody>
+                        </table>
+                        <p style="margin:12px 0 16px 0;font-size:11px;line-height:16px;mso-line-height-rule:exactly;color:#787580">{{ offer.smallPrint }}</p>
+                      </td>
+                    </tr></tbody>
+                  </table>
+                  <table role="presentation" cellpadding="0" cellspacing="0" border="0" class="card-cell" style="display:inline-block;width:100%;max-width:300px;vertical-align:top;border-collapse:collapse">
+                    <tbody><tr>
+                      <td style="padding:16px 18px 16px 18px;font-size:14px;text-align:left">
+                        <div style="font-size:0;line-height:0;text-align:left;margin-bottom:2px">
+                          <sc-if value="{{ offer.hasHot }}" hint-placeholder-val="{{ true }}">
+                            <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="display:inline-block;vertical-align:top;border-collapse:separate;margin:0 6px 6px 0">
+                              <tbody><tr><td width="100" style="background:#FF8811;border-radius:999px;padding:3px 10px;font-size:11px;line-height:14px;mso-line-height-rule:exactly;font-weight:700;color:#FFFFFF;text-align:center;white-space:nowrap;width:100px">{{ offer.hotBadge }}</td></tr></tbody>
+                            </table>
+                          </sc-if>
+                          <sc-for list="{{ offer.badges }}" as="b" hint-placeholder-count="1">
+                            <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="display:inline-block;vertical-align:top;border-collapse:separate;margin:0 6px 6px 0">
+                              <tbody><tr><td width="100" style="background:#FF8811;border-radius:999px;padding:3px 10px;font-size:11px;line-height:14px;mso-line-height-rule:exactly;font-weight:700;color:#FFFFFF;text-align:center;white-space:nowrap;width:100px">{{ b }}</td></tr></tbody>
+                            </table>
+                          </sc-for>
+                        </div>
+                        <p style="margin:0 0 2px 0;font-size:11px;line-height:14px;mso-line-height-rule:exactly;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#E30613">{{ offer.make }}</p>
+                        <p style="margin:0 0 2px 0;font-size:20px;line-height:26px;mso-line-height-rule:exactly;font-weight:700;color:#000000">{{ offer.model }}</p>
+                        <p style="margin:0 0 10px 0;font-size:13px;line-height:18px;mso-line-height-rule:exactly;color:#787580">{{ offer.derivative }}</p>
+                        <sc-if value="{{ offer.isSalsac }}" hint-placeholder-val="{{ false }}">
+                          <p style="margin:0 0 2px 0;line-height:30px;mso-line-height-rule:exactly"><span style="font-size:26px;font-weight:700;color:#E30613">{{ offer.net20 }}</span> <span style="font-size:12px;color:#787580">net · 20% taxpayer</span></p>
+                          <p style="margin:0 0 8px 0;line-height:24px;mso-line-height-rule:exactly"><span style="font-size:20px;font-weight:700;color:#E30613">{{ offer.net40 }}</span> <span style="font-size:12px;color:#787580">net · 40% taxpayer</span></p>
+                        </sc-if>
+                        <sc-if value="{{ offer.notSalsac }}" hint-placeholder-val="{{ true }}">
+                          <p style="margin:0 0 8px 0;line-height:32px;mso-line-height-rule:exactly"><span style="font-size:28px;font-weight:700;color:#E30613">{{ offer.price }}</span> <span style="font-size:13px;font-weight:500;color:#787580">{{ offer.vatLabel }}</span></p>
+                        </sc-if>
+                        <p style="margin:0 0 12px 0;font-size:13px;line-height:18px;mso-line-height-rule:exactly;color:#393838">{{ offer.specLine }}</p>
+                        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:separate;border-spacing:0;margin-bottom:14px">
+                          <tbody>
+                            <sc-for list="{{ offer.statPairs }}" as="pair" hint-placeholder-count="2">
+                              <tr>
+                                <sc-for list="{{ pair.items }}" as="s" hint-placeholder-count="2">
+                                  <td width="48%" style="background:#F6F6F7;border-radius:6px;padding:7px 8px;vertical-align:top">
+                                    <p style="margin:0;font-size:9px;line-height:12px;mso-line-height-rule:exactly;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:#787580">{{ s.label }}</p>
+                                    <p style="margin:1px 0 0 0;font-size:13px;line-height:18px;mso-line-height-rule:exactly;font-weight:700;color:#000000;white-space:nowrap">{{ s.value }}</p>
+                                  </td>
+                                  <sc-if value="{{ s.notLast }}" hint-placeholder-val="{{ true }}"><td width="8" style="font-size:0;line-height:0">&nbsp;</td></sc-if>
+                                </sc-for>
+                              </tr>
+                              <sc-if value="{{ pair.notLast }}" hint-placeholder-val="{{ true }}"><tr><td colspan="3" height="4" style="font-size:0;line-height:0;padding:0">&nbsp;</td></tr></sc-if>
+                            </sc-for>
+                          </tbody>
+                        </table>
+                        <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:separate">
+                          <tbody><tr>
+                            <td style="background:#31BD51;border-radius:999px;padding:10px 22px;text-align:center;mso-padding-alt:0">
+                              <a href="{{ offer.ctaHref }}" style="display:block;font-size:14px;line-height:18px;mso-line-height-rule:exactly;font-weight:600;color:#FFFFFF;text-decoration:none;white-space:nowrap">{{ offer.ctaLabel }}</a>
+                            </td>
+                          </tr></tbody>
+                        </table>
+                        <sc-if value="{{ showViewLink }}" hint-placeholder-val="{{ false }}">
+                          <p style="margin:8px 0 0 0;font-size:13px;line-height:18px;mso-line-height-rule:exactly"><a href="{{ offer.url }}" style="color:#E30613;text-decoration:underline;font-weight:600">View this offer</a></p>
+                        </sc-if>
+                        <sc-if value="{{ hasBrochure }}" hint-placeholder-val="{{ false }}">
+                          <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;margin-top:8px">
+                            <tbody><tr>
+                              <td style="padding:0 6px 0 0;vertical-align:middle"><sc-if value="{{ isPdf }}" hint-placeholder-val="{{ false }}"><img src="assets/icon-doc-2x.png" width="14" height="14" alt="PDF document" style="display:block;border:0;width:14px;height:14px"></sc-if><sc-if value="{{ isGated }}" hint-placeholder-val="{{ false }}"><img src="assets/icon-external-2x.png" width="14" height="14" alt="Opens manufacturer site" style="display:block;border:0;width:14px;height:14px"></sc-if></td>
+                              <td style="vertical-align:middle;font-size:13px;line-height:18px;mso-line-height-rule:exactly"><a href="{{ offer.brochureHref }}" style="color:#787580;text-decoration:underline">{{ brochureLabel }}</a></td>
+                            </tr></tbody>
+                          </table>
+                        </sc-if>
+                      </td>
+                    </tr></tbody>
+                  </table>
+                </td>
+              </tr></tbody>
+            </table>
+          </sc-for>
+        </td>
+      </tr>
+    </sc-if>
+
+    <!-- ================= C. HALF CARD (grid2) — fluid hybrid, 2 × 288 columns, card 264×198 ================= -->
+    <sc-if value="{{ showHalf }}" hint-placeholder-val="{{ false }}">
+      <tr>
+        <td style="padding:12px 12px 8px 12px;font-size:0;text-align:center">
+          <sc-for list="{{ offers }}" as="offer" hint-placeholder-count="2">
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0" class="card-cell" style="display:inline-block;width:100%;max-width:{{ halfCellMax }};vertical-align:top;border-collapse:collapse">
+              <tbody><tr>
+                <td style="padding:0 12px 20px 12px;font-size:14px;text-align:left">
+                  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:separate;border:1px solid #E1E0E4;border-radius:16px;overflow:hidden">
+                    <tbody>
+                      <tr><td style="padding:0;background:#FFFFFF;position:relative">
+                        <img src="assets/vehicle-placeholder.png" width="264" height="198" alt="{{ offer.alt }}" style="display:block;border:0;width:100%;max-width:100%;height:auto">
+                        <image-slot id="img-{{ offer.id }}" shape="rect" fit="contain" placeholder="{{ offer.imgPlaceholder }}" style="position:absolute;left:0;top:0;width:100%;height:100%"></image-slot>
+                      </td></tr>
+                      <tr><td style="padding:14px 16px 18px 16px">
+                        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:separate;margin:0 0 8px 0;height:22px">
+                          <tbody><tr>
+                            <sc-if value="{{ offer.hasHot }}" hint-placeholder-val="{{ true }}">
+                              <td style="background:#FF8811;border-radius:999px;padding:3px 10px;font-size:11px;line-height:14px;mso-line-height-rule:exactly;font-weight:700;color:#FFFFFF;white-space:nowrap;text-align:center;width:50%;vertical-align:top">{{ offer.hotBadge }}</td>
+                              <td width="6" style="font-size:0;line-height:0">&nbsp;</td>
+                            </sc-if>
+                            <sc-for list="{{ offer.badges1 }}" as="b" hint-placeholder-count="1">
+                              <td style="background:#FF8811;border-radius:999px;padding:3px 10px;font-size:11px;line-height:14px;mso-line-height-rule:exactly;font-weight:700;color:#FFFFFF;white-space:nowrap;text-align:center;width:50%;vertical-align:top">{{ b }}</td>
+                              <td width="6" style="font-size:0;line-height:0">&nbsp;</td>
+                            </sc-for>
+                          </tr></tbody>
+                        </table>
+                        <p style="margin:0 0 2px 0;font-size:11px;line-height:14px;mso-line-height-rule:exactly;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#E30613">{{ offer.make }}</p>
+                        <p style="margin:0 0 2px 0;font-size:20px;line-height:26px;mso-line-height-rule:exactly;font-weight:700;color:#000000">{{ offer.model }}</p>
+                        <p style="margin:0 0 10px 0;font-size:13px;line-height:18px;mso-line-height-rule:exactly;color:#787580;min-height:36px">{{ offer.derivative }}</p>
+                        <sc-if value="{{ offer.isSalsac }}" hint-placeholder-val="{{ false }}">
+                          <p style="margin:0 0 2px 0;line-height:30px;mso-line-height-rule:exactly"><span style="font-size:26px;font-weight:700;color:#E30613">{{ offer.net20 }}</span> <span style="font-size:12px;color:#787580">net · 20%</span></p>
+                          <p style="margin:0 0 8px 0;line-height:24px;mso-line-height-rule:exactly"><span style="font-size:20px;font-weight:700;color:#E30613">{{ offer.net40 }}</span> <span style="font-size:12px;color:#787580">net · 40%</span></p>
+                        </sc-if>
+                        <sc-if value="{{ offer.notSalsac }}" hint-placeholder-val="{{ true }}">
+                          <p style="margin:0 0 8px 0;line-height:32px;mso-line-height-rule:exactly"><span style="font-size:28px;font-weight:700;color:#E30613">{{ offer.price }}</span> <span style="font-size:12px;font-weight:500;color:#787580">{{ offer.vatLabel }}</span></p>
+                        </sc-if>
+                        <p style="margin:0 0 12px 0;font-size:12px;line-height:18px;mso-line-height-rule:exactly;color:#393838">{{ offer.specLine }}</p>
+                        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:separate;border-spacing:0;margin-bottom:12px">
+                          <tbody>
+                            <sc-for list="{{ offer.statPairs }}" as="pair" hint-placeholder-count="2">
+                              <tr>
+                                <sc-for list="{{ pair.items }}" as="s" hint-placeholder-count="2">
+                                  <td width="48%" style="background:#F6F6F7;border-radius:6px;padding:7px 8px;vertical-align:top">
+                                    <p style="margin:0;font-size:9px;line-height:12px;mso-line-height-rule:exactly;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:#787580">{{ s.label }}</p>
+                                    <p style="margin:1px 0 0 0;font-size:13px;line-height:18px;mso-line-height-rule:exactly;font-weight:700;color:#000000;white-space:nowrap">{{ s.value }}</p>
+                                  </td>
+                                  <sc-if value="{{ s.notLast }}" hint-placeholder-val="{{ true }}"><td width="8" style="font-size:0;line-height:0">&nbsp;</td></sc-if>
+                                </sc-for>
+                              </tr>
+                              <sc-if value="{{ pair.notLast }}" hint-placeholder-val="{{ true }}"><tr><td colspan="3" height="4" style="font-size:0;line-height:0;padding:0">&nbsp;</td></tr></sc-if>
+                            </sc-for>
+                          </tbody>
+                        </table>
+                        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:separate">
+                          <tbody><tr>
+                            <td style="background:#31BD51;border-radius:999px;padding:11px 12px;text-align:center;mso-padding-alt:0">
+                              <a href="{{ offer.ctaHref }}" style="display:block;font-size:14px;line-height:18px;mso-line-height-rule:exactly;font-weight:600;color:#FFFFFF;text-decoration:none">{{ offer.ctaLabel }}</a>
+                            </td>
+                          </tr></tbody>
+                        </table>
+                        <sc-if value="{{ showViewLink }}" hint-placeholder-val="{{ false }}">
+                          <p style="margin:8px 0 0 0;font-size:12px;line-height:16px;mso-line-height-rule:exactly;text-align:center"><a href="{{ offer.url }}" style="color:#E30613;text-decoration:underline;font-weight:600">View this offer</a></p>
+                        </sc-if>
+                        <sc-if value="{{ hasBrochure }}" hint-placeholder-val="{{ false }}">
+                          <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="border-collapse:collapse;margin:8px auto 0 auto">
+                            <tbody><tr>
+                              <td style="padding:0 6px 0 0;vertical-align:middle"><sc-if value="{{ isPdf }}" hint-placeholder-val="{{ false }}"><img src="assets/icon-doc-2x.png" width="14" height="14" alt="PDF document" style="display:block;border:0;width:14px;height:14px"></sc-if><sc-if value="{{ isGated }}" hint-placeholder-val="{{ false }}"><img src="assets/icon-external-2x.png" width="14" height="14" alt="Opens manufacturer site" style="display:block;border:0;width:14px;height:14px"></sc-if></td>
+                              <td style="vertical-align:middle;font-size:12px;line-height:16px;mso-line-height-rule:exactly"><a href="{{ offer.brochureHref }}" style="color:#787580;text-decoration:underline">{{ brochureLabel }}</a></td>
+                            </tr></tbody>
+                          </table>
+                        </sc-if>
+                        <p style="margin:12px 0 0 0;font-size:11px;line-height:16px;mso-line-height-rule:exactly;color:#787580">{{ offer.smallPrint }}</p>
+                      </td></tr>
+                    </tbody>
+                  </table>
+                </td>
+              </tr></tbody>
+            </table>
+          </sc-for>
+        </td>
+      </tr>
+    </sc-if>
+
+    <!-- ================= D. COMPACT CARD (grid3) — fluid hybrid, 3 × 192 columns, card 168×126 ================= -->
+    <sc-if value="{{ showCompact }}" hint-placeholder-val="{{ false }}">
+      <tr>
+        <td style="padding:12px 12px 0 12px;font-size:0;text-align:center">
+          <sc-for list="{{ offers }}" as="offer" hint-placeholder-count="3">
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0" class="card-cell" style="display:inline-block;width:100%;max-width:{{ compactCellMax }};vertical-align:top;border-collapse:collapse">
+              <tbody><tr>
+                <td style="padding:0 12px 16px 12px;font-size:14px;text-align:left">
+                  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:separate;border:1px solid #E1E0E4;border-radius:12px;overflow:hidden">
+                    <tbody>
+                      <tr><td style="padding:0;background:#FFFFFF;position:relative">
+                        <img src="assets/vehicle-placeholder.png" width="168" height="126" alt="{{ offer.alt }}" style="display:block;border:0;width:100%;max-width:100%;height:auto">
+                        <image-slot id="img-{{ offer.id }}" shape="rect" fit="contain" placeholder="{{ offer.imgPlaceholder }}" style="position:absolute;left:0;top:0;width:100%;height:100%"></image-slot>
+                      </td></tr>
+                      <tr><td style="padding:12px 12px 14px 12px">
+                        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:separate;margin:0 0 6px 0;height:20px">
+                          <tbody><tr>
+                            <sc-if value="{{ offer.hasHot }}" hint-placeholder-val="{{ true }}">
+                              <td style="background:#FF8811;border-radius:999px;padding:2px 8px;font-size:10px;line-height:14px;mso-line-height-rule:exactly;font-weight:700;color:#FFFFFF;white-space:nowrap;text-align:center;width:100%;vertical-align:top">{{ offer.hotBadge }}</td>
+                            </sc-if>
+                            <sc-if value="{{ offer.noHotFirstBadge }}" hint-placeholder-val="{{ false }}">
+                              <td style="background:#FF8811;border-radius:999px;padding:2px 8px;font-size:10px;line-height:14px;mso-line-height-rule:exactly;font-weight:700;color:#FFFFFF;white-space:nowrap;text-align:center;width:100%;vertical-align:top">{{ offer.firstBadge }}</td>
+                            </sc-if>
+                          </tr></tbody>
+                        </table>
+                        <p style="margin:0 0 2px 0;font-size:10px;line-height:14px;mso-line-height-rule:exactly;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#E30613">{{ offer.make }}</p>
+                        <p style="margin:0 0 2px 0;font-size:17px;line-height:22px;mso-line-height-rule:exactly;font-weight:700;color:#000000">{{ offer.model }}</p>
+                        <p style="margin:0 0 8px 0;font-size:11px;line-height:16px;mso-line-height-rule:exactly;color:#787580;min-height:32px">{{ offer.derivative }}</p>
+                        <sc-if value="{{ offer.isSalsac }}" hint-placeholder-val="{{ false }}">
+                          <p style="margin:0;line-height:26px;mso-line-height-rule:exactly"><span style="font-size:22px;font-weight:700;color:#E30613">{{ offer.net20 }}</span></p>
+                          <p style="margin:0 0 2px 0;font-size:10px;line-height:14px;mso-line-height-rule:exactly;color:#787580">net · 20% taxpayer · {{ offer.net40 }} at 40%</p>
+                        </sc-if>
+                        <sc-if value="{{ offer.notSalsac }}" hint-placeholder-val="{{ true }}">
+                          <p style="margin:0;line-height:26px;mso-line-height-rule:exactly"><span style="font-size:22px;font-weight:700;color:#E30613">{{ offer.price }}</span></p>
+                          <p style="margin:0 0 2px 0;font-size:10px;line-height:14px;mso-line-height-rule:exactly;color:#787580">{{ offer.vatLabel }}</p>
+                        </sc-if>
+                        <p style="margin:0 0 8px 0;font-size:10px;line-height:14px;mso-line-height-rule:exactly;color:#787580">{{ offer.validityLine }}</p>
+                        <p style="margin:0 0 10px 0;font-size:11px;line-height:16px;mso-line-height-rule:exactly;color:#393838">{{ offer.specShort }}</p>
+                        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:separate">
+                          <tbody><tr>
+                            <td style="background:#31BD51;border-radius:999px;padding:9px 10px;text-align:center;mso-padding-alt:0">
+                              <a href="{{ offer.ctaHref }}" style="display:block;font-size:13px;line-height:16px;mso-line-height-rule:exactly;font-weight:600;color:#FFFFFF;text-decoration:none">{{ offer.ctaLabel }}</a>
+                            </td>
+                          </tr></tbody>
+                        </table>
+                        <sc-if value="{{ showViewLink }}" hint-placeholder-val="{{ false }}">
+                          <p style="margin:8px 0 0 0;font-size:11px;line-height:14px;mso-line-height-rule:exactly;text-align:center"><a href="{{ offer.url }}" style="color:#E30613;text-decoration:underline;font-weight:600">View this offer</a></p>
+                        </sc-if>
+                        <sc-if value="{{ hasBrochure }}" hint-placeholder-val="{{ false }}">
+                          <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="border-collapse:collapse;margin:8px auto 0 auto">
+                            <tbody><tr>
+                              <td style="padding:0 5px 0 0;vertical-align:middle"><sc-if value="{{ isPdf }}" hint-placeholder-val="{{ false }}"><img src="assets/icon-doc-2x.png" width="14" height="14" alt="PDF document" style="display:block;border:0;width:14px;height:14px"></sc-if><sc-if value="{{ isGated }}" hint-placeholder-val="{{ false }}"><img src="assets/icon-external-2x.png" width="14" height="14" alt="Opens manufacturer site" style="display:block;border:0;width:14px;height:14px"></sc-if></td>
+                              <td style="vertical-align:middle;font-size:11px;line-height:14px;mso-line-height-rule:exactly"><a href="{{ offer.brochureHref }}" style="color:#787580;text-decoration:underline">{{ brochureLabel }}</a></td>
+                            </tr></tbody>
+                          </table>
+                        </sc-if>
+                      </td></tr>
+                    </tbody>
+                  </table>
+                </td>
+              </tr></tbody>
+            </table>
+          </sc-for>
+        </td>
+      </tr>
+      <tr>
+        <td style="padding:0 24px 8px 24px">
+          <p style="margin:0;font-size:11px;line-height:16px;mso-line-height-rule:exactly;color:#787580">{{ compactSmallPrint }}</p>
+        </td>
+      </tr>
+    </sc-if>
+
+    <!-- Signature -->
+    <tr>
+      <td style="padding:8px 24px 28px 24px">
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;border-top:1px solid #E1E0E4">
+          <tbody>
+            <tr>
+              <sc-if value="{{ showHeadshot }}" hint-placeholder-val="{{ true }}">
+                <td width="72" style="padding:22px 16px 0 0;vertical-align:top">
+                  <div style="position:relative;width:56px;height:56px">
+                    <img src="assets/headshot-placeholder.png" width="56" height="56" alt="{{ sender.name }}" style="display:block;border:0;width:56px;height:56px;border-radius:50%">
+                    <image-slot id="headshot" shape="circle" placeholder=" " style="position:absolute;left:0;top:0;width:56px;height:56px"></image-slot>
+                  </div>
+                </td>
+              </sc-if>
+              <td style="padding:22px 0 0 0;vertical-align:top">
+                <p style="margin:0 0 2px 0;font-size:16px;line-height:22px;mso-line-height-rule:exactly;font-weight:700;color:#000000">{{ sender.name }}</p>
+                <p style="margin:0 0 8px 0;font-size:14px;line-height:20px;mso-line-height-rule:exactly;color:#787580">{{ sender.title }}</p>
+                <p style="margin:0;font-size:14px;line-height:22px;mso-line-height-rule:exactly;color:#787580">{{ sender.phone }}<br><a href="mailto:{{ sender.email }}" style="color:#E30613;text-decoration:underline">{{ sender.email }}</a></p>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </td>
+    </tr>
+
+    <!-- Compliance footer (locked block) -->
+    <tr>
+      <td style="padding:0 24px 24px 24px">
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:separate;border-radius:12px">
+          <tbody>
+            <tr>
+              <td style="background:#F6F6F7;border-radius:12px;padding:20px 20px 18px 20px">
+                <p style="margin:0 0 10px 0;font-size:11px;line-height:14px;mso-line-height-rule:exactly;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#393838">{{ complianceTitle }}</p>
+                <sc-for list="{{ complianceLines }}" as="line" hint-placeholder-count="4">
+                  <p style="margin:0 0 8px 0;font-size:12px;line-height:18px;mso-line-height-rule:exactly;color:#787580">{{ line }}</p>
+                </sc-for>
+                <p style="margin:12px 0 0 0;padding-top:12px;border-top:1px solid #E1E0E4;font-size:12px;line-height:18px;mso-line-height-rule:exactly;color:#787580">Don't want offers from DreamLease? Reply to this email and tell us, and we'll stop.</p>
+                <p style="margin:8px 0 0 0;font-size:11px;line-height:16px;mso-line-height-rule:exactly;color:#787580">DreamLease Ltd, [registered address], registered in England and Wales no. [00000000]. <a href="https://www.dreamlease.co.uk" style="color:#787580;text-decoration:underline">dreamlease.co.uk</a></p>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </td>
+    </tr>
+
+    </tbody>
+  </table>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{
+  &quot;offerCount&quot;: {&quot;editor&quot;: &quot;int&quot;, &quot;default&quot;: 3, &quot;min&quot;: 1, &quot;max&quot;: 6, &quot;tsType&quot;: &quot;number&quot;, &quot;section&quot;: &quot;Campaign&quot;},
+  &quot;layout&quot;: {&quot;editor&quot;: &quot;enum&quot;, &quot;default&quot;: &quot;auto&quot;, &quot;options&quot;: [&quot;auto&quot;, &quot;single&quot;, &quot;stack&quot;, &quot;grid2&quot;, &quot;grid3&quot;], &quot;tsType&quot;: &quot;string&quot;, &quot;section&quot;: &quot;Campaign&quot;},
+  &quot;contractType&quot;: {&quot;editor&quot;: &quot;enum&quot;, &quot;default&quot;: &quot;personal&quot;, &quot;options&quot;: [&quot;personal&quot;, &quot;business&quot;, &quot;salary_sacrifice&quot;], &quot;tsType&quot;: &quot;string&quot;, &quot;section&quot;: &quot;Campaign&quot;},
+  &quot;sender&quot;: {&quot;editor&quot;: &quot;enum&quot;, &quot;default&quot;: &quot;rep&quot;, &quot;options&quot;: [&quot;rep&quot;, &quot;department&quot;], &quot;tsType&quot;: &quot;string&quot;, &quot;section&quot;: &quot;Campaign&quot;},
+  &quot;cta&quot;: {&quot;editor&quot;: &quot;enum&quot;, &quot;default&quot;: &quot;view_offer&quot;, &quot;options&quot;: [&quot;view_offer&quot;, &quot;email&quot;, &quot;call&quot;, &quot;whatsapp&quot;, &quot;book&quot;, &quot;link&quot;], &quot;tsType&quot;: &quot;string&quot;, &quot;section&quot;: &quot;Campaign&quot;},
+  &quot;ctaLabel&quot;: {&quot;editor&quot;: &quot;text&quot;, &quot;default&quot;: &quot;&quot;, &quot;tsType&quot;: &quot;string&quot;, &quot;section&quot;: &quot;Campaign&quot;},
+  &quot;brochure&quot;: {&quot;editor&quot;: &quot;enum&quot;, &quot;default&quot;: &quot;pdf&quot;, &quot;options&quot;: [&quot;none&quot;, &quot;pdf&quot;, &quot;gated&quot;], &quot;tsType&quot;: &quot;string&quot;, &quot;section&quot;: &quot;Campaign&quot;},
+  &quot;preheader&quot;: {&quot;editor&quot;: &quot;text&quot;, &quot;default&quot;: &quot;Three electric options on 36 months, 8,000 miles a year.&quot;, &quot;tsType&quot;: &quot;string&quot;, &quot;section&quot;: &quot;Campaign&quot;},
+  &quot;viewport&quot;: {&quot;editor&quot;: &quot;enum&quot;, &quot;default&quot;: &quot;desktop&quot;, &quot;options&quot;: [&quot;desktop&quot;, &quot;mobile&quot;], &quot;tsType&quot;: &quot;string&quot;, &quot;section&quot;: &quot;Preview&quot;},
+  &quot;font&quot;: {&quot;editor&quot;: &quot;enum&quot;, &quot;default&quot;: &quot;Arial&quot;, &quot;options&quot;: [&quot;Arial&quot;, &quot;Sofia Pro&quot;], &quot;tsType&quot;: &quot;string&quot;, &quot;section&quot;: &quot;Preview&quot;}
+}">
+// PLACEHOLDER DATA — design preview only. The derived numbers below (salary sacrifice nets × 0.68 / × 0.56,
+// business prices ÷ 1.2) are illustrative so the layouts have realistic figures. In the tool, salsac net
+// figures are hand-entered and business prices come from the business offer page. Do NOT copy this arithmetic.
+// Likewise the WhatsApp link is derived from the phone number here for the mock only: in the tool it comes from
+// Sender.whatsapp, and the Bookings URL from Sender.bookingUrl.
+// Preview-only constructs to strip in the MJML: <image-slot> overlays, position:relative on image cells, the headshot wrapper div.
+// MSO conditional ghost tables are required around the grid2, grid3 and stack inline-block tables (not expressible here).
+const OFFERS = [
+  { id: 'byd-seal', make: 'BYD', model: 'Seal', derivative: 'Design 82.5kWh Excellence AWD 4dr Auto', monthly: 389, initial: 3501, term: 36, miles: 8000, hot: 'DreamLease exclusive!', badges: ['In stock', 'Special offer'], valid: '30 Sep 2026', stats: [['Range', '323 mi'], ['0–62', '3.8s'], ['Battery', '82.5 kWh'], ['Warranty', '6 yrs']] },
+  { id: 'mg4', make: 'MG', model: 'MG4 EV', derivative: 'Trophy Long Range 64kWh 5dr Auto', monthly: 249, initial: 2241, term: 36, miles: 8000, hot: 'Special offer', badges: ['In stock'], valid: '30 Sep 2026', stats: [['Range', '281 mi'], ['0–62', '7.9s'], ['Battery', '64 kWh'], ['Warranty', '7 yrs']] },
+  { id: 'kia-ev3', make: 'Kia', model: 'EV3', derivative: 'GT-Line 81.4kWh 5dr Auto', monthly: 329, initial: 2961, term: 36, miles: 8000, hot: '', badges: ['Factory order'], valid: '15 Oct 2026', stats: [['Range', '375 mi'], ['0–62', '7.9s'], ['Battery', '81.4 kWh'], ['Warranty', '7 yrs']] },
+  { id: 'cupra-born', make: 'Cupra', model: 'Born', derivative: 'V2 59kWh 204PS 5dr Auto', monthly: 299, initial: 2691, term: 36, miles: 8000, hot: 'Hot offer', badges: ['In stock', 'Limited numbers'], valid: '30 Sep 2026', stats: [['Range', '264 mi'], ['0–62', '7.0s'], ['Battery', '59 kWh'], ['Warranty', '3 yrs']] },
+  { id: 'kona-ev', make: 'Hyundai', model: 'Kona Electric', derivative: 'Advance 65kWh 218PS 5dr Auto', monthly: 279, initial: 2511, term: 36, miles: 8000, hot: '', badges: ['In stock'], valid: '7 Oct 2026', stats: [['Range', '319 mi'], ['0–62', '7.8s'], ['Battery', '65 kWh'], ['Warranty', '5 yrs']] },
+  { id: 'skoda-elroq', make: 'Skoda', model: 'Elroq', derivative: 'SE L 82kWh 85 5dr Auto', monthly: 339, initial: 3051, term: 36, miles: 8000, hot: 'Special offer', badges: ['Factory order'], valid: '30 Sep 2026', stats: [['Range', '360 mi'], ['0–62', '6.6s'], ['Battery', '82 kWh'], ['Warranty', '3 yrs']] },
+];
+const gbp = n => '£' + Math.round(n).toLocaleString('en-GB');
+const LONG_VALID = { '30 Sep 2026': '30 September 2026', '15 Oct 2026': '15 October 2026', '7 Oct 2026': '7 October 2026' };
+const CTA_DEFAULTS = { view_offer: 'View this offer', email: 'Email me about this', call: 'Call me on {phone}', whatsapp: 'WhatsApp me', book: 'Book a time to talk', link: 'Read the full review' };
+
+class Component extends DCLogic {
+  renderVals() {
+    const p = this.props;
+    const count = Math.min(6, Math.max(1, parseInt(p.offerCount ?? 3, 10) || 1));
+    const contract = p.contractType ?? 'personal';
+    const mobile = (p.viewport ?? 'desktop') === 'mobile';
+    const fontStack = (p.font ?? 'Arial') === 'Sofia Pro'
+      ? "'Sofia Pro', Arial, 'Helvetica Neue', Helvetica, sans-serif"
+      : "Arial, 'Helvetica Neue', Helvetica, sans-serif";
+    let layout = p.layout ?? 'auto';
+    if (layout === 'auto') layout = count === 1 ? 'single' : count === 2 || count === 4 ? 'grid2' : 'grid3';
+
+    const shared = (p.sender ?? 'rep') === 'department';
+    const sender = shared
+      ? { name: 'DreamLease Sales Team', title: 'sales@dreamlease.co.uk', phone: '0330 000 0000', email: 'sales@dreamlease.co.uk' }
+      : { name: 'Sam Carter', title: 'Account Manager, DreamLease', phone: '01234 567 890', email: 'sam.carter@dreamlease.co.uk' };
+
+    const cta = p.cta ?? 'view_offer';
+    const ctaOverride = (p.ctaLabel ?? '').trim();
+    const ctaLabel = ctaOverride || CTA_DEFAULTS[cta].replace('{phone}', sender.phone);
+    const brochure = p.brochure ?? 'pdf';
+    const hasBrochure = brochure !== 'none';
+
+    const isSalsac = contract === 'salary_sacrifice';
+    const vatLabel = contract === 'business' ? 'per month ex VAT' : 'per month inc VAT';
+    const offers = OFFERS.slice(0, count).map(o => {
+      const monthly = contract === 'business' ? o.monthly / 1.2 : o.monthly;   // placeholder arithmetic, see header comment
+      const initial = contract === 'business' ? o.initial / 1.2 : o.initial;
+      const stats = o.stats.map(([label, value], i, a) => ({ label, value, notLast: i < a.length - 1 }));
+      const pair = (items, notLast) => ({ items: items.map((s, i) => ({ ...s, notLast: i < items.length - 1 })), notLast });
+      const badges = o.badges.slice(0, 2);
+      const url = `https://www.dreamlease.co.uk/offers/${contract === 'business' ? 'business' : 'personal'}/${o.id}/`;
+      const subject = encodeURIComponent(`${o.make} ${o.model} offer`);
+      const ctaHref = {
+        view_offer: url,
+        email: `mailto:${sender.email}?subject=${subject}`,
+        call: `tel:${sender.phone.replace(/\s/g, '')}`,
+        whatsapp: `https://wa.me/44${sender.phone.replace(/\s/g, '').slice(1)}?text=${subject}`,
+        book: 'https://outlook.office.com/book/DreamLease@dreamlease.co.uk/',
+        link: 'https://www.dreamlease.co.uk/news/',
+      }[cta];
+      const smallPrint = `Processing fee £299.99 inc VAT · Offer valid until ${LONG_VALID[o.valid] || o.valid}`
+        + (hasBrochure ? ' · Brochure figures are the manufacturer\'s and may differ from this offer.' : '');
+      return {
+        id: o.id, make: o.make, model: o.model, derivative: o.derivative, alt: `${o.make} ${o.model}`,
+        hasHot: !!o.hot, hotBadge: o.hot, badges, badges1: badges.slice(0, 1),
+        noHotFirstBadge: !o.hot && badges.length > 0, firstBadge: badges[0] || '',
+        price: gbp(monthly), vatLabel,
+        isSalsac, notSalsac: !isSalsac,
+        net20: gbp(o.monthly * 0.68), net40: gbp(o.monthly * 0.56),
+        grossLine: `${gbp(o.monthly)} per month gross salary sacrifice.`,
+        specLine: isSalsac
+          ? `${o.term} months · ${o.miles.toLocaleString('en-GB')} miles p.a. · maintenance and insurance included`
+          : `${o.term} months · ${o.miles.toLocaleString('en-GB')} miles p.a. · ${gbp(initial)} initial payment`,
+        specShort: isSalsac ? `${o.term} mo · ${o.miles / 1000}k miles · all-inclusive` : `${o.term} mo · ${o.miles / 1000}k miles · ${gbp(initial)} initial`,
+        stats, statPairs: [pair(stats.slice(0, 2), true), pair(stats.slice(2, 4), false)],
+        url, ctaHref, ctaLabel,
+        brochureHref: brochure === 'pdf' ? `https://offers.dreamlease.co.uk/brochures/${o.id}.pdf` : `https://www.${o.make.toLowerCase()}.co.uk/brochure`,
+        smallPrint, validityLine: `Valid until ${o.valid}`,
+        imgPlaceholder: `${o.make} ${o.model} · 1200×900, white background`,
+      };
+    });
+
+    const complianceByType = {
+      personal: ['Personal contract hire', [
+        'Prices shown include VAT and are based on the term, annual mileage and initial payment stated on each offer. Excess mileage charges and a fair wear and tear standard apply at the end of the agreement.',
+        'A processing fee of £299.99 inc VAT is payable on all orders. At the end of the lease the vehicle must be returned in its original condition. You will not own the vehicle.',
+        'Offers are subject to status and availability, are for UK residents aged 18 or over, and are valid until the date shown on each offer. Guarantees may be required.',
+        'DreamLease Ltd is a credit broker, not a lender, and is authorised and regulated by the Financial Conduct Authority, firm reference number [000000]. We may receive commission from the funder for introducing your business.',
+      ]],
+      business: ['Business contract hire', [
+        'Prices shown exclude VAT and are based on the term, annual mileage and initial payment stated on each offer. Business contract hire is available to limited companies, partnerships and sole traders. Excess mileage charges and a fair wear and tear standard apply.',
+        'A processing fee of £299.99 inc VAT is payable on all orders. At the end of the lease the vehicle must be returned in its original condition. Your business will not own the vehicle.',
+        'Offers are subject to status and availability and are valid until the date shown on each offer. Directors\' guarantees may be required.',
+        'DreamLease Ltd is a credit broker, not a lender, and is authorised and regulated by the Financial Conduct Authority, firm reference number [000000]. We may receive commission from the funder for introducing your business.',
+      ]],
+      salary_sacrifice: ['Salary sacrifice car scheme', [
+        'Net monthly figures are illustrative, based on a 20% and 40% income tax payer with standard National Insurance, and depend on your employer\'s scheme rules and your personal circumstances. Your take-home pay will reduce and Benefit in Kind tax applies.',
+        'The agreement is between your employer and the funder. Term, mileage, maintenance and insurance are as stated on each offer. Early termination and excess mileage charges may apply through the scheme.',
+        'Offers are subject to scheme eligibility, status and availability, and are valid until the date shown on each offer. Your employer will confirm the final figures before any order is placed.',
+        'DreamLease Ltd is a credit broker, not a lender, and is authorised and regulated by the Financial Conduct Authority, firm reference number [000000].',
+      ]],
+    };
+    const [complianceTitle, complianceLines] = complianceByType[contract] || complianceByType.personal;
+    const contractLabel = { personal: 'Personal · inc VAT', business: 'Business · ex VAT', salary_sacrifice: 'Salary sacrifice' }[contract];
+
+    return {
+      fontStack, emailWidth: mobile ? 375 : 600,
+      preheader: p.preheader ?? 'Three electric options on 36 months, 8,000 miles a year.',
+      metaLine: `${count} offer${count > 1 ? 's' : ''} · ${layout} · ${contractLabel} · CTA ${cta} · ${mobile ? '375px' : '600px'}`,
+      offers,
+      showHero: layout === 'single', showRows: layout === 'stack', showHalf: layout === 'grid2', showCompact: layout === 'grid3',
+      showViewLink: cta !== 'view_offer',
+      hasBrochure, isPdf: brochure === 'pdf', isGated: brochure === 'gated',
+      halfCellMax: mobile ? '100%' : '288px', compactCellMax: mobile ? '100%' : '192px',
+      brochureLabel: brochure === 'pdf' ? 'Download brochure (PDF)' : 'Request a brochure',
+      brochureIcon: brochure === 'pdf' ? 'assets/icon-doc-2x.png' : 'assets/icon-external-2x.png',
+      brochureAlt: brochure === 'pdf' ? 'PDF document' : 'Opens manufacturer site',
+      compactSmallPrint: 'All offers: processing fee £299.99 inc VAT.' + (hasBrochure ? ' Brochure figures are the manufacturer\'s and may differ from this offer.' : ''),
+      showHeadshot: !shared, sender,
+      complianceTitle, complianceLines,
+    };
+  }
+}
+</script>
+</body>
+</html>

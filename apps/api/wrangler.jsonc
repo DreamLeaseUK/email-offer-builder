@@ -1,0 +1,33 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "offer-mailer",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-09-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": { "enabled": true },
+  "vars": {
+    // Cloudflare Access: team domain and the application's AUD tag. Leave empty locally;
+    // the middleware then accepts DEV_USER_EMAIL from .dev.vars.
+    "ACCESS_TEAM_DOMAIN": "",
+    "ACCESS_AUD": "",
+    "HOSTED_BASE_URL": "https://offers.dreamlease.co.uk",
+    "TOOL_BASE_URL": "https://mailer.dreamlease.co.uk",
+    "APP_VERSION": "0.1.0"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "offer-mailer",
+      "database_id": "32d1b987-b550-4bb4-9bfc-dd219c9404d4",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "r2_buckets": [
+    { "binding": "IMAGES", "bucket_name": "offer-mailer-images" },
+    { "binding": "HOSTED", "bucket_name": "offer-mailer-hosted" },
+    { "binding": "BROCHURES", "bucket_name": "offer-mailer-brochures" }
+  ]
+  // Secrets (wrangler secret put): FIRECRAWL_API_KEY
+  // Static assets for apps/web are added in build step 4:
+  // "assets": { "directory": "../web/dist", "binding": "ASSETS", "not_found_handling": "single-page-application" }
+}

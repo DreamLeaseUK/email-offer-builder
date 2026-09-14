@@ -1,0 +1,3 @@
+# Copy to .dev.vars (git-ignored). Only honoured when ACCESS_AUD is empty, i.e. never in production.
+DEV_USER_EMAIL=matt.wilson@dreamlease.co.uk
+# FIRECRAWL_API_KEY=fc-...

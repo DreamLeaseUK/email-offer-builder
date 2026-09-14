@@ -1,0 +1,15 @@
+{
+  "_comment": "Fixed badge list (brief §5.1). Reps pick from these; never free text. Maintained by Matt.",
+  "badges": [
+    "In stock",
+    "Special offer",
+    "DreamLease exclusive!",
+    "Hot offer",
+    "Factory order",
+    "Limited numbers",
+    "Price drop",
+    "New model",
+    "Free maintenance",
+    "Home charger included"
+  ]
+}

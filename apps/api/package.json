@@ -1,0 +1,29 @@
+{
+  "name": "@offer-mailer/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "types": "wrangler types",
+    "test": "vitest run",
+    "typecheck": "wrangler types && tsc -p tsconfig.json",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate:local": "wrangler d1 migrations apply offer-mailer --local",
+    "db:migrate": "wrangler d1 migrations apply offer-mailer --remote"
+  },
+  "dependencies": {
+    "@offer-mailer/adapters": "workspace:*",
+    "@offer-mailer/schema": "workspace:*",
+    "drizzle-orm": "^0.44.5",
+    "hono": "^4.9.7",
+    "jose": "^6.1.0"
+  },
+  "devDependencies": {
+    "drizzle-kit": "^0.31.4",
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.4",
+    "wrangler": "^4.131.1"
+  }
+}
