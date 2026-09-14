@@ -12,7 +12,7 @@ You are resuming work on the DreamLease Offer Mailer, an internal tool where a s
 
 Facts you can rely on without re-checking:
 
-- Steps 1 and 2 are done and committed (`7bc5777`, `f2b6372`). On 14 Sept a three-part card diagnostic (`packages/render/scripts/diag-card.ts`, rows R/D1–D6, I1–I6, S1–S3; see status doc §5) was sent to Matt. If his results are not yet in the conversation, ask for them before touching `cards.ts`.
+- Steps 1, 2 and 3 are done, committed and deployed (v0.3.0). On 14 Sept a three-part card diagnostic (`packages/render/scripts/diag-card.ts`, rows R/D1–D6, I1–I6, S1–S3; see status doc §5) was sent to Matt. If his results are not yet in the conversation, ask for them before touching `cards.ts`. Step 3 decisions (the site's pricing JSON endpoint, derived initial payment, `/f/` file routes, the Images binding, the workerd test pool) are in status doc §2; the Firecrawl secret is still to be set by Matt (§7).
 - The Worker is live at https://offer-mailer.matt-wilson-9b8.workers.dev. `pnpm test` and `pnpm typecheck` were clean at handover. Wrangler auth expires; if a deploy fails with an auth error, ask Matt to run the login command in the status doc from his own terminal.
 - Matt (Head of Marketing, the only stakeholder you'll talk to) tests emails by opening the `.eml` fixtures in classic Outlook and New Outlook on Windows and forwarding from New Outlook to his phone (Outlook iOS and Gmail iOS). He sends screenshots. He is direct and wants an agile, frictionless build; he has explicitly said "do full diagnostics before churning another version" after a day of single-screenshot fixes.
 
@@ -26,6 +26,6 @@ How to work on those: do **not** edit `packages/render/src/cards.ts` in response
 
 Things not to do: don't reintroduce `[if mso]` conditionals inside the email body; don't add line-height inside the VML pills; don't propose red badges (Matt chose orange); don't propose MJML; don't suggest a Claude Code skill for email design (reviewed and declined); don't touch the brochure glyph icons until asked.
 
-After the template issues are closed, the next build step is 3 (brief §8.2): URL lookup adapter with HTMLRewriter parsing, image pipeline via Cloudflare Image transformations to R2 under `vehicles/<sha256>.jpg`, term/mileage chips, 24-hour cache of parsed offers only, and the brochure harvest (§5.8). The CAP ID rule applies to everything you persist.
+After the template issues are closed, the next build step is 4 (brief §8.2): the web app (campaigns, compose, add-offer modal with the URL lookup and the term/mileage chips from `options`, library, preview) on Vite + React with the design-system components, talking to `/api/offers/lookup` and `/api/brochures/*`. The CAP ID rule applies to everything you persist.
 
 Start by confirming to Matt, in a few lines, that you've read the three documents, what the current git state is, and which of the three open template issues you propose to diagnose first and how.

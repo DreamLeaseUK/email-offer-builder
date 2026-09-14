@@ -380,6 +380,7 @@ Where the implementation has departed from this brief, and why. `docs/status-202
 - **Hosted page is the email markup in a page wrapper** until the design-system hosted page from §7.1 is delivered.
 - **Cloudflare Workers Paid** is confirmed but not yet switched on; free plan is sufficient until build step 3.
 - **Open template issues** at handover: classic Outlook grid cards render narrow after the last changes; New Outlook desktop in a narrow pane keeps the vehicle image at its design width inside a full-width card and wraps the stack layout's image column above the content. Method for resolving them is in the status doc §5.
+- **Lookup (step 3) reads two things, not one.** §3's finding that offer pages are fully server-rendered holds for identity, stats, fees and defaults, but not for prices or badges: those come from the page's own JSON endpoint (`/api/carresults/GetOfferDropdownsForCar`), which also lists the term, mileage and initial-payment options used for the chips. Initial payment is initial months × monthly, as the site computes it. The lookup cache stores the parsed result (offer plus options), never HTML. Stored files are served from `/f/vehicles/<sha>.jpg` and `/f/brochures/<sha>.pdf`; brochure links are `/b/<id>` as specified.
 
 ## 9. Assumptions and open items
 

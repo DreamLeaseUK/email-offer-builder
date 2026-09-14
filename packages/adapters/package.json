@@ -9,12 +9,17 @@
     ".": "./src/index.ts"
   },
   "scripts": {
+    "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
-    "@offer-mailer/schema": "workspace:*"
+    "@offer-mailer/schema": "workspace:*",
+    "zod": "^4.1.5"
   },
   "devDependencies": {
-    "typescript": "^5.9.2"
+    "@types/node": "^24.5.2",
+    "htmlrewriter": "0.0.13",
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.4"
   }
 }
