@@ -11,14 +11,14 @@ Internal tool: a rep pastes a dreamlease.co.uk offer URL, assembles a branded HT
 ## Four rules that never bend
 
 1. **Three layers, no leaks.** `packages/schema` is the offer model (Zod). Source adapters produce `Offer`s; output adapters deliver a `Rendered` campaign. `render(campaign, template)` in `packages/render` is a pure function and the only place email or hosted HTML is produced. No adapter imports another adapter. React components never build HTML. The markup is TypeScript template functions translated line for line from the v5 markup reference (decided 14 Sept 2026: no MJML, it would only re-derive markup the design already hand-built for email). `MARKUP_VERSION` in `packages/render` is bumped when the markup changes in a way Emma should see; templates pin the version they were approved against.
-2. **CAP IDs are never stored.** The website's vehicle image URLs contain a CAP ID (`images.motorleaseplatform.com/cvd/?...capId=...`). Never persist those URLs or any CAP ID in D1, R2 keys, logs, filenames, cache entries or rendered HTML. Images are fetched, transformed and stored under `vehicles/<sha256>.jpg`; only our R2 URL is kept. `assertNoCapId()` in `packages/schema` guards every persisted object and CI greps for leaks. Never persist raw scraped HTML at all; the 24-hour lookup cache holds parsed `Offer` objects only.
+2. **CAP IDs are never stored.** The website's vehicle image URLs contain a CAP ID (`images.motorleaseplatform.com/cvd/?...capId=...`). Never persist those URLs or any CAP ID in D1, R2 keys, logs, filenames, cache entries or rendered HTML. Images are fetched, transformed and stored under `vehicles/<sha256>.jpg`; only our R2 URL is kept. `assertNoCapId()` in `packages/schema` guards every persisted object and CI greps for leaks. Never persist raw scraped HTML at all; the 24-hour lookup cache holds parsed lookup results (the `Offer` plus the site's term/mileage options) only. The site's pricing JSON carries the CAP ID as a bare number inside `rateBookIdentifier`; the parser copies named fields only and never that one.
 3. **Compliance is locked.** Each template carries one Emma-approved compliance block per contract type. Reps cannot edit it. A campaign cannot render against a template whose status is not `approved`. Rep-authored copy (intro, subject, preheader, CTA label) is recorded verbatim in the promotions register alongside the archived HTML. Badges come from a fixed list, never free text.
 4. **Drafts only.** The Worker never sends email. Delivery is a Graph draft in the rep's mailbox, or clipboard HTML. A human always presses Send.
 
 ## Runtime constraints
 
 - Everything runs on Cloudflare: Workers (Paid plan) with static assets, D1, R2, Access, Image transformations. No Pages, Netlify, Surge or Supabase.
-- Nothing CPU-heavy in the request path: rendering is string templating, images resize via Cloudflare Image transformations, HTML parses with HTMLRewriter.
+- Nothing CPU-heavy in the request path: rendering is string templating, images resize via the Cloudflare Images binding (`TRANSFORM`), HTML parses with HTMLRewriter. Offer prices are not in the page HTML: the site's own `GET /api/carresults/GetOfferDropdownsForCar` JSON prices a configuration and lists the term/mileage options; the page supplies identity, stats and the image URL.
 - Firecrawl is the only metered service. Direct fetch first, Firecrawl fallback, cache for 24 hours. Brochure harvests cap at ~15 credits.
 - Design tokens: green CTA `#31BD51`, Ignition Red `#E30613` for prices and links, badge orange `#FF8811`, black headings, Graphite `#787580` body, borders `#E1E0E4`, panels `#F6F6F7`. Email font stack is Arial fallback; Sofia Pro is UI only.
 - Email geometry lives in `packages/render/src/layout.ts` and follows the v5 reference: a fixed 600px wrapper that the media query makes fluid on phones (enhancement only; the fluid-hybrid `display:inline-block; width:100%; max-width` cards stack without it). Auto layout: 1 single, 2 grid2, 3 stack, 4+ grid2; grid3 only when chosen. The reference's non-negotiables (`docs/offer-mailer-implementation-notes.md`): `[if mso]` ghost tables around every card group with one ghost `<td>` per card in rows of two or three, and inside the stack card and the hero CTA row; buttons as td padding + `display:block` anchor + `mso-padding-alt:0`, no VML, square corners in Outlook classic accepted; images with explicit width and height (hero 550×413, stack 218×164, grid2 262×197, grid3 166×125, headshot 56×56); background, padding and radius on a `<td>`; no negative margins, spacers as `<td height>` cells; fixed-width badge pills (td width 126 hero, 100 stack/grid2); forced light mode via the `color-scheme` metas, the `[data-ogsc]`/`[data-ogsb]` overrides and `lock-*` classes on every coloured cell. History: the 14 Sept client review had removed the body ghost tables and `mso-padding-alt` and used VML pills after single-client observations (classic Outlook unwrapping conditionals on forward, Word collapsing padded cells); Matt's v5 brief that afternoon restored the reference constructions, so those observations are now things to re-verify in the acceptance pass, not rules.
@@ -29,7 +29,7 @@ Internal tool: a rep pastes a dreamlease.co.uk offer URL, assembles a branded HT
 apps/api           Cloudflare Worker (Hono): API, hosted pages, redirects, static assets for the web app
 apps/web           Vite + React tool UI (build step 4)
 packages/schema    Zod schemas from brief §5.1, CAP ID guard
-packages/adapters  Source and output adapter interfaces (§5.2) and implementations
+packages/adapters  Source and output adapter interfaces (§5.2) and implementations: url lookup (normalise, HTMLRewriter page parser, site pricing JSON, offer assembly), Firecrawl client, brochure allowlist/harvest/manual/ensure. Pure: I/O is injected.
 packages/render    render(), card markup from the v4 design, fixtures, .eml helper for client testing
 docs/              Briefs
 design/            Claude Design export of the email template and its assets
@@ -45,8 +45,10 @@ pnpm typecheck
 pnpm db:generate         # drizzle-kit generate -> apps/api/migrations
 pnpm db:migrate:local    # apply migrations to the local D1
 pnpm db:migrate          # apply migrations to the remote D1
-pnpm deploy
+pnpm run deploy          # "run" matters: bare `pnpm deploy` is pnpm's own command
 ```
+
+API tests run inside workerd (`@cloudflare/vitest-pool-workers`, vitest 4 in `apps/api` only) with real local D1, R2 and Images bindings; `.dev.vars` is loaded, so the bare test `env` already has a dev user. The pool's workerd can trail wrangler's; `apps/api/vitest.config.ts` pins the test compatibility date. Adapter tests run under plain vitest with the wasm HTMLRewriter. Fixtures under `packages/adapters/test/fixtures` are real pages with the image host replaced and the CAP ID zeroed; keep them that way.
 
 ## Cloudflare
 

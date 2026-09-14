@@ -12,11 +12,11 @@
     // the middleware then accepts DEV_USER_EMAIL from .dev.vars.
     "ACCESS_TEAM_DOMAIN": "",
     "ACCESS_AUD": "",
-    // Origin that serves /r, /c, /b and /a. Becomes https://offers.dreamlease.co.uk once the
+    // Origin that serves /r, /c, /b, /f and /a. Becomes https://offers.dreamlease.co.uk once the
     // custom domain is attached; until then the workers.dev URL so emails render end to end.
     "PUBLIC_BASE_URL": "https://offer-mailer.matt-wilson-9b8.workers.dev",
     "TOOL_BASE_URL": "https://mailer.dreamlease.co.uk",
-    "APP_VERSION": "0.2.0"
+    "APP_VERSION": "0.3.0"
   },
   "d1_databases": [
     {
@@ -30,6 +30,9 @@
     { "binding": "IMAGES", "bucket_name": "offer-mailer-images" },
     { "binding": "HOSTED", "bucket_name": "offer-mailer-hosted" },
     { "binding": "BROCHURES", "bucket_name": "offer-mailer-brochures" }
-  ]
+  ],
+  // Cloudflare Images binding (brief §5.3 step 4): resizes the vehicle image to a 1200px JPEG before it
+  // goes to R2. Billed per unique transformation; the free allowance covers our volume.
+  "images": { "binding": "TRANSFORM" }
   // Secrets (wrangler secret put): FIRECRAWL_API_KEY
 }
