@@ -60,6 +60,7 @@ export const campaign: Campaign = {
   templateVersion: 1,
   subject: 'The Kia EV3 offer we talked about',
   intro: 'Thanks for your time on the call yesterday.\nHere is the offer.',
+  layout: 'auto',
   offers: [offer],
   sender,
   compliance: { variant: 'personal', approvedWordingVersion: 1 },

@@ -3,9 +3,11 @@ export interface Env {
   IMAGES: R2Bucket;
   HOSTED: R2Bucket;
   BROCHURES: R2Bucket;
+  ASSETS: Fetcher;
   ACCESS_TEAM_DOMAIN: string;
   ACCESS_AUD: string;
-  HOSTED_BASE_URL: string;
+  /** Origin serving /r, /c, /b and /a (workers.dev now, offers.dreamlease.co.uk later). */
+  PUBLIC_BASE_URL: string;
   TOOL_BASE_URL: string;
   APP_VERSION?: string;
   /** .dev.vars only; ignored whenever ACCESS_AUD is set. */

@@ -1,5 +1,7 @@
 import { Hono } from 'hono';
+import { dev } from './dev.js';
 import type { AppEnv } from './env.js';
+import { hosted } from './hosted.js';
 import { requireAccess } from './middleware/access.js';
 
 const app = new Hono<AppEnv>();
@@ -19,17 +21,17 @@ app.get('/health', async (c) => {
   return c.json({ ok: true, service: 'offer-mailer', version: c.env.APP_VERSION ?? 'dev', db, time: new Date().toISOString() });
 });
 
-// Hosted pages, click redirects and brochure links live on offers.dreamlease.co.uk and need no login.
-// Implemented in build steps 2, 3 and 6; registered now so the route shape is fixed.
-app.get('/c/:slug', (c) => c.text('These offers are not available yet.', 404));
-app.get('/r/:campaign/:link', (c) => c.text('Link not found.', 404));
-app.get('/b/:id', (c) => c.text('Brochure not found.', 404));
+// Hosted pages (§5.4), click redirects (§5.6) and brochure links (§5.8) need no login.
+app.route('/', hosted);
+app.get('/r/:slug/:link', (c) => c.text('Link not found.', 404)); // build step 6
+app.get('/b/:id', (c) => c.text('Brochure not found.', 404)); // build step 3
 
 // ---------- tool API (behind Cloudflare Access) ----------
 
 const api = new Hono<AppEnv>();
 api.use('*', requireAccess());
 api.get('/me', (c) => c.json(c.get('user')));
+api.route('/dev', dev);
 app.route('/api', api);
 
 // ---------- fallbacks ----------

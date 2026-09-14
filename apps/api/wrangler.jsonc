@@ -5,14 +5,18 @@
   "compatibility_date": "2026-09-01",
   "compatibility_flags": ["nodejs_compat"],
   "observability": { "enabled": true },
+  // Static files served before the Worker runs: /a/* email assets now, the web app build later.
+  "assets": { "directory": "./public", "binding": "ASSETS" },
   "vars": {
     // Cloudflare Access: team domain and the application's AUD tag. Leave empty locally;
     // the middleware then accepts DEV_USER_EMAIL from .dev.vars.
     "ACCESS_TEAM_DOMAIN": "",
     "ACCESS_AUD": "",
-    "HOSTED_BASE_URL": "https://offers.dreamlease.co.uk",
+    // Origin that serves /r, /c, /b and /a. Becomes https://offers.dreamlease.co.uk once the
+    // custom domain is attached; until then the workers.dev URL so emails render end to end.
+    "PUBLIC_BASE_URL": "https://offer-mailer.matt-wilson-9b8.workers.dev",
     "TOOL_BASE_URL": "https://mailer.dreamlease.co.uk",
-    "APP_VERSION": "0.1.0"
+    "APP_VERSION": "0.2.0"
   },
   "d1_databases": [
     {
@@ -28,6 +32,4 @@
     { "binding": "BROCHURES", "bucket_name": "offer-mailer-brochures" }
   ]
   // Secrets (wrangler secret put): FIRECRAWL_API_KEY
-  // Static assets for apps/web are added in build step 4:
-  // "assets": { "directory": "../web/dist", "binding": "ASSETS", "not_found_handling": "single-page-application" }
 }

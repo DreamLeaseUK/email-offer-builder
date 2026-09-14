@@ -144,6 +144,7 @@ interface Campaign {
   subject: string;
   preheader?: string;
   intro: string;                    // rep's personal message, plain text with line breaks
+  layout: 'auto' | 'single' | 'stack' | 'grid2' | 'grid3';   // auto: 1 → single, 2 or 4 → grid2, else grid3
   offers: Offer[];                  // 1–6
   recipient?: RecipientContext;
   sender: Sender;
@@ -157,12 +158,13 @@ interface Campaign {
 
 interface Template {
   id: string; name: string; version: number;
-  layout: 'single' | 'stack' | 'grid2' | 'grid3';
-  mjml: string;                     // source, with slots
-  complianceBlocks: Record<ContractType, string>;   // locked, versioned, Emma-approved
+  markupVersion: number;            // generation of packages/render this template was approved against
+  complianceBlocks: Record<ContractType, { title: string; paragraphs: string[] }>;   // locked, versioned, Emma-approved
+  footer: { optOutLine: string; companyLine: string };
   approvedBy?: string; approvedAt?: string;
   status: 'draft' | 'approved' | 'retired';
 }
+// Layout is chosen per campaign (Campaign.layout: 'auto' | layout), not per template.
 ```
 
 ### 5.2 Adapter interfaces
@@ -171,7 +173,7 @@ interface Template {
 interface OfferSource    { kind: string; lookup(input: unknown): Promise<Offer> }
 interface BrochureSource { kind: string; harvest(vehicle: Offer['vehicle']): Promise<Brochure> }
 interface OfferOutput    { kind: string; deliver(rendered: Rendered, campaign: Campaign, sender: Sender): Promise<DeliveryResult> }
-interface Rendered       { html: string; text: string; subject: string; hostedHtml: string }
+interface Rendered       { html: string; text: string; subject: string; hostedHtml: string; layout: TemplateLayout; links: Record<string, string> }  // links: linkId → destination for /r/<slug>/<linkId>
 ```
 
 Stage one implements `OfferSource`: `manual`, `url`. Stage one implements `BrochureSource`: `firecrawl`, `manual`. Stage one implements `OfferOutput`: `graph_draft`, `clipboard`. The hosted page is not an output adapter: every render writes it (see §5.4). Stubs with typed interfaces (no logic) for `feed`, `monday`, `ai`, `mautic`.
@@ -321,7 +323,7 @@ Please also produce a one-page "how to send an offer email" guide layout for the
 ### 8.1 Stack
 
 - Monorepo, pnpm workspaces: `apps/web` (Vite + React + TypeScript, design system components imported from the DS repo as a workspace package), `apps/api` (Cloudflare Worker, Hono), `packages/schema` (Zod schemas from §5.1, shared), `packages/render` (MJML templates + `render()`), `packages/adapters` (source and output adapters with the interfaces in §5.2).
-- MJML compiled at build time into HTML templates with slots; `render()` fills slots at runtime. No MJML compilation in the Worker. The MJML source lives in `packages/render` and is the artefact Emma approves (by version); the compiled HTML is a build output.
+- No MJML (decided 14 Sept 2026). The v4 design file is already hand-built email-safe table HTML, so `packages/render` reproduces it as TypeScript template functions with the Outlook ghost tables added, rather than re-deriving it through MJML. `MARKUP_VERSION` is bumped when the markup changes in a way Emma should see; a `Template` pins the `markupVersion` it was approved against, and `render()` refuses a mismatch.
 - D1 via Drizzle, migrations in repo. R2 bindings for `images`, `hosted` and `brochures`.
 - Image processing via Cloudflare Image transformations (5,000 free per month, well above our volume) through the Images binding or `cf.image` fetch options; the resized JPEG is then written to R2. No wasm resizing in the Worker.
 - Auth: Cloudflare Access JWT verified in the Worker middleware; MSAL.js in the browser for Graph.
@@ -365,6 +367,19 @@ Ship 1–3 as a working "paste a URL, get a hosted page and an Outlook draft" ve
 - Don't reach for Netlify or Surge; everything on Cloudflare.
 
 ---
+
+## 9a. As built (14 September 2026)
+
+Where the implementation has departed from this brief, and why. `docs/status-2026-09-14.md` carries the full log and the client verification matrix; CLAUDE.md carries the rules.
+
+- **Email width 640px, not 600.** Fluid container up to 640 with the standard Outlook 640 ghost wrapper. The first Outlook review found 600 small in the reading pane.
+- **Layout belongs to the campaign, not the template** (`Campaign.layout`). Auto picks single, grid2, stack, grid2 for 1, 2, 3, 4+ offers. grid3 is explicit only.
+- **No MJML; no `[if mso]` ghost tables inside the body.** Classic Outlook unwraps conditional comments when it sends or forwards, so a ghost grid reached phones as two fixed columns squeezed to fit. Grids are inline-block divs that Outlook desktop stacks one per row; phones stack natively.
+- **Rounded buttons and badges in classic Outlook use VML** in a construction chosen by side-by-side diagnostic (`packages/render/scripts/diag-vml.ts`, variant V4).
+- **Brochure link sits under the button** on every card size, not beside it in the hero card.
+- **Hosted page is the email markup in a page wrapper** until the design-system hosted page from §7.1 is delivered.
+- **Cloudflare Workers Paid** is confirmed but not yet switched on; free plan is sufficient until build step 3.
+- **Open template issues** at handover: classic Outlook grid cards render narrow after the last changes; New Outlook desktop in a narrow pane keeps the vehicle image at its design width inside a full-width card and wraps the stack layout's image column above the content. Method for resolving them is in the status doc §5.
 
 ## 9. Assumptions and open items
 

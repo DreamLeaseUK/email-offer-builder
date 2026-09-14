@@ -242,6 +242,8 @@ export const Campaign = z.object({
   preheader: z.string().max(150).optional(),
   /** Rep's personal message, plain text with line breaks. Recorded in the register. */
   intro: z.string().min(1).max(4000),
+  /** 'auto' picks single for 1 offer, grid2 for 2 or 4, grid3 otherwise. */
+  layout: z.enum(['auto', 'single', 'stack', 'grid2', 'grid3']),
   /** Snapshot copies, not references: what was sent must not change when the library does. */
   offers: z.array(Offer).min(1).max(6),
   recipient: RecipientContext.optional(),
@@ -261,15 +263,30 @@ export type Campaign = z.infer<typeof Campaign>;
 
 // ---------- Template ----------
 
+/** Locked, versioned, Emma-approved. Title line plus paragraphs, rendered in the footer panel. */
+export const ComplianceBlock = z.object({
+  title: z.string().min(1).max(60),
+  paragraphs: z.array(z.string().min(1)).min(1),
+});
+export type ComplianceBlock = z.infer<typeof ComplianceBlock>;
+
 export const Template = z.object({
   id: uuid,
   name: z.string().min(1),
   version: z.number().int().positive(),
-  layout: TemplateLayout,
-  /** MJML source with slots. The artefact Emma approves. */
-  mjml: z.string().min(1),
-  /** Locked, versioned, Emma-approved. One block per contract type. */
-  complianceBlocks: z.record(ContractType, z.string().min(1)),
+  /**
+   * Markup generation of packages/render this template was approved against. The markup itself is
+   * code (the v4 design translated to template functions); this pins which generation Emma saw.
+   */
+  markupVersion: z.number().int().positive(),
+  /** One block per contract type. Reps cannot edit these. */
+  complianceBlocks: z.record(ContractType, ComplianceBlock),
+  footer: z.object({
+    /** "Don't want offers from DreamLease? Reply to this email and tell us, and we'll stop." */
+    optOutLine: z.string().min(1),
+    /** Registered company line. */
+    companyLine: z.string().min(1),
+  }),
   approvedBy: email.optional(),
   approvedAt: isoDateTime.optional(),
   status: TemplateStatus,
@@ -283,5 +300,9 @@ export const Rendered = z.object({
   text: z.string(),
   subject: z.string(),
   hostedHtml: z.string(),
+  /** Layout actually used after resolving 'auto'. */
+  layout: TemplateLayout,
+  /** linkId -> destination. The /r/<slug>/<linkId> redirect resolves against this. */
+  links: z.record(z.string(), z.string()),
 });
 export type Rendered = z.infer<typeof Rendered>;

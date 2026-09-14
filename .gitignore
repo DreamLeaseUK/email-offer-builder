@@ -6,3 +6,4 @@ dist/
 .DS_Store
 Thumbs.db
 apps/api/worker-configuration.d.ts
+out/
