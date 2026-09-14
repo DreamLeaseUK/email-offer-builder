@@ -15,6 +15,15 @@
  * Sizes come from layout.ts. Four sizes: hero (single), row (stack), half (grid2), compact (grid3).
  * The only additions to the reference are the salary-sacrifice price blocks (from the v4 design) and
  * the red "View this offer" link the brief requires under any non-view_offer button.
+ *
+ * Badge pill counts (Matt, 14 Sept, New Outlook focus): ONE pill on every multi-offer card (stack,
+ * grid2, grid3), up to THREE on the single-offer hero. The v5 reference itself caps at hero 2,
+ * stack 1, grid2 1, grid3 1, so the multi-offer cards already match it; only the hero raise (2 → 3)
+ * exceeds the reference, on Matt's instruction. Reason for one pill on multi-offer cards: a second
+ * PILL_SMALL badge (120px + gap) cannot sit beside the first in a ~230px card column, so two badges
+ * wrapped to a second row and threw the row's card heights out in New Outlook (which also drops
+ * vertical-align:top). diff-reference therefore reports a third hero pill the reference lacks
+ * (layout-A, intended); stack/grid2/grid3 stay identical to the reference.
  */
 import { C, FF, LH, esc, mso, spacer, table } from './html.js';
 import { GRID2_CELL, GRID2_IMG, GRID2_IMG_H, GRID3_CELL, GRID3_IMG, GRID3_IMG_H, GRID_WIDTH, HERO_IMG, HERO_IMG_H, ICON, PILL_HERO, PILL_SMALL, STACK_CONTENT_COL, STACK_IMG, STACK_IMG_COL, STACK_IMG_H, STACK_INNER } from './layout.js';
@@ -172,7 +181,7 @@ ${img(vm.imageUrl, HERO_IMG, HERO_IMG_H, vm.alt, '16px 16px 0 0', `${HERO_IMG}px
 </tr>
 <tr>
 <td style="padding:20px 20px 22px 20px; ${FF}">
-${badgeRow(vm, 2, PILL_HERO, 4, 12, 12, 16, 8)}
+${badgeRow(vm, 3, PILL_HERO, 4, 12, 12, 16, 8)}
 ${eyebrow(vm, 12, 16, 4)}
 ${model(vm, 26, 32, 4)}
 ${derivative(vm, 14, 20, 16)}
@@ -206,7 +215,7 @@ ${smallPrint(vm.smallPrint, '12px 0 16px 0', 11, 16, true)}
     `display:inline-block; width:100%; max-width:${STACK_CONTENT_COL}px; vertical-align:top;`,
     `<tr>
 <td style="padding:16px 18px; font-size:14px; text-align:left; ${FF}">
-${badgeRow(vm, 2, PILL_SMALL, 3, 10, 11, 14, 6)}
+${badgeRow(vm, 1, PILL_SMALL, 3, 10, 11, 14, 6)}
 ${eyebrow(vm, 11, 14, 2)}
 ${model(vm, 20, 26, 2)}
 ${derivative(vm, 13, 18, 10)}
@@ -248,7 +257,7 @@ ${img(vm.imageUrl, GRID2_IMG, GRID2_IMG_H, vm.alt, '16px 16px 0 0', '100%')}
 </tr>
 <tr>
 <td style="padding:14px 16px 18px 16px; ${FF}">
-${badgeRow(vm, 2, PILL_SMALL, 3, 10, 11, 14, 6)}
+${badgeRow(vm, 1, PILL_SMALL, 3, 10, 11, 14, 6)}
 ${eyebrow(vm, 11, 14, 2)}
 ${model(vm, 20, 26, 2)}
 ${derivative(vm, 13, 18, 10, 36)}

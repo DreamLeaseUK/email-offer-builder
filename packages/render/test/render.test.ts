@@ -199,7 +199,7 @@ describe('render()', () => {
     expect(out.html).toMatch(/\.fluid-img \{ width: 100% !important; height: auto !important; max-width: 100% !important; \}/);
   });
 
-  it('caps badges at two per card (one for grid3), hot badge first, as fixed-width floated pills', () => {
+  it('caps badges at one per multi-offer card and up to three on the single hero, hot badge first', () => {
     const { campaign, brochures } = fixtureCampaign({ layout: 'grid3', offerCount: 1 });
     campaign.offers[0]!.badges = ['In stock', 'Special offer', 'Price drop'];
     campaign.offers[0]!.hotBadge = 'DreamLease exclusive!';
@@ -209,13 +209,13 @@ describe('render()', () => {
     expect(compact).toMatch(/<td align="center" class="lock-white" style="background-color:#FF8811;[^"]*">DreamLease exclusive!<\/td>/);
     campaign.layout = 'single';
     const hero = render(campaign, fixtureTemplate, { publicBaseUrl: BASE, brochures }).html;
-    expect(pills(hero)).toBe(2);
+    expect(pills(hero)).toBe(3);
     expect(hero.indexOf('DreamLease exclusive!')).toBeLessThan(hero.indexOf('>In stock<'));
-    expect(hero.match(/<table role="presentation" cellpadding="0" cellspacing="0" border="0" align="left" style="margin:0 6px 8px 0;">/g)?.length).toBe(2);
+    expect(hero.match(/<table role="presentation" cellpadding="0" cellspacing="0" border="0" align="left" style="margin:0 6px 8px 0;">/g)?.length).toBe(3);
     campaign.layout = 'stack';
-    expect(pills(render(campaign, fixtureTemplate, { publicBaseUrl: BASE, brochures }).html)).toBe(2);
+    expect(pills(render(campaign, fixtureTemplate, { publicBaseUrl: BASE, brochures }).html)).toBe(1);
     campaign.layout = 'grid2';
-    expect(pills(render(campaign, fixtureTemplate, { publicBaseUrl: BASE, brochures }).html)).toBe(2);
+    expect(pills(render(campaign, fixtureTemplate, { publicBaseUrl: BASE, brochures }).html)).toBe(1);
   });
 
   it('omits the "View these offers online" link from the hosted page', () => {
