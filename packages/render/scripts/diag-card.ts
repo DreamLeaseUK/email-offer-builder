@@ -188,7 +188,7 @@ const sections: Section[] = [
 
 const STYLE = `body{margin:0;padding:0;background:${C.ground}}table{border-collapse:collapse}img{border:0;line-height:100%;outline:none;text-decoration:none;-ms-interpolation-mode:bicubic}a{color:${C.red}}@media (max-width:480px){.card-cell{max-width:100% !important}}`;
 
-const p = (text: string, size = 13, color = C.graphite, weight = 400) => `<p style="margin:0 0 6px 0;font-size:${size}px;line-height:${size + 6}px;${LH};font-weight:${weight};color:${color}">${text}</p>`;
+const p = (text: string, size = 13, color: string = C.graphite, weight = 400) => `<p style="margin:0 0 6px 0;font-size:${size}px;line-height:${size + 6}px;${LH};font-weight:${weight};color:${color}">${text}</p>`;
 
 function sectionRows(s: Section): string {
   let body = `<tr><td style="padding:22px ${SIDE}px 6px ${SIDE}px;border-top:1px solid ${C.border}">${p(`<b>${s.title}.</b> ${s.ask}`, 13, C.ink)}</td></tr>`;
