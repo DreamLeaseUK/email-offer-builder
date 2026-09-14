@@ -1,19 +1,21 @@
 /**
  * render(campaign, template) → Rendered — brief §4, §5.2, §5.4, §5.5.
  * Pure: no I/O, no clock unless passed in. The only place email or hosted HTML is produced.
+ * Document shell, header, intro, signature and compliance footer follow the markup source of truth
+ * `dreamlease-offer-mailer` v5 (14 Sept 2026); cards are in cards.ts.
  */
 import type { Brochure, Campaign, ComplianceBlock, Rendered, Template, TemplateLayout } from '@offer-mailer/schema';
 import { assertNoCapId } from '@offer-mailer/schema';
 import { compactCard, ghostGrid, halfCard, heroCard, rowCard } from './cards.js';
-import { C, FONT, LH, esc, paragraphs } from './html.js';
-import { COMPACT_CELL, EMAIL_WIDTH, GRID_PAD, HALF_CELL, SIDE } from './layout.js';
+import { C, FF, FONT, LH, esc, mso, paragraphs, table } from './html.js';
+import { EMAIL_WIDTH, GRID2_CELL, GRID3_CELL, GRID_PAD, HEADSHOT, LOGO_H, LOGO_W, SIDE } from './layout.js';
 import { Links } from './links.js';
 import { RenderError, buildCards, type CardVM } from './viewmodel.js';
 
 export { RenderError };
 
-/** Bump when the markup changes in a way Emma should re-approve. */
-export const MARKUP_VERSION = 1;
+/** Bump when the markup changes in a way Emma should re-approve. 2 = the v5 reference markup. */
+export const MARKUP_VERSION = 2;
 
 export class TemplateNotApprovedError extends Error {
   constructor(template: Template) {
@@ -76,30 +78,100 @@ export function render(campaign: Campaign, template: Template, opts: RenderOptio
 
 // ---------- document shells ----------
 
-const STYLE = `body{margin:0;padding:0;background:${C.ground}}table{border-collapse:collapse}img{border:0;line-height:100%;outline:none;text-decoration:none;-ms-interpolation-mode:bicubic}a{color:${C.red}}a[x-apple-data-detectors]{color:inherit !important;text-decoration:none !important}@media (max-width:480px){.card-cell{max-width:100% !important}}`;
+/** Head styles from the reference: resets, link-colour locks, forced light, and the enhancement-only media query. */
+export const STYLE = `  /* Resets — enhancement only, no layout depends on this block. */
+  html, body { margin: 0 !important; padding: 0 !important; width: 100% !important; }
+  body { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; background-color: ${C.ground}; }
+  table { border-collapse: collapse; mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
+  img { border: 0; outline: none; text-decoration: none; -ms-interpolation-mode: bicubic; }
+  a { text-decoration: underline; }
+  p { margin: 0; }
+  .appleLinks a { color: ${C.graphite} !important; text-decoration: none !important; }
+  /* Gmail/Apple auto-link colour lock */
+  a[x-apple-data-detectors], u + #body a, #MessageViewBody a {
+    color: inherit !important; text-decoration: none !important; font-size: inherit !important;
+    font-family: inherit !important; font-weight: inherit !important; line-height: inherit !important;
+  }
+  /* Forced light — Outlook mobile / Apple Mail inversion */
+  [data-ogsc] .lock-bg, [data-ogsb] .lock-bg { background-color: ${C.white} !important; }
+  [data-ogsc] .lock-tint, [data-ogsb] .lock-tint { background-color: ${C.panel} !important; }
+  [data-ogsc] .lock-ink { color: ${C.black} !important; }
+  [data-ogsc] .lock-body { color: ${C.graphite} !important; }
+  [data-ogsc] .lock-red { color: ${C.red} !important; }
+  [data-ogsc] .lock-white { color: ${C.white} !important; }
+
+  /* Progressive enhancement. Cards already wrap without this. */
+  @media only screen and (max-width: 480px) {
+    .wrapper { width: 100% !important; }
+    .card-cell { max-width: 100% !important; width: 100% !important; }
+    .gutter { padding-left: 16px !important; padding-right: 16px !important; }
+    .stack-col { max-width: 100% !important; width: 100% !important; }
+    .fluid-img { width: 100% !important; height: auto !important; max-width: 100% !important; }
+    .cta-btn a { white-space: normal !important; }
+    /* compact cards adopt the grid2 type scale once they are full width */
+    .compact-model { font-size: 20px !important; line-height: 26px !important; }
+    .compact-deriv { font-size: 13px !important; line-height: 18px !important; min-height: 0 !important; }
+    .compact-price { font-size: 28px !important; }
+    .compact-spec { font-size: 12px !important; }
+    .center-sm { text-align: center !important; }
+  }`;
+
+const MSO_HEAD = `<!--[if mso]>
+<xml><o:OfficeDocumentSettings><o:AllowPNG/><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml>
+<style type="text/css">
+  * { font-family: ${FONT} !important; }
+  table { border-collapse: collapse !important; mso-table-lspace: 0pt !important; mso-table-rspace: 0pt !important; }
+  td, p, a, span { mso-line-height-rule: exactly; }
+</style>
+<![endif]-->`;
+
+function preheader(campaign: Campaign): string {
+  if (!campaign.preheader) return '';
+  return `<!-- Preheader -->
+<div style="display:none; font-size:1px; line-height:1px; max-height:0; max-width:0; opacity:0; overflow:hidden; mso-hide:all;">
+  ${esc(campaign.preheader)}
+  ${'&nbsp;&zwnj;'.repeat(30)}
+</div>
+`;
+}
 
 function emailDocument(campaign: Campaign, body: string): string {
   return `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" lang="en-GB">
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office" lang="en">
 <head>
-<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="x-apple-disable-message-reformatting">
-<meta name="format-detection" content="telephone=no,date=no,address=no,email=no">
-<meta name="color-scheme" content="light">
-<meta name="supported-color-schemes" content="light">
+<meta charset="utf-8" />
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="x-apple-disable-message-reformatting" />
+<meta name="color-scheme" content="light only" />
+<meta name="supported-color-schemes" content="light only" />
 <title>${esc(campaign.subject)}</title>
-<!--[if mso]><xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml><style>v\\:* { behavior: url(#default#VML); display: inline-block; }</style><![endif]-->
-<style>${STYLE}</style>
+${MSO_HEAD}
+<style type="text/css">
+${STYLE}
+</style>
 </head>
-<body style="margin:0;padding:0;background:${C.ground}">
-<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" bgcolor="${C.ground}" style="background:${C.ground}"><tbody><tr><td align="center" style="padding:24px 12px">
-<!--[if mso]><table role="presentation" cellpadding="0" cellspacing="0" border="0" width="${EMAIL_WIDTH}"><tr><td><![endif]-->
+
+<body id="body" style="margin:0; padding:0; background-color:${C.ground};">
+
+${preheader(campaign)}<!-- Outer background -->
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color:${C.ground};">
+<tr>
+<td align="center" style="padding:32px 8px;">
+
+${mso(`\n<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="${EMAIL_WIDTH}" align="center"><tr><td>\n`)}
+
 ${body}
-<!--[if mso]></td></tr></table><![endif]-->
-</td></tr></tbody></table>
+
+${mso('\n</td></tr></table>\n')}
+
+</td>
+</tr>
+</table>
+
 </body>
-</html>`;
+</html>
+`;
 }
 
 function hostedDocument(campaign: Campaign, body: string): string {
@@ -109,15 +181,24 @@ function hostedDocument(campaign: Campaign, body: string): string {
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
+<meta name="color-scheme" content="light only">
 <title>${esc(campaign.subject)} · DreamLease</title>
-<style>${STYLE}body{font-family:${FONT}}</style>
+<style type="text/css">
+${STYLE}
+  body { font-family: ${FONT}; }
+</style>
 </head>
-<body>
-<div style="padding:32px 12px">
+<body style="margin:0; padding:0; background-color:${C.ground};">
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color:${C.ground};">
+<tr>
+<td align="center" style="padding:32px 8px;">
 ${body}
-</div>
+</td>
+</tr>
+</table>
 </body>
-</html>`;
+</html>
+`;
 }
 
 // ---------- email body ----------
@@ -129,49 +210,135 @@ interface BodyCtx {
   forHostedPage: boolean;
 }
 
-function emailBody(campaign: Campaign, template: Template, cards: CardVM[], layout: TemplateLayout, compliance: ComplianceBlock, ctx: BodyCtx): string {
-  const preheader = campaign.preheader
-    ? `<tr><td style="padding:0"><div style="display:none;font-size:1px;line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden;mso-hide:all">${esc(campaign.preheader)}${'&nbsp;&zwnj;'.repeat(30)}</div></td></tr>`
-    : '';
+const bodyP = (text: string, size: number, lh: number, margin: string, extra = '') =>
+  `<p class="lock-body" style="margin:${margin}; ${extra}font-size:${size}px; line-height:${lh}px; ${LH}; color:${C.graphite};">${text}</p>`;
 
+function emailBody(campaign: Campaign, template: Template, cards: CardVM[], layout: TemplateLayout, compliance: ComplianceBlock, ctx: BodyCtx): string {
   const viewOnline = ctx.forHostedPage
     ? ''
-    : `<tr><td align="right" style="font-size:12px;line-height:16px;${LH};color:${C.graphite};padding-bottom:14px"><a href="${esc(ctx.hostedUrl)}" style="color:${C.red};text-decoration:underline">View these offers online</a></td></tr>`;
+    : `<tr>
+          <td align="right" class="lock-body" style="padding-bottom:14px; ${FF} font-size:12px; line-height:16px; ${LH}; color:${C.graphite};">
+            <a href="${esc(ctx.hostedUrl)}" style="color:${C.red}; text-decoration:underline;" class="lock-red">View these offers online</a>
+          </td>
+        </tr>
+        `;
 
-  const header = `<tr><td style="padding:20px 24px 0 24px"><table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse"><tbody>${viewOnline}<tr><td style="padding-bottom:20px;border-bottom:1px solid ${C.border}"><table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse"><tbody><tr><td style="background:${C.white};padding:2px 4px 2px 0"><img src="${esc(ctx.base)}/a/logo-2x.png" width="98" height="32" alt="DreamLease" style="display:block;border:0;width:98px;height:32px"></td></tr></tbody></table></td></tr></tbody></table></td></tr>`;
+  const header = `  <!-- Header -->
+  <tr>
+    <td class="gutter" style="padding:20px ${SIDE}px 0 ${SIDE}px;">
+      ${table(
+        'width="100%"',
+        '',
+        `
+        ${viewOnline}<tr>
+          <td style="padding-bottom:20px; border-bottom:1px solid ${C.border};">
+            <img src="${esc(ctx.base)}/a/logo-2x.png" width="${LOGO_W}" height="${LOGO_H}" alt="DreamLease" style="display:block; border:0; width:${LOGO_W}px; height:${LOGO_H}px;" />
+          </td>
+        </tr>
+      `,
+      )}
+    </td>
+  </tr>`;
 
-  const greeting = campaign.recipient?.firstName ? `<p style="margin:0 0 14px 0;font-size:22px;line-height:28px;${LH};font-weight:700;color:${C.black}">Hi ${esc(campaign.recipient.firstName)},</p>` : '';
-  const intro = `<tr><td style="padding:28px 24px 8px 24px">${greeting}${paragraphs(campaign.intro, `margin:0 0 14px 0;font-size:16px;line-height:26px;${LH};color:${C.graphite}`)}</td></tr>`;
+  const greeting = campaign.recipient?.firstName ? `<p class="lock-ink" style="margin:0 0 14px 0; font-size:22px; line-height:28px; ${LH}; font-weight:bold; color:${C.black};">Hi ${esc(campaign.recipient.firstName)},</p>\n` : '';
+  const intro = `  <!-- Intro -->
+  <tr>
+    <td class="gutter" style="padding:28px ${SIDE}px 8px ${SIDE}px; ${FF}">
+${greeting}${paragraphs(campaign.intro, `margin:0 0 14px 0; font-size:16px; line-height:26px; ${LH}; color:${C.graphite};`, 'lock-body')}
+    </td>
+  </tr>`;
 
   let offersHtml: string;
   switch (layout) {
     case 'single':
-      offersHtml = `<tr><td style="padding:12px ${SIDE}px 8px ${SIDE}px">${cards.map(heroCard).join('')}</td></tr>`;
+      offersHtml = `<tr>\n<td class="gutter" style="padding:12px ${SIDE}px 0 ${SIDE}px;">\n${cards.map(heroCard).join('\n')}\n</td>\n</tr>`;
       break;
     case 'stack':
-      offersHtml = `<tr><td style="padding:12px ${SIDE}px 8px ${SIDE}px">${cards.map(rowCard).join('')}</td></tr>`;
+      offersHtml = `<tr>\n<td class="gutter" style="padding:12px ${SIDE}px 0 ${SIDE}px;">\n${cards.map(rowCard).join('\n')}\n</td>\n</tr>`;
       break;
     case 'grid2':
-      offersHtml = `<tr><td style="padding:12px ${GRID_PAD}px 8px ${GRID_PAD}px;font-size:0;text-align:center">${ghostGrid(cards.map(halfCard), 2, HALF_CELL)}</td></tr>`;
+      offersHtml = `<tr>\n<td style="padding:12px ${GRID_PAD}px 0 ${GRID_PAD}px; font-size:0; text-align:center;">\n${ghostGrid(cards.map(halfCard), 2, GRID2_CELL)}\n</td>\n</tr>`;
       break;
     case 'grid3': {
       const feeParts = ['All offers: processing fee £299.99 inc VAT.'];
       if (cards.some((c) => c.brochure)) feeParts.push("Brochure figures are the manufacturer's and may differ from this offer.");
-      offersHtml = `<tr><td style="padding:12px ${GRID_PAD}px 0 ${GRID_PAD}px;font-size:0;text-align:center">${ghostGrid(cards.map(compactCard), 3, COMPACT_CELL)}</td></tr><tr><td style="padding:0 ${SIDE}px 8px ${SIDE}px"><p style="margin:0;font-size:11px;line-height:16px;${LH};color:${C.graphite}">${esc(feeParts.join(' '))}</p></td></tr>`;
+      offersHtml = `<tr>\n<td style="padding:12px ${GRID_PAD}px 0 ${GRID_PAD}px; font-size:0; text-align:center;">\n${ghostGrid(cards.map(compactCard), 3, GRID3_CELL)}\n</td>\n</tr>
+<tr>\n<td class="gutter" style="padding:0 ${SIDE}px 8px ${SIDE}px;">\n${bodyP(esc(feeParts.join(' ')), 11, 16, '0', FF + ' ')}\n</td>\n</tr>`;
       break;
     }
   }
 
   const s = campaign.sender;
   const sigEmail = ctx.links.track('sig-email', `mailto:${s.email}`);
-  const signature = `<tr><td style="padding:8px 24px 28px 24px"><table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;border-top:1px solid ${C.border}"><tbody><tr><td style="padding:22px 0 0 0;vertical-align:top"><p style="margin:0 0 2px 0;font-size:16px;line-height:22px;${LH};font-weight:700;color:${C.black}">${esc(s.displayName)}</p>${s.jobTitle ? `<p style="margin:0 0 8px 0;font-size:14px;line-height:20px;${LH};color:${C.graphite}">${esc(s.jobTitle)}</p>` : ''}<p style="margin:0;font-size:14px;line-height:22px;${LH};color:${C.graphite}">${s.phone ? `${esc(s.phone)}<br>` : ''}<a href="${esc(sigEmail)}" style="color:${C.red};text-decoration:underline">${esc(s.email)}</a></p></td></tr></tbody></table></td></tr>`;
+  const headshot = s.headshotUrl
+    ? `<td width="72" style="padding:22px 16px 0 0; vertical-align:top;">
+            <img src="${esc(s.headshotUrl)}" width="${HEADSHOT}" height="${HEADSHOT}" alt="${esc(s.displayName)}" style="display:block; border:0; width:${HEADSHOT}px; height:${HEADSHOT}px; border-radius:50%;" />
+          </td>
+          `
+    : '';
+  const signature = `  <!-- Signature -->
+  <tr>
+    <td class="gutter" style="padding:8px ${SIDE}px 28px ${SIDE}px;">
+      ${table(
+        'width="100%"',
+        `border-top:1px solid ${C.border};`,
+        `
+        <tr>
+          ${headshot}<td style="padding:22px 0 0 0; vertical-align:top; ${FF}">
+            <p class="lock-ink" style="margin:0 0 2px 0; font-size:16px; line-height:22px; ${LH}; font-weight:bold; color:${C.black};">${esc(s.displayName)}</p>
+            ${s.jobTitle ? bodyP(esc(s.jobTitle), 14, 20, '0 0 8px 0') + '\n            ' : ''}${bodyP(`${s.phone ? `${esc(s.phone)}<br />\n              ` : ''}<a href="${esc(sigEmail)}" style="color:${C.red}; text-decoration:underline;" class="lock-red">${esc(s.email)}</a>`, 14, 22, '0')}
+          </td>
+        </tr>
+      `,
+      )}
+    </td>
+  </tr>`;
 
   const siteHref = ctx.links.track('footer-site', 'https://www.dreamlease.co.uk');
-  const footer = `<tr><td style="padding:0 24px 24px 24px"><table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:separate;border-radius:12px"><tbody><tr><td style="background:${C.panel};border-radius:12px;padding:20px 20px 18px 20px"><p style="margin:0 0 10px 0;font-size:11px;line-height:14px;${LH};font-weight:700;letter-spacing:1px;color:${C.ink}">${esc(compliance.title.toUpperCase())}</p>${compliance.paragraphs.map((p) => `<p style="margin:0 0 8px 0;font-size:12px;line-height:18px;${LH};color:${C.graphite}">${esc(p)}</p>`).join('')}<p style="margin:12px 0 0 0;padding-top:12px;border-top:1px solid ${C.border};font-size:12px;line-height:18px;${LH};color:${C.graphite}">${esc(template.footer.optOutLine)}</p><p style="margin:8px 0 0 0;font-size:11px;line-height:16px;${LH};color:${C.graphite}">${esc(template.footer.companyLine)} <a href="${esc(siteHref)}" style="color:${C.graphite};text-decoration:underline">dreamlease.co.uk</a></p></td></tr></tbody></table></td></tr>`;
+  const footer = `  <!-- Compliance footer — locked block, do not edit per send -->
+  <tr>
+    <td class="gutter" style="padding:0 ${SIDE}px ${SIDE}px ${SIDE}px;">
+      ${table(
+        'width="100%"',
+        '',
+        `
+        <tr>
+          <td class="lock-tint" style="background-color:${C.panel}; border-radius:12px; padding:20px; ${FF}">
+            <p style="margin:0 0 10px 0; font-size:11px; line-height:14px; ${LH}; font-weight:bold; letter-spacing:1px; text-transform:uppercase; color:${C.ink};">${esc(compliance.title.toUpperCase())}</p>
+            ${compliance.paragraphs.map((p) => bodyP(esc(p), 12, 18, '0 0 8px 0')).join('\n            ')}
+            ${table(
+              'width="100%"',
+              `margin-top:12px; border-top:1px solid ${C.border};`,
+              `
+              <tr><td style="padding-top:12px;">
+                ${bodyP(esc(template.footer.optOutLine), 12, 18, '0', FF + ' ')}
+                ${bodyP(`${esc(template.footer.companyLine)} <a href="${esc(siteHref)}" style="color:${C.graphite}; text-decoration:underline;" class="lock-body">dreamlease.co.uk</a>`, 11, 16, '8px 0 0 0', FF + ' ')}
+              </td></tr>
+            `,
+            )}
+          </td>
+        </tr>
+      `,
+      )}
+    </td>
+  </tr>`;
 
-  // Fluid container: 100% up to EMAIL_WIDTH so phones reflow instead of scaling the email down.
-  // Outlook desktop gets the fixed width from the ghost table in emailDocument().
-  return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" width="100%" style="margin:0 auto;border-collapse:collapse;background:${C.white};width:100%;max-width:${EMAIL_WIDTH}px;font-family:${FONT};color:${C.graphite}"><tbody>${preheader}${header}${intro}${offersHtml}${signature}${footer}</tbody></table>`;
+  // Fixed 600px wrapper; the media query makes it fluid on phones as an enhancement.
+  return `<!-- ================= EMAIL WRAPPER ${EMAIL_WIDTH} ================= -->
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="${EMAIL_WIDTH}" class="wrapper lock-bg" style="width:${EMAIL_WIDTH}px; max-width:${EMAIL_WIDTH}px; background-color:${C.white}; ${FF} color:${C.graphite};">
+
+${header}
+
+${intro}
+
+${offersHtml}
+
+${signature}
+
+${footer}
+
+</table>
+<!-- ================= /EMAIL WRAPPER ================= -->`;
 }
 
 // ---------- plain text alternative ----------

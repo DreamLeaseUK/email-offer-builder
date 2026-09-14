@@ -41,7 +41,8 @@ export interface CardVM {
   cta: { href: string; label: string };
   /** Present when the CTA is not view_offer: the offer page must stay one click away. */
   viewHref?: string;
-  brochure?: { href: string; label: string; alt: string; kind: 'pdf' | 'gated' };
+  /** label for hero/stack/grid2, shortLabel for grid3; iconUrl is the 14px glyph on our origin. */
+  brochure?: { href: string; label: string; shortLabel: string; alt: string; kind: 'pdf' | 'gated'; iconUrl: string };
   smallPrint: string;
   validityLine: string;
   validUntil: string;
@@ -125,8 +126,8 @@ export function buildCards(campaign: Campaign, opts: VmOptions): CardVM[] {
       const href = links.track(`o${n}-brochure`, `${publicBaseUrl}/b/${b.id}`);
       brochure =
         b.kind === 'pdf'
-          ? { href, label: 'Download brochure (PDF)', alt: 'PDF document', kind: 'pdf' }
-          : { href, label: 'Request a brochure', alt: 'Opens manufacturer site', kind: 'gated' };
+          ? { href, label: 'Download brochure (PDF)', shortLabel: 'Brochure (PDF)', alt: 'PDF document', kind: 'pdf', iconUrl: `${publicBaseUrl}/a/icon-doc-2x.png` }
+          : { href, label: 'Request a brochure', shortLabel: 'Request brochure', alt: 'Opens manufacturer site', kind: 'gated', iconUrl: `${publicBaseUrl}/a/icon-external-2x.png` };
     }
 
     const smallPrintParts = [];

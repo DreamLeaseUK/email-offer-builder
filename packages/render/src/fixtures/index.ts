@@ -15,6 +15,7 @@ export const senderRep: Sender = {
   jobTitle: 'Account Manager, DreamLease',
   whatsapp: '+447700900123',
   bookingUrl: 'https://outlook.office.com/book/DreamLease@dreamlease.co.uk/',
+  headshotUrl: 'https://offer-mailer.matt-wilson-9b8.workers.dev/a/headshot-placeholder.png',
   mailbox: by,
 };
 
@@ -116,7 +117,7 @@ export const fixtureTemplate: Template = {
   id: 't0000000-0000-4000-8000-000000000001',
   name: 'Offer mailer',
   version: 1,
-  markupVersion: 1,
+  markupVersion: 2,
   complianceBlocks: {
     personal: {
       title: 'Personal contract hire',

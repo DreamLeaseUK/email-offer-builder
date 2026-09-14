@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { Rendered, findCapIdLeak } from '@offer-mailer/schema';
 import type { TemplateLayout } from '@offer-mailer/schema';
-import { render, resolveLayout, TemplateNotApprovedError, RenderError } from '../src/index.js';
+import { render, resolveLayout, TemplateNotApprovedError, RenderError, MARKUP_VERSION } from '../src/index.js';
 import { fixtureCampaign, fixtureTemplate } from '../src/fixtures/index.js';
 
 const BASE = 'https://offers.dreamlease.co.uk';
@@ -130,30 +130,92 @@ describe('render()', () => {
     expect(out.html).toContain('&lt;script&gt;');
   });
 
-  it('uses no Outlook ghost tables inside the body, only the outer 640 wrapper', () => {
-    for (const layout of ['stack', 'grid2', 'grid3'] as const) {
-      const html = r({ layout, offerCount: 4 }).out.html;
-      expect(html.match(/<!--\[if mso\]><table/g)?.length).toBe(1);
-      expect(html).not.toMatch(/<!--\[if mso\]><tr>/);
+  // The v5 reference markup's non-negotiables (docs/status: 14 Sept, "Offer Mailer implementation notes").
+  it('wraps every card group in a ghost table with one ghost td per card, in rows', () => {
+    const ghostCells = (html: string, width: number) => html.match(new RegExp(`<!--\\[if mso\\]>[^<]*(?:<[^!][^<]*)*?<td width="${width}" valign="top"><!\\[endif\\]-->`, 'g'))?.length ?? 0;
+    const grid4 = r({ layout: 'grid2', offerCount: 4 }).out.html;
+    expect(ghostCells(grid4, 288)).toBe(4);
+    expect(grid4.match(/<!--\[if mso\]><\/td><\/tr><tr><td width="288" valign="top"><!\[endif\]-->/g)?.length).toBe(1); // two rows
+    const grid3 = r({ layout: 'grid3', offerCount: 6 }).out.html;
+    expect(ghostCells(grid3, 192)).toBe(6);
+    expect(grid3.match(/<!--\[if mso\]><\/td><\/tr><tr><td width="192" valign="top"><!\[endif\]-->/g)?.length).toBe(1);
+    const odd = r({ layout: 'grid2', offerCount: 3 }).out.html;
+    expect(ghostCells(odd, 288)).toBe(3);
+    const stack = r({ layout: 'stack', offerCount: 3 }).out.html;
+    expect(ghostCells(stack, 250)).toBe(3);
+    expect(ghostCells(stack, 300)).toBe(3);
+    const hero = r({ layout: 'single', offerCount: 1, brochure: 'pdf' }).out.html;
+    expect(hero).toMatch(/<!--\[if mso\]><table[^>]*><tr><td valign="middle"><!\[endif\]-->/);
+  });
+
+  it('builds buttons with td padding, a block anchor and mso-padding-alt, and no VML', () => {
+    for (const layout of ['single', 'stack', 'grid2', 'grid3'] as const) {
+      const html = r({ layout, offerCount: layout === 'single' ? 1 : 3 }).out.html;
+      const buttons = html.match(/<td align="center" style="background-color:#31BD51;[^"]*">/g) ?? [];
+      expect(buttons.length).toBe(layout === 'single' ? 1 : 3);
+      for (const b of buttons) expect(b).toMatch(/mso-padding-alt:0/);
+      expect(html.match(/<a href="[^"]+" style="display:block;[^"]*color:#FFFFFF; text-decoration:none;" class="lock-white">/g)?.length).toBe(buttons.length);
+      expect(html).not.toMatch(/v:roundrect/);
     }
   });
 
-  it('keeps the container fluid for phones and fixed for Outlook desktop', () => {
-    const { out } = r({ layout: 'grid2', offerCount: 4 });
-    expect(out.html).toMatch(/width="100%" style="margin:0 auto;[^"]*max-width:640px/);
-    expect(out.html).toMatch(/<!--\[if mso\]><table[^>]*width="640"><tr><td><!\[endif\]-->/);
-    expect(out.html).not.toMatch(/mso-padding-alt/);
-    expect(out.html).not.toMatch(/text-transform/);
+  it('fixes the image sizes, the pill widths and the 600px wrapper the reference specifies', () => {
+    expect(r({ layout: 'single', offerCount: 1 }).out.html).toMatch(/<img [^>]*width="550" height="413"/);
+    expect(r({ layout: 'stack', offerCount: 2 }).out.html).toMatch(/<img [^>]*width="218" height="164"/);
+    expect(r({ layout: 'grid2', offerCount: 2 }).out.html).toMatch(/<img [^>]*width="262" height="197"/);
+    expect(r({ layout: 'grid3', offerCount: 3 }).out.html).toMatch(/<img [^>]*width="166" height="125"/);
+    expect(r({ layout: 'single', offerCount: 1 }).out.html).toMatch(/<td width="126" align="center" class="lock-white" style="width:126px;/);
+    expect(r({ layout: 'grid2', offerCount: 2 }).out.html).toMatch(/<td width="100" align="center" class="lock-white" style="width:100px;/);
+    const html = r().out.html;
+    expect(html).toMatch(/width="600" class="wrapper lock-bg" style="width:600px; max-width:600px;/);
+    expect(html).toMatch(/<!--\[if mso\]>\s*<table[^>]*width="600" align="center"><tr><td>/);
+    expect(html).toMatch(/<img [^>]*width="56" height="56"/); // headshot
   });
 
-  it('caps badges per card size and keeps them in one row', () => {
+  it('forces light mode and keeps the media query as an enhancement', () => {
+    const html = r({ layout: 'grid3', offerCount: 3 }).out.html;
+    expect(html).toMatch(/<meta name="color-scheme" content="light only" \/>/);
+    expect(html).toMatch(/\[data-ogsc\] \.lock-red/);
+    for (const cls of ['lock-bg', 'lock-tint', 'lock-ink', 'lock-body', 'lock-red', 'lock-white']) expect(html).toContain(`class="${cls}`);
+    expect(html).toMatch(/@media only screen and \(max-width: 480px\)/);
+    expect(html).toMatch(/class="card-cell" style="display:inline-block; width:100%; max-width:192px;/);
+    expect(html).not.toMatch(/margin:\s*-/);
+    // spacers are cells, never margins (grid3's full-width pill needs none; grid2's floated pills do)
+    expect(r({ layout: 'grid2', offerCount: 2 }).out.html).toMatch(/<td height="8" style="font-size:0; line-height:0; height:8px;">&nbsp;<\/td>/);
+  });
+
+  it('bumps MARKUP_VERSION to the v5 generation and refuses a template pinned to v1', () => {
+    expect(MARKUP_VERSION).toBe(2);
+    const { campaign } = fixtureCampaign();
+    expect(() => render(campaign, { ...fixtureTemplate, markupVersion: 1 }, { publicBaseUrl: BASE })).toThrow(/markup v1/);
+  });
+
+  it('keeps the wrapper fixed at 600 and lets the media query make it fluid on phones', () => {
+    const { out } = r({ layout: 'grid2', offerCount: 4 });
+    expect(out.html.match(/width="600"/g)?.length).toBe(2); // the ghost wrapper and the real one
+    expect(out.html).toMatch(/\.wrapper \{ width: 100% !important; \}/);
+    expect(out.html).toMatch(/\.card-cell \{ max-width: 100% !important; width: 100% !important; \}/);
+    expect(out.html).toMatch(/\.stack-col \{ max-width: 100% !important; width: 100% !important; \}/);
+    expect(out.html).toMatch(/\.fluid-img \{ width: 100% !important; height: auto !important; max-width: 100% !important; \}/);
+  });
+
+  it('caps badges at two per card (one for grid3), hot badge first, as fixed-width floated pills', () => {
     const { campaign, brochures } = fixtureCampaign({ layout: 'grid3', offerCount: 1 });
     campaign.offers[0]!.badges = ['In stock', 'Special offer', 'Price drop'];
+    campaign.offers[0]!.hotBadge = 'DreamLease exclusive!';
+    const pills = (html: string) => html.match(/background-color:#FF8811/g)?.length ?? 0;
     const compact = render(campaign, fixtureTemplate, { publicBaseUrl: BASE, brochures }).html;
-    expect(compact.match(/background:#FF8811/g)?.length).toBe(1);
+    expect(pills(compact)).toBe(1);
+    expect(compact).toMatch(/<td align="center" class="lock-white" style="background-color:#FF8811;[^"]*">DreamLease exclusive!<\/td>/);
     campaign.layout = 'single';
     const hero = render(campaign, fixtureTemplate, { publicBaseUrl: BASE, brochures }).html;
-    expect(hero.match(/background:#FF8811/g)?.length).toBe(3);
+    expect(pills(hero)).toBe(2);
+    expect(hero.indexOf('DreamLease exclusive!')).toBeLessThan(hero.indexOf('>In stock<'));
+    expect(hero.match(/<table role="presentation" cellpadding="0" cellspacing="0" border="0" align="left" style="margin:0 6px 8px 0;">/g)?.length).toBe(2);
+    campaign.layout = 'stack';
+    expect(pills(render(campaign, fixtureTemplate, { publicBaseUrl: BASE, brochures }).html)).toBe(2);
+    campaign.layout = 'grid2';
+    expect(pills(render(campaign, fixtureTemplate, { publicBaseUrl: BASE, brochures }).html)).toBe(2);
   });
 
   it('omits the "View these offers online" link from the hosted page', () => {

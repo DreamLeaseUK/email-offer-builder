@@ -1,0 +1,721 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office" lang="en">
+<head>
+<meta charset="utf-8" />
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="x-apple-disable-message-reformatting" />
+<meta name="color-scheme" content="light only" />
+<meta name="supported-color-schemes" content="light only" />
+<title>DreamLease offers</title>
+
+<!--
+  ============================================================================
+  DreamLease Offer Mailer — send-ready HTML
+  Visual source of truth: "Offer Mailer Email Template v2.dc.html"
+
+  HOW TO USE THIS FILE
+  1. Pick ONE layout block below (A SINGLE / B STACK / C GRID2 / D GRID3) and
+     delete the other three. Each block is delimited by
+     <!== LAYOUT x START ==>  /  <!== LAYOUT x END ==>
+  2. Inside a block, each offer is delimited by
+     <!== OFFER CARD START ==> / <!== OFFER CARD END ==>
+     Duplicate or delete whole cards for 1–6 offers. In C and D, also update
+     the ghost-table <td> count (see the note inside each block) or Outlook
+     classic will leave an empty column.
+  3. Swap assets/… for absolute CDN URLs before sending.
+  4. Placeholders are {{ handlebars }} in HTML comments for the build; the literal text left in
+     place is real sample copy so the file can be pasted straight into Litmus.
+
+  CLIENT COVERAGE — which construct covers which client
+  - Outlook 2007–2021 classic (Word engine): conditional ghost tables around
+    every multi-card group; button padding on the <td> with a display:block
+    anchor (Word drops anchor padding); background colour on <td>, never a
+    <div>; explicit width/height on every <img>; PixelsPerInch 96 fix; a
+    conditional <style> forcing Arial (Word ignores the webfont stack).
+    Rounded corners degrade to square — accepted.
+  - Outlook.com / new Outlook (Windows/Mac): supports media queries and
+    border-radius; the fluid-hybrid inline-block tables are the base layout,
+    so it is correct with or without the query.
+  - Outlook mobile (iOS/Android): honours media queries; forced light-mode
+    metas plus [data-ogsc] overrides stop its aggressive inversion.
+  - Gmail desktop: 600px fixed, everything critical inline; the head <style>
+    is used only for enhancement, never for layout that matters.
+  - Gmail mobile app: honours the media query when the account is a Google
+    account; the fluid-hybrid pattern covers it when it is not (IMAP accounts),
+    so multi-offer grids stack vertically either way.
+
+  RULE OF THUMB: if you delete the media query, the email must still be
+  readable and must still stack on a phone. That is what fluid hybrid buys.
+  ============================================================================
+-->
+
+<!--[if mso]>
+<xml><o:OfficeDocumentSettings><o:AllowPNG/><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml>
+<style type="text/css">
+  * { font-family: Arial, Helvetica, sans-serif !important; }
+  table { border-collapse: collapse !important; mso-table-lspace: 0pt !important; mso-table-rspace: 0pt !important; }
+  td, p, a, span { mso-line-height-rule: exactly; }
+</style>
+<![endif]-->
+
+<style type="text/css">
+  /* Resets — enhancement only, no layout depends on this block. */
+  html, body { margin: 0 !important; padding: 0 !important; width: 100% !important; }
+  body { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; background-color: #EDEDEF; }
+  table { border-collapse: collapse; mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
+  img { border: 0; outline: none; text-decoration: none; -ms-interpolation-mode: bicubic; }
+  a { text-decoration: underline; }
+  p { margin: 0; }
+  .appleLinks a { color: #787580 !important; text-decoration: none !important; }
+  /* Gmail/Apple auto-link colour lock */
+  a[x-apple-data-detectors], u + #body a, #MessageViewBody a {
+    color: inherit !important; text-decoration: none !important; font-size: inherit !important;
+    font-family: inherit !important; font-weight: inherit !important; line-height: inherit !important;
+  }
+  /* Forced light — Outlook mobile / Apple Mail inversion */
+  [data-ogsc] .lock-bg, [data-ogsb] .lock-bg { background-color: #FFFFFF !important; }
+  [data-ogsc] .lock-tint, [data-ogsb] .lock-tint { background-color: #F6F6F7 !important; }
+  [data-ogsc] .lock-ink { color: #000000 !important; }
+  [data-ogsc] .lock-body { color: #787580 !important; }
+  [data-ogsc] .lock-red { color: #E30613 !important; }
+  [data-ogsc] .lock-white { color: #FFFFFF !important; }
+
+  /* Progressive enhancement. Cards already wrap without this. */
+  @media only screen and (max-width: 480px) {
+    .wrapper { width: 100% !important; }
+    .card-cell { max-width: 100% !important; width: 100% !important; }
+    .gutter { padding-left: 16px !important; padding-right: 16px !important; }
+    .stack-col { max-width: 100% !important; width: 100% !important; }
+    .fluid-img { width: 100% !important; height: auto !important; max-width: 100% !important; }
+    .cta-btn a { white-space: normal !important; }
+    /* compact cards adopt the grid2 type scale once they are full width */
+    .compact-model { font-size: 20px !important; line-height: 26px !important; }
+    .compact-deriv { font-size: 13px !important; line-height: 18px !important; min-height: 0 !important; }
+    .compact-price { font-size: 28px !important; }
+    .compact-spec { font-size: 12px !important; }
+    .center-sm { text-align: center !important; }
+  }
+</style>
+</head>
+
+<body id="body" style="margin:0; padding:0; background-color:#EDEDEF;">
+
+<!-- Preheader -->
+<div style="display:none; font-size:1px; line-height:1px; max-height:0; max-width:0; opacity:0; overflow:hidden; mso-hide:all;">
+  <!--{{ preheader }}-->Three electric options on 36 months, 8,000 miles a year.
+  &nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;
+</div>
+
+<!-- Outer background -->
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color:#EDEDEF;">
+<tr>
+<td align="center" style="padding:32px 8px;">
+
+<!--[if mso]>
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" align="center"><tr><td>
+<![endif]-->
+
+<!-- ================= EMAIL WRAPPER 600 ================= -->
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" class="wrapper lock-bg" style="width:600px; max-width:600px; background-color:#FFFFFF; font-family:Arial, Helvetica, sans-serif; color:#787580;">
+
+  <!-- Header -->
+  <tr>
+    <td class="gutter" style="padding:20px 24px 0 24px;">
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+        <tr>
+          <td align="right" class="lock-body" style="padding-bottom:14px; font-family:Arial, Helvetica, sans-serif; font-size:12px; line-height:16px; mso-line-height-rule:exactly; color:#787580;">
+            <a href="{{ hostedUrl }}" style="color:#E30613; text-decoration:underline;" class="lock-red">View these offers online</a>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding-bottom:20px; border-bottom:1px solid #E1E0E4;">
+            <img src="assets/logo-2x.png" width="99" height="32" alt="DreamLease" style="display:block; border:0; width:99px; height:32px;" />
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+
+  <!-- Intro -->
+  <tr>
+    <td class="gutter" style="padding:28px 24px 8px 24px; font-family:Arial, Helvetica, sans-serif;">
+      <p class="lock-ink" style="margin:0 0 14px 0; font-size:22px; line-height:28px; mso-line-height-rule:exactly; font-weight:bold; color:#000000;">Hi <!--{{ recipientFirstName }}-->Priya,</p>
+      <p class="lock-body" style="margin:0 0 14px 0; font-size:16px; line-height:26px; mso-line-height-rule:exactly; color:#787580;"><!--{{ introParagraph1 }}-->Thanks for your time on the call yesterday. As promised, here are the electric options that fit the budget we talked about, all on 36 months with 8,000 miles a year.</p>
+      <p class="lock-body" style="margin:0 0 14px 0; font-size:16px; line-height:26px; mso-line-height-rule:exactly; color:#787580;"><!--{{ introParagraph2 }}-->Prices move quickly on these, so if one stands out let me know this week and I'll hold the quote for you.</p>
+    </td>
+  </tr>
+
+
+  <!-- ==================================================================== -->
+  <!--== LAYOUT A — SINGLE (hero card, 1 offer). Delete B, C, D.        ==-->
+  <!-- ==================================================================== -->
+  <tr>
+    <td class="gutter" style="padding:12px 24px 0 24px;">
+
+      <!--== OFFER CARD START ==-->
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border:1px solid #E1E0E4; border-radius:16px; margin-bottom:20px;">
+        <tr>
+          <td class="lock-bg" style="padding:0; background-color:#FFFFFF; border-radius:16px 16px 0 0;">
+            <img src="assets/vehicle-placeholder.png" width="550" height="413" alt="{{ offer.make }} <!--{{ offer.model }}-->" class="fluid-img" style="display:block; border:0; width:100%; max-width:550px; height:auto; border-radius:16px 16px 0 0;" />
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:20px 20px 22px 20px; font-family:Arial, Helvetica, sans-serif;">
+
+            <!-- Badges: one ghost-tabled pill per badge, fixed content width -->
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="left" style="margin:0 6px 8px 0;">
+              <tr><td width="126" align="center" class="lock-white" style="width:126px; background-color:#FF8811; border-radius:999px; padding:4px 12px; font-family:Arial, Helvetica, sans-serif; font-size:12px; line-height:16px; mso-line-height-rule:exactly; font-weight:bold; color:#FFFFFF; white-space:nowrap;"><!--{{ offer.badge1 }}-->DreamLease exclusive!</td></tr>
+            </table>
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="left" style="margin:0 6px 8px 0;">
+              <tr><td width="126" align="center" class="lock-white" style="width:126px; background-color:#FF8811; border-radius:999px; padding:4px 12px; font-family:Arial, Helvetica, sans-serif; font-size:12px; line-height:16px; mso-line-height-rule:exactly; font-weight:bold; color:#FFFFFF; white-space:nowrap;"><!--{{ offer.badge2 }}-->In stock</td></tr>
+            </table>
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%"><tr><td height="8" style="font-size:0; line-height:0; height:8px;">&nbsp;</td></tr></table>
+
+            <p class="lock-red" style="margin:0 0 4px 0; font-size:12px; line-height:16px; mso-line-height-rule:exactly; font-weight:bold; letter-spacing:1px; text-transform:uppercase; color:#E30613;"><!--{{ offer.make }}-->BYD</p>
+            <p class="lock-ink" style="margin:0 0 4px 0; font-size:26px; line-height:32px; mso-line-height-rule:exactly; font-weight:bold; color:#000000;"><!--{{ offer.model }}-->Seal</p>
+            <p class="lock-body" style="margin:0 0 16px 0; font-size:14px; line-height:20px; mso-line-height-rule:exactly; color:#787580;"><!--{{ offer.derivative }}-->Design 82.5kWh Excellence AWD 4dr Auto</p>
+
+            <p style="margin:0 0 14px 0; line-height:38px; mso-line-height-rule:exactly;">
+              <span class="lock-red" style="font-size:34px; font-weight:bold; color:#E30613;"><!--{{ offer.price }}-->£389</span>
+              <span class="lock-body" style="font-size:14px; color:#787580;"><!--{{ offer.priceLabel }}-->per month inc VAT</span>
+            </p>
+
+            <p style="margin:0 0 16px 0; font-size:14px; line-height:20px; mso-line-height-rule:exactly; color:#393838;"><!--{{ offer.specLine }}-->36 months &middot; 8,000 miles p.a. &middot; £3,501 initial payment</p>
+
+            <!-- Stat tiles: background/padding/radius on the td -->
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom:18px;">
+              <tr>
+                <td width="24%" class="lock-tint" style="background-color:#F6F6F7; border-radius:6px; padding:10px; vertical-align:top;">
+                  <p class="lock-body" style="margin:0; font-family:Arial, Helvetica, sans-serif; font-size:10px; line-height:14px; mso-line-height-rule:exactly; font-weight:bold; letter-spacing:0.6px; text-transform:uppercase; color:#787580;">Range</p>
+                  <p class="lock-ink" style="margin:2px 0 0 0; font-family:Arial, Helvetica, sans-serif; font-size:15px; line-height:20px; mso-line-height-rule:exactly; font-weight:bold; color:#000000; white-space:nowrap;"><!--{{ offer.stat1 }}-->323 mi</p>
+                </td>
+                <td width="8" style="font-size:0; line-height:0;">&nbsp;</td>
+                <td width="24%" class="lock-tint" style="background-color:#F6F6F7; border-radius:6px; padding:10px; vertical-align:top;">
+                  <p class="lock-body" style="margin:0; font-family:Arial, Helvetica, sans-serif; font-size:10px; line-height:14px; mso-line-height-rule:exactly; font-weight:bold; letter-spacing:0.6px; text-transform:uppercase; color:#787580;">0&ndash;62</p>
+                  <p class="lock-ink" style="margin:2px 0 0 0; font-family:Arial, Helvetica, sans-serif; font-size:15px; line-height:20px; mso-line-height-rule:exactly; font-weight:bold; color:#000000; white-space:nowrap;"><!--{{ offer.stat2 }}-->3.8s</p>
+                </td>
+                <td width="8" style="font-size:0; line-height:0;">&nbsp;</td>
+                <td width="24%" class="lock-tint" style="background-color:#F6F6F7; border-radius:6px; padding:10px; vertical-align:top;">
+                  <p class="lock-body" style="margin:0; font-family:Arial, Helvetica, sans-serif; font-size:10px; line-height:14px; mso-line-height-rule:exactly; font-weight:bold; letter-spacing:0.6px; text-transform:uppercase; color:#787580;">Battery</p>
+                  <p class="lock-ink" style="margin:2px 0 0 0; font-family:Arial, Helvetica, sans-serif; font-size:15px; line-height:20px; mso-line-height-rule:exactly; font-weight:bold; color:#000000; white-space:nowrap;"><!--{{ offer.stat3 }}-->82.5 kWh</p>
+                </td>
+                <td width="8" style="font-size:0; line-height:0;">&nbsp;</td>
+                <td width="24%" class="lock-tint" style="background-color:#F6F6F7; border-radius:6px; padding:10px; vertical-align:top;">
+                  <p class="lock-body" style="margin:0; font-family:Arial, Helvetica, sans-serif; font-size:10px; line-height:14px; mso-line-height-rule:exactly; font-weight:bold; letter-spacing:0.6px; text-transform:uppercase; color:#787580;">Warranty</p>
+                  <p class="lock-ink" style="margin:2px 0 0 0; font-family:Arial, Helvetica, sans-serif; font-size:15px; line-height:20px; mso-line-height-rule:exactly; font-weight:bold; color:#000000; white-space:nowrap;"><!--{{ offer.stat4 }}-->6 yrs</p>
+                </td>
+              </tr>
+            </table>
+
+            <!-- CTA + brochure. Ghost table keeps them side by side in Outlook;
+                 without it they stack, which is the intended narrow behaviour. -->
+            <!--[if mso]><table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr><td valign="middle"><![endif]-->
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0" class="cta-btn" style="display:inline-block; vertical-align:middle; max-width:100%;">
+              <tr>
+                <td align="center" style="background-color:#31BD51; border-radius:999px; padding:13px 30px; mso-padding-alt:0;">
+                  <a href="{{ offer.ctaHref }}" style="display:block; font-family:Arial, Helvetica, sans-serif; font-size:16px; line-height:20px; mso-line-height-rule:exactly; font-weight:bold; color:#FFFFFF; text-decoration:none;" class="lock-white"><!--{{ offer.ctaLabel }}-->View this offer</a>
+                </td>
+              </tr>
+            </table>
+            <!--[if mso]></td><td valign="middle"><![endif]-->
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="display:inline-block; vertical-align:middle;">
+              <tr>
+                <td style="padding:10px 6px 10px 16px; vertical-align:middle;">
+                  <img src="assets/icon-doc-2x.png" width="14" height="14" alt="PDF document" style="display:block; border:0; width:14px; height:14px;" />
+                </td>
+                <td class="appleLinks" style="padding:10px 0; vertical-align:middle; font-family:Arial, Helvetica, sans-serif; font-size:13px; line-height:18px; mso-line-height-rule:exactly; white-space:nowrap;">
+                  <a href="{{ offer.brochureHref }}" style="color:#787580; text-decoration:underline;" class="lock-body"><!--{{ offer.brochureLabel }}-->Download brochure (PDF)</a>
+                </td>
+              </tr>
+            </table>
+            <!--[if mso]></td></tr></table><![endif]-->
+
+            <p class="lock-body" style="margin:14px 0 0 0; font-size:12px; line-height:18px; mso-line-height-rule:exactly; color:#787580;"><!--{{ offer.smallPrint }}-->Processing fee £299.99 inc VAT &middot; Offer valid until 30 September 2026 &middot; Brochure figures are the manufacturer's and may differ from this offer.</p>
+          </td>
+        </tr>
+      </table>
+      <!--== OFFER CARD END ==-->
+
+    </td>
+  </tr>
+  <!--== LAYOUT A END ==-->
+
+
+  <!-- ==================================================================== -->
+  <!--== LAYOUT B — STACK (image left, 1–6 offers, always one per row)   ==-->
+  <!--   Ghost table inside each card keeps image and content side by side  -->
+  <!-- ==================================================================== -->
+  <tr>
+    <td class="gutter" style="padding:12px 24px 0 24px;">
+
+      <!--== OFFER CARD START ==-->
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border:1px solid #E1E0E4; border-radius:16px; margin-bottom:16px;">
+        <tr>
+          <td style="padding:0; font-size:0; text-align:left;">
+
+            <!--[if mso]><table role="presentation" cellpadding="0" cellspacing="0" border="0" width="550"><tr><td width="250" valign="top"><![endif]-->
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0" class="stack-col" style="display:inline-block; width:100%; max-width:250px; vertical-align:top;">
+              <tr>
+                <td style="padding:16px 16px 0 16px; font-size:14px; text-align:left;">
+                  <img src="assets/vehicle-placeholder.png" width="218" height="164" alt="{{ offer.make }} <!--{{ offer.model }}-->" class="fluid-img" style="display:block; border:0; width:100%; max-width:218px; height:auto; border-radius:10px;" />
+                  <p class="lock-body" style="margin:12px 0 16px 0; font-family:Arial, Helvetica, sans-serif; font-size:11px; line-height:16px; mso-line-height-rule:exactly; color:#787580;"><!--{{ offer.smallPrint }}-->Processing fee £299.99 inc VAT &middot; Offer valid until 30 September 2026</p>
+                </td>
+              </tr>
+            </table>
+            <!--[if mso]></td><td width="300" valign="top"><![endif]-->
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0" class="stack-col" style="display:inline-block; width:100%; max-width:300px; vertical-align:top;">
+              <tr>
+                <td style="padding:16px 18px; font-size:14px; text-align:left; font-family:Arial, Helvetica, sans-serif;">
+
+                  <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="left" style="margin:0 6px 6px 0;">
+                    <tr><td width="100" align="center" class="lock-white" style="width:100px; background-color:#FF8811; border-radius:999px; padding:3px 10px; font-family:Arial, Helvetica, sans-serif; font-size:11px; line-height:14px; mso-line-height-rule:exactly; font-weight:bold; color:#FFFFFF; white-space:nowrap;"><!--{{ offer.badge1 }}-->Special offer</td></tr>
+                  </table>
+                  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%"><tr><td height="8" style="font-size:0; line-height:0; height:8px;">&nbsp;</td></tr></table>
+
+                  <p class="lock-red" style="margin:0 0 2px 0; font-size:11px; line-height:14px; mso-line-height-rule:exactly; font-weight:bold; letter-spacing:1px; text-transform:uppercase; color:#E30613;"><!--{{ offer.make }}-->MG</p>
+                  <p class="lock-ink" style="margin:0 0 2px 0; font-size:20px; line-height:26px; mso-line-height-rule:exactly; font-weight:bold; color:#000000;"><!--{{ offer.model }}-->MG4 EV</p>
+                  <p class="lock-body" style="margin:0 0 10px 0; font-size:13px; line-height:18px; mso-line-height-rule:exactly; color:#787580;"><!--{{ offer.derivative }}-->Trophy Long Range 64kWh 5dr Auto</p>
+                  <p style="margin:0 0 8px 0; line-height:32px; mso-line-height-rule:exactly;">
+                    <span class="lock-red" style="font-size:28px; font-weight:bold; color:#E30613;"><!--{{ offer.price }}-->£249</span>
+                    <span class="lock-body" style="font-size:13px; color:#787580;"><!--{{ offer.priceLabel }}-->per month inc VAT</span>
+                  </p>
+                  <p style="margin:0 0 12px 0; font-size:13px; line-height:18px; mso-line-height-rule:exactly; color:#393838;"><!--{{ offer.specLine }}-->36 months &middot; 8,000 miles p.a. &middot; £2,241 initial payment</p>
+
+                  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom:14px;">
+                    <tr>
+                      <td width="48%" class="lock-tint" style="background-color:#F6F6F7; border-radius:6px; padding:7px 8px; vertical-align:top;">
+                        <p class="lock-body" style="margin:0; font-family:Arial, Helvetica, sans-serif; font-size:9px; line-height:12px; mso-line-height-rule:exactly; font-weight:bold; letter-spacing:0.5px; text-transform:uppercase; color:#787580;">Range</p>
+                        <p class="lock-ink" style="margin:1px 0 0 0; font-family:Arial, Helvetica, sans-serif; font-size:13px; line-height:18px; mso-line-height-rule:exactly; font-weight:bold; color:#000000; white-space:nowrap;">281 mi</p>
+                      </td>
+                      <td width="8" style="font-size:0; line-height:0;">&nbsp;</td>
+                      <td width="48%" class="lock-tint" style="background-color:#F6F6F7; border-radius:6px; padding:7px 8px; vertical-align:top;">
+                        <p class="lock-body" style="margin:0; font-family:Arial, Helvetica, sans-serif; font-size:9px; line-height:12px; mso-line-height-rule:exactly; font-weight:bold; letter-spacing:0.5px; text-transform:uppercase; color:#787580;">0&ndash;62</p>
+                        <p class="lock-ink" style="margin:1px 0 0 0; font-family:Arial, Helvetica, sans-serif; font-size:13px; line-height:18px; mso-line-height-rule:exactly; font-weight:bold; color:#000000; white-space:nowrap;">7.9s</p>
+                      </td>
+                    </tr>
+                    <tr><td colspan="3" height="4" style="font-size:0; line-height:0; height:4px;">&nbsp;</td></tr>
+                    <tr>
+                      <td width="48%" class="lock-tint" style="background-color:#F6F6F7; border-radius:6px; padding:7px 8px; vertical-align:top;">
+                        <p class="lock-body" style="margin:0; font-family:Arial, Helvetica, sans-serif; font-size:9px; line-height:12px; mso-line-height-rule:exactly; font-weight:bold; letter-spacing:0.5px; text-transform:uppercase; color:#787580;">Battery</p>
+                        <p class="lock-ink" style="margin:1px 0 0 0; font-family:Arial, Helvetica, sans-serif; font-size:13px; line-height:18px; mso-line-height-rule:exactly; font-weight:bold; color:#000000; white-space:nowrap;">64 kWh</p>
+                      </td>
+                      <td width="8" style="font-size:0; line-height:0;">&nbsp;</td>
+                      <td width="48%" class="lock-tint" style="background-color:#F6F6F7; border-radius:6px; padding:7px 8px; vertical-align:top;">
+                        <p class="lock-body" style="margin:0; font-family:Arial, Helvetica, sans-serif; font-size:9px; line-height:12px; mso-line-height-rule:exactly; font-weight:bold; letter-spacing:0.5px; text-transform:uppercase; color:#787580;">Warranty</p>
+                        <p class="lock-ink" style="margin:1px 0 0 0; font-family:Arial, Helvetica, sans-serif; font-size:13px; line-height:18px; mso-line-height-rule:exactly; font-weight:bold; color:#000000; white-space:nowrap;">7 yrs</p>
+                      </td>
+                    </tr>
+                  </table>
+
+                  <table role="presentation" cellpadding="0" cellspacing="0" border="0" class="cta-btn">
+                    <tr>
+                      <td align="center" style="background-color:#31BD51; border-radius:999px; padding:10px 22px; mso-padding-alt:0;">
+                        <a href="{{ offer.ctaHref }}" style="display:block; font-family:Arial, Helvetica, sans-serif; font-size:14px; line-height:18px; mso-line-height-rule:exactly; font-weight:bold; color:#FFFFFF; text-decoration:none;" class="lock-white"><!--{{ offer.ctaLabel }}-->View this offer</a>
+                      </td>
+                    </tr>
+                  </table>
+                  <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin-top:8px;">
+                    <tr>
+                      <td style="padding:0 6px 0 0; vertical-align:middle;"><img src="assets/icon-doc-2x.png" width="14" height="14" alt="PDF document" style="display:block; border:0; width:14px; height:14px;" /></td>
+                      <td class="appleLinks" style="vertical-align:middle; font-family:Arial, Helvetica, sans-serif; font-size:13px; line-height:18px; mso-line-height-rule:exactly; white-space:nowrap;">
+                        <a href="{{ offer.brochureHref }}" style="color:#787580; text-decoration:underline;" class="lock-body"><!--{{ offer.brochureLabel }}-->Download brochure (PDF)</a>
+                      </td>
+                    </tr>
+                  </table>
+
+                </td>
+              </tr>
+            </table>
+            <!--[if mso]></td></tr></table><![endif]-->
+
+          </td>
+        </tr>
+      </table>
+      <!--== OFFER CARD END ==-->
+
+    </td>
+  </tr>
+  <!--== LAYOUT B END ==-->
+
+
+  <!-- ==================================================================== -->
+  <!--== LAYOUT C — GRID2 (two-up, 2/4/6 offers)                         ==-->
+  <!--   Ghost table: ONE <td width="276"> per card, in rows of two.        -->
+  <!--   4 offers = two ghost rows. 6 offers = three. Keep them in sync.    -->
+  <!-- ==================================================================== -->
+  <tr>
+    <td style="padding:12px 12px 0 12px; font-size:0; text-align:center;">
+
+      <!--[if mso]><table role="presentation" cellpadding="0" cellspacing="0" border="0" width="576"><tr><td width="288" valign="top"><![endif]-->
+      <!--== OFFER CARD START ==-->
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" class="card-cell" style="display:inline-block; width:100%; max-width:288px; vertical-align:top;">
+        <tr>
+          <td style="padding:0 12px 20px 12px; font-size:14px; text-align:left;">
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border:1px solid #E1E0E4; border-radius:16px;">
+              <tr>
+                <td class="lock-bg" style="padding:0; background-color:#FFFFFF; border-radius:16px 16px 0 0;">
+                  <img src="assets/vehicle-placeholder.png" width="262" height="197" alt="{{ offer.make }} <!--{{ offer.model }}-->" class="fluid-img" style="display:block; border:0; width:100%; max-width:100%; height:auto; border-radius:16px 16px 0 0;" />
+                </td>
+              </tr>
+              <tr>
+                <td style="padding:14px 16px 18px 16px; font-family:Arial, Helvetica, sans-serif;">
+                  <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="left" style="margin:0 6px 6px 0;">
+                    <tr><td width="100" align="center" class="lock-white" style="width:100px; background-color:#FF8811; border-radius:999px; padding:3px 10px; font-family:Arial, Helvetica, sans-serif; font-size:11px; line-height:14px; mso-line-height-rule:exactly; font-weight:bold; color:#FFFFFF; white-space:nowrap;"><!--{{ offer.badge1 }}-->In stock</td></tr>
+                  </table>
+                  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%"><tr><td height="8" style="font-size:0; line-height:0; height:8px;">&nbsp;</td></tr></table>
+
+                  <p class="lock-red" style="margin:0 0 2px 0; font-size:11px; line-height:14px; mso-line-height-rule:exactly; font-weight:bold; letter-spacing:1px; text-transform:uppercase; color:#E30613;"><!--{{ offer.make }}-->Cupra</p>
+                  <p class="lock-ink" style="margin:0 0 2px 0; font-size:20px; line-height:26px; mso-line-height-rule:exactly; font-weight:bold; color:#000000;"><!--{{ offer.model }}-->Born</p>
+                  <p class="lock-body" style="margin:0 0 10px 0; font-size:13px; line-height:18px; mso-line-height-rule:exactly; color:#787580; min-height:36px;"><!--{{ offer.derivative }}-->V2 59kWh 204PS 5dr Auto</p>
+                  <p style="margin:0 0 8px 0; line-height:32px; mso-line-height-rule:exactly;">
+                    <span class="lock-red" style="font-size:28px; font-weight:bold; color:#E30613;"><!--{{ offer.price }}-->£299</span>
+                    <span class="lock-body" style="font-size:12px; color:#787580;"><!--{{ offer.priceLabel }}-->per month inc VAT</span>
+                  </p>
+                  <p style="margin:0 0 12px 0; font-size:12px; line-height:18px; mso-line-height-rule:exactly; color:#393838;"><!--{{ offer.specLine }}-->36 months &middot; 8,000 miles p.a. &middot; £2,691 initial payment</p>
+
+                  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom:12px;">
+                    <tr>
+                      <td width="48%" class="lock-tint" style="background-color:#F6F6F7; border-radius:6px; padding:7px 8px; vertical-align:top;">
+                        <p class="lock-body" style="margin:0; font-family:Arial, Helvetica, sans-serif; font-size:9px; line-height:12px; mso-line-height-rule:exactly; font-weight:bold; letter-spacing:0.5px; text-transform:uppercase; color:#787580;">Range</p>
+                        <p class="lock-ink" style="margin:1px 0 0 0; font-family:Arial, Helvetica, sans-serif; font-size:13px; line-height:18px; mso-line-height-rule:exactly; font-weight:bold; color:#000000; white-space:nowrap;">264 mi</p>
+                      </td>
+                      <td width="8" style="font-size:0; line-height:0;">&nbsp;</td>
+                      <td width="48%" class="lock-tint" style="background-color:#F6F6F7; border-radius:6px; padding:7px 8px; vertical-align:top;">
+                        <p class="lock-body" style="margin:0; font-family:Arial, Helvetica, sans-serif; font-size:9px; line-height:12px; mso-line-height-rule:exactly; font-weight:bold; letter-spacing:0.5px; text-transform:uppercase; color:#787580;">0&ndash;62</p>
+                        <p class="lock-ink" style="margin:1px 0 0 0; font-family:Arial, Helvetica, sans-serif; font-size:13px; line-height:18px; mso-line-height-rule:exactly; font-weight:bold; color:#000000; white-space:nowrap;">7.0s</p>
+                      </td>
+                    </tr>
+                    <tr><td colspan="3" height="4" style="font-size:0; line-height:0; height:4px;">&nbsp;</td></tr>
+                    <tr>
+                      <td width="48%" class="lock-tint" style="background-color:#F6F6F7; border-radius:6px; padding:7px 8px; vertical-align:top;">
+                        <p class="lock-body" style="margin:0; font-family:Arial, Helvetica, sans-serif; font-size:9px; line-height:12px; mso-line-height-rule:exactly; font-weight:bold; letter-spacing:0.5px; text-transform:uppercase; color:#787580;">Battery</p>
+                        <p class="lock-ink" style="margin:1px 0 0 0; font-family:Arial, Helvetica, sans-serif; font-size:13px; line-height:18px; mso-line-height-rule:exactly; font-weight:bold; color:#000000; white-space:nowrap;">59 kWh</p>
+                      </td>
+                      <td width="8" style="font-size:0; line-height:0;">&nbsp;</td>
+                      <td width="48%" class="lock-tint" style="background-color:#F6F6F7; border-radius:6px; padding:7px 8px; vertical-align:top;">
+                        <p class="lock-body" style="margin:0; font-family:Arial, Helvetica, sans-serif; font-size:9px; line-height:12px; mso-line-height-rule:exactly; font-weight:bold; letter-spacing:0.5px; text-transform:uppercase; color:#787580;">Warranty</p>
+                        <p class="lock-ink" style="margin:1px 0 0 0; font-family:Arial, Helvetica, sans-serif; font-size:13px; line-height:18px; mso-line-height-rule:exactly; font-weight:bold; color:#000000; white-space:nowrap;">3 yrs</p>
+                      </td>
+                    </tr>
+                  </table>
+
+                  <!-- grid2 button: no nowrap, a 30-char label wraps rather than clips -->
+                  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" class="cta-btn">
+                    <tr>
+                      <td align="center" style="background-color:#31BD51; border-radius:999px; padding:11px 12px; mso-padding-alt:0;">
+                        <a href="{{ offer.ctaHref }}" style="display:block; font-family:Arial, Helvetica, sans-serif; font-size:14px; line-height:18px; mso-line-height-rule:exactly; font-weight:bold; color:#FFFFFF; text-decoration:none;" class="lock-white"><!--{{ offer.ctaLabel }}-->View this offer</a>
+                      </td>
+                    </tr>
+                  </table>
+                  <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin:8px auto 0 auto;">
+                    <tr>
+                      <td style="padding:0 6px 0 0; vertical-align:middle;"><img src="assets/icon-doc-2x.png" width="14" height="14" alt="PDF document" style="display:block; border:0; width:14px; height:14px;" /></td>
+                      <td class="appleLinks" style="vertical-align:middle; font-family:Arial, Helvetica, sans-serif; font-size:12px; line-height:16px; mso-line-height-rule:exactly; white-space:nowrap;">
+                        <a href="{{ offer.brochureHref }}" style="color:#787580; text-decoration:underline;" class="lock-body"><!--{{ offer.brochureLabel }}-->Download brochure (PDF)</a>
+                      </td>
+                    </tr>
+                  </table>
+                  <p class="lock-body" style="margin:12px 0 0 0; font-size:11px; line-height:16px; mso-line-height-rule:exactly; color:#787580;"><!--{{ offer.smallPrint }}-->Processing fee £299.99 inc VAT &middot; Valid until 30 Sep 2026</p>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+      <!--== OFFER CARD END ==-->
+      <!--[if mso]></td><td width="288" valign="top"><![endif]-->
+
+      <!--== OFFER CARD START ==-->
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" class="card-cell" style="display:inline-block; width:100%; max-width:288px; vertical-align:top;">
+        <tr>
+          <td style="padding:0 12px 20px 12px; font-size:14px; text-align:left;">
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border:1px solid #E1E0E4; border-radius:16px;">
+              <tr>
+                <td class="lock-bg" style="padding:0; background-color:#FFFFFF; border-radius:16px 16px 0 0;">
+                  <img src="assets/vehicle-placeholder.png" width="262" height="197" alt="Kia EV3" class="fluid-img" style="display:block; border:0; width:100%; max-width:100%; height:auto; border-radius:16px 16px 0 0;" />
+                </td>
+              </tr>
+              <tr>
+                <td style="padding:14px 16px 18px 16px; font-family:Arial, Helvetica, sans-serif;">
+                  <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="left" style="margin:0 6px 6px 0;">
+                    <tr><td width="100" align="center" class="lock-white" style="width:100px; background-color:#FF8811; border-radius:999px; padding:3px 10px; font-family:Arial, Helvetica, sans-serif; font-size:11px; line-height:14px; mso-line-height-rule:exactly; font-weight:bold; color:#FFFFFF; white-space:nowrap;">Factory order</td></tr>
+                  </table>
+                  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%"><tr><td height="8" style="font-size:0; line-height:0; height:8px;">&nbsp;</td></tr></table>
+
+                  <p class="lock-red" style="margin:0 0 2px 0; font-size:11px; line-height:14px; mso-line-height-rule:exactly; font-weight:bold; letter-spacing:1px; text-transform:uppercase; color:#E30613;">Kia</p>
+                  <p class="lock-ink" style="margin:0 0 2px 0; font-size:20px; line-height:26px; mso-line-height-rule:exactly; font-weight:bold; color:#000000;">EV3</p>
+                  <p class="lock-body" style="margin:0 0 10px 0; font-size:13px; line-height:18px; mso-line-height-rule:exactly; color:#787580; min-height:36px;">GT-Line 81.4kWh 5dr Auto</p>
+                  <p style="margin:0 0 8px 0; line-height:32px; mso-line-height-rule:exactly;">
+                    <span class="lock-red" style="font-size:28px; font-weight:bold; color:#E30613;">£329</span>
+                    <span class="lock-body" style="font-size:12px; color:#787580;">per month inc VAT</span>
+                  </p>
+                  <p style="margin:0 0 12px 0; font-size:12px; line-height:18px; mso-line-height-rule:exactly; color:#393838;">36 months &middot; 8,000 miles p.a. &middot; £2,961 initial payment</p>
+
+                  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom:12px;">
+                    <tr>
+                      <td width="48%" class="lock-tint" style="background-color:#F6F6F7; border-radius:6px; padding:7px 8px; vertical-align:top;">
+                        <p class="lock-body" style="margin:0; font-family:Arial, Helvetica, sans-serif; font-size:9px; line-height:12px; mso-line-height-rule:exactly; font-weight:bold; letter-spacing:0.5px; text-transform:uppercase; color:#787580;">Range</p>
+                        <p class="lock-ink" style="margin:1px 0 0 0; font-family:Arial, Helvetica, sans-serif; font-size:13px; line-height:18px; mso-line-height-rule:exactly; font-weight:bold; color:#000000; white-space:nowrap;">375 mi</p>
+                      </td>
+                      <td width="8" style="font-size:0; line-height:0;">&nbsp;</td>
+                      <td width="48%" class="lock-tint" style="background-color:#F6F6F7; border-radius:6px; padding:7px 8px; vertical-align:top;">
+                        <p class="lock-body" style="margin:0; font-family:Arial, Helvetica, sans-serif; font-size:9px; line-height:12px; mso-line-height-rule:exactly; font-weight:bold; letter-spacing:0.5px; text-transform:uppercase; color:#787580;">0&ndash;62</p>
+                        <p class="lock-ink" style="margin:1px 0 0 0; font-family:Arial, Helvetica, sans-serif; font-size:13px; line-height:18px; mso-line-height-rule:exactly; font-weight:bold; color:#000000; white-space:nowrap;">7.9s</p>
+                      </td>
+                    </tr>
+                    <tr><td colspan="3" height="4" style="font-size:0; line-height:0; height:4px;">&nbsp;</td></tr>
+                    <tr>
+                      <td width="48%" class="lock-tint" style="background-color:#F6F6F7; border-radius:6px; padding:7px 8px; vertical-align:top;">
+                        <p class="lock-body" style="margin:0; font-family:Arial, Helvetica, sans-serif; font-size:9px; line-height:12px; mso-line-height-rule:exactly; font-weight:bold; letter-spacing:0.5px; text-transform:uppercase; color:#787580;">Battery</p>
+                        <p class="lock-ink" style="margin:1px 0 0 0; font-family:Arial, Helvetica, sans-serif; font-size:13px; line-height:18px; mso-line-height-rule:exactly; font-weight:bold; color:#000000; white-space:nowrap;">81.4 kWh</p>
+                      </td>
+                      <td width="8" style="font-size:0; line-height:0;">&nbsp;</td>
+                      <td width="48%" class="lock-tint" style="background-color:#F6F6F7; border-radius:6px; padding:7px 8px; vertical-align:top;">
+                        <p class="lock-body" style="margin:0; font-family:Arial, Helvetica, sans-serif; font-size:9px; line-height:12px; mso-line-height-rule:exactly; font-weight:bold; letter-spacing:0.5px; text-transform:uppercase; color:#787580;">Warranty</p>
+                        <p class="lock-ink" style="margin:1px 0 0 0; font-family:Arial, Helvetica, sans-serif; font-size:13px; line-height:18px; mso-line-height-rule:exactly; font-weight:bold; color:#000000; white-space:nowrap;">7 yrs</p>
+                      </td>
+                    </tr>
+                  </table>
+
+                  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" class="cta-btn">
+                    <tr>
+                      <td align="center" style="background-color:#31BD51; border-radius:999px; padding:11px 12px; mso-padding-alt:0;">
+                        <a href="{{ offer.ctaHref }}" style="display:block; font-family:Arial, Helvetica, sans-serif; font-size:14px; line-height:18px; mso-line-height-rule:exactly; font-weight:bold; color:#FFFFFF; text-decoration:none;" class="lock-white">View this offer</a>
+                      </td>
+                    </tr>
+                  </table>
+                  <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin:8px auto 0 auto;">
+                    <tr>
+                      <td style="padding:0 6px 0 0; vertical-align:middle;"><img src="assets/icon-doc-2x.png" width="14" height="14" alt="PDF document" style="display:block; border:0; width:14px; height:14px;" /></td>
+                      <td class="appleLinks" style="vertical-align:middle; font-family:Arial, Helvetica, sans-serif; font-size:12px; line-height:16px; mso-line-height-rule:exactly; white-space:nowrap;">
+                        <a href="{{ offer.brochureHref }}" style="color:#787580; text-decoration:underline;" class="lock-body">Download brochure (PDF)</a>
+                      </td>
+                    </tr>
+                  </table>
+                  <p class="lock-body" style="margin:12px 0 0 0; font-size:11px; line-height:16px; mso-line-height-rule:exactly; color:#787580;">Processing fee £299.99 inc VAT &middot; Valid until 15 Oct 2026</p>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+      <!--== OFFER CARD END ==-->
+      <!--[if mso]></td></tr></table><![endif]-->
+
+    </td>
+  </tr>
+  <!--== LAYOUT C END ==-->
+
+
+  <!-- ==================================================================== -->
+  <!--== LAYOUT D — GRID3 (three-up, 3/6 offers)                         ==-->
+  <!--   Ghost table: ONE <td width="192"> per card, rows of three.         -->
+  <!-- ==================================================================== -->
+  <tr>
+    <td style="padding:12px 12px 0 12px; font-size:0; text-align:center;">
+
+      <!--[if mso]><table role="presentation" cellpadding="0" cellspacing="0" border="0" width="576"><tr><td width="192" valign="top"><![endif]-->
+      <!--== OFFER CARD START ==-->
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" class="card-cell" style="display:inline-block; width:100%; max-width:192px; vertical-align:top;">
+        <tr>
+          <td style="padding:0 12px 16px 12px; font-size:14px; text-align:left;">
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border:1px solid #E1E0E4; border-radius:12px;">
+              <tr>
+                <td class="lock-bg" style="padding:0; background-color:#FFFFFF; border-radius:12px 12px 0 0;">
+                  <img src="assets/vehicle-placeholder.png" width="166" height="125" alt="{{ offer.make }} <!--{{ offer.model }}-->" class="fluid-img" style="display:block; border:0; width:100%; max-width:100%; height:auto; border-radius:12px 12px 0 0;" />
+                </td>
+              </tr>
+              <tr>
+                <td style="padding:12px 12px 14px 12px; font-family:Arial, Helvetica, sans-serif;">
+                  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom:6px;">
+                    <tr><td align="center" class="lock-white" style="background-color:#FF8811; border-radius:999px; padding:2px 8px; font-family:Arial, Helvetica, sans-serif; font-size:10px; line-height:14px; mso-line-height-rule:exactly; font-weight:bold; color:#FFFFFF;"><!--{{ offer.badge1 }}-->Special offer</td></tr>
+                  </table>
+                  <p class="lock-red" style="margin:0 0 2px 0; font-size:10px; line-height:14px; mso-line-height-rule:exactly; font-weight:bold; letter-spacing:1px; text-transform:uppercase; color:#E30613;"><!--{{ offer.make }}-->Skoda</p>
+                  <p class="lock-ink compact-model" style="margin:0 0 2px 0; font-size:17px; line-height:22px; mso-line-height-rule:exactly; font-weight:bold; color:#000000;"><!--{{ offer.model }}-->Elroq</p>
+                  <p class="lock-body compact-deriv" style="margin:0 0 8px 0; font-size:11px; line-height:16px; mso-line-height-rule:exactly; color:#787580; min-height:32px;"><!--{{ offer.derivative }}-->SE L 82kWh 85 5dr Auto</p>
+                  <p style="margin:0; line-height:26px; mso-line-height-rule:exactly;"><span class="lock-red compact-price" style="font-size:22px; font-weight:bold; color:#E30613;"><!--{{ offer.price }}-->£339</span></p>
+                  <p class="lock-body" style="margin:0 0 2px 0; font-size:10px; line-height:14px; mso-line-height-rule:exactly; color:#787580;"><!--{{ offer.priceLabel }}-->per month inc VAT</p>
+                  <p class="lock-body" style="margin:0 0 8px 0; font-size:10px; line-height:14px; mso-line-height-rule:exactly; color:#787580;"><!--{{ offer.validity }}-->Valid until 30 Sep 2026</p>
+                  <p class="compact-spec" style="margin:0 0 10px 0; font-size:11px; line-height:16px; mso-line-height-rule:exactly; color:#393838;"><!--{{ offer.specShort }}-->36 mo &middot; 8k miles &middot; £3,051 initial</p>
+                  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" class="cta-btn">
+                    <tr>
+                      <td align="center" style="background-color:#31BD51; border-radius:999px; padding:9px 10px; mso-padding-alt:0;">
+                        <a href="{{ offer.ctaHref }}" style="display:block; font-family:Arial, Helvetica, sans-serif; font-size:13px; line-height:16px; mso-line-height-rule:exactly; font-weight:bold; color:#FFFFFF; text-decoration:none;" class="lock-white"><!--{{ offer.ctaLabel }}-->View offer</a>
+                      </td>
+                    </tr>
+                  </table>
+                  <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin:8px auto 0 auto;">
+                    <tr>
+                      <td style="padding:0 5px 0 0; vertical-align:middle;"><img src="assets/icon-doc-2x.png" width="14" height="14" alt="PDF document" style="display:block; border:0; width:14px; height:14px;" /></td>
+                      <td class="appleLinks" style="vertical-align:middle; font-family:Arial, Helvetica, sans-serif; font-size:11px; line-height:14px; mso-line-height-rule:exactly; white-space:nowrap;">
+                        <a href="{{ offer.brochureHref }}" style="color:#787580; text-decoration:underline;" class="lock-body"><!--{{ offer.brochureLabel }}-->Brochure (PDF)</a>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+      <!--== OFFER CARD END ==-->
+      <!--[if mso]></td><td width="192" valign="top"><![endif]-->
+
+      <!--== OFFER CARD START ==-->
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" class="card-cell" style="display:inline-block; width:100%; max-width:192px; vertical-align:top;">
+        <tr>
+          <td style="padding:0 12px 16px 12px; font-size:14px; text-align:left;">
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border:1px solid #E1E0E4; border-radius:12px;">
+              <tr>
+                <td class="lock-bg" style="padding:0; background-color:#FFFFFF; border-radius:12px 12px 0 0;">
+                  <img src="assets/vehicle-placeholder.png" width="166" height="125" alt="Hyundai Kona Electric" class="fluid-img" style="display:block; border:0; width:100%; max-width:100%; height:auto; border-radius:12px 12px 0 0;" />
+                </td>
+              </tr>
+              <tr>
+                <td style="padding:12px 12px 14px 12px; font-family:Arial, Helvetica, sans-serif;">
+                  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom:6px;">
+                    <tr><td align="center" class="lock-white" style="background-color:#FF8811; border-radius:999px; padding:2px 8px; font-family:Arial, Helvetica, sans-serif; font-size:10px; line-height:14px; mso-line-height-rule:exactly; font-weight:bold; color:#FFFFFF;">In stock</td></tr>
+                  </table>
+                  <p class="lock-red" style="margin:0 0 2px 0; font-size:10px; line-height:14px; mso-line-height-rule:exactly; font-weight:bold; letter-spacing:1px; text-transform:uppercase; color:#E30613;">Hyundai</p>
+                  <p class="lock-ink compact-model" style="margin:0 0 2px 0; font-size:17px; line-height:22px; mso-line-height-rule:exactly; font-weight:bold; color:#000000;">Kona Electric</p>
+                  <p class="lock-body compact-deriv" style="margin:0 0 8px 0; font-size:11px; line-height:16px; mso-line-height-rule:exactly; color:#787580; min-height:32px;">Advance 65kWh 218PS 5dr Auto</p>
+                  <p style="margin:0; line-height:26px; mso-line-height-rule:exactly;"><span class="lock-red compact-price" style="font-size:22px; font-weight:bold; color:#E30613;">£279</span></p>
+                  <p class="lock-body" style="margin:0 0 2px 0; font-size:10px; line-height:14px; mso-line-height-rule:exactly; color:#787580;">per month inc VAT</p>
+                  <p class="lock-body" style="margin:0 0 8px 0; font-size:10px; line-height:14px; mso-line-height-rule:exactly; color:#787580;">Valid until 7 Oct 2026</p>
+                  <p class="compact-spec" style="margin:0 0 10px 0; font-size:11px; line-height:16px; mso-line-height-rule:exactly; color:#393838;">36 mo &middot; 8k miles &middot; £2,511 initial</p>
+                  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" class="cta-btn">
+                    <tr>
+                      <td align="center" style="background-color:#31BD51; border-radius:999px; padding:9px 10px; mso-padding-alt:0;">
+                        <a href="{{ offer.ctaHref }}" style="display:block; font-family:Arial, Helvetica, sans-serif; font-size:13px; line-height:16px; mso-line-height-rule:exactly; font-weight:bold; color:#FFFFFF; text-decoration:none;" class="lock-white">View offer</a>
+                      </td>
+                    </tr>
+                  </table>
+                  <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin:8px auto 0 auto;">
+                    <tr>
+                      <td style="padding:0 5px 0 0; vertical-align:middle;"><img src="assets/icon-doc-2x.png" width="14" height="14" alt="PDF document" style="display:block; border:0; width:14px; height:14px;" /></td>
+                      <td class="appleLinks" style="vertical-align:middle; font-family:Arial, Helvetica, sans-serif; font-size:11px; line-height:14px; mso-line-height-rule:exactly; white-space:nowrap;">
+                        <a href="{{ offer.brochureHref }}" style="color:#787580; text-decoration:underline;" class="lock-body">Brochure (PDF)</a>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+      <!--== OFFER CARD END ==-->
+      <!--[if mso]></td><td width="192" valign="top"><![endif]-->
+
+      <!--== OFFER CARD START ==-->
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" class="card-cell" style="display:inline-block; width:100%; max-width:192px; vertical-align:top;">
+        <tr>
+          <td style="padding:0 12px 16px 12px; font-size:14px; text-align:left;">
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border:1px solid #E1E0E4; border-radius:12px;">
+              <tr>
+                <td class="lock-bg" style="padding:0; background-color:#FFFFFF; border-radius:12px 12px 0 0;">
+                  <img src="assets/vehicle-placeholder.png" width="166" height="125" alt="MG MG4 EV" class="fluid-img" style="display:block; border:0; width:100%; max-width:100%; height:auto; border-radius:12px 12px 0 0;" />
+                </td>
+              </tr>
+              <tr>
+                <td style="padding:12px 12px 14px 12px; font-family:Arial, Helvetica, sans-serif;">
+                  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom:6px;">
+                    <tr><td align="center" class="lock-white" style="background-color:#FF8811; border-radius:999px; padding:2px 8px; font-family:Arial, Helvetica, sans-serif; font-size:10px; line-height:14px; mso-line-height-rule:exactly; font-weight:bold; color:#FFFFFF;">Special offer</td></tr>
+                  </table>
+                  <p class="lock-red" style="margin:0 0 2px 0; font-size:10px; line-height:14px; mso-line-height-rule:exactly; font-weight:bold; letter-spacing:1px; text-transform:uppercase; color:#E30613;">MG</p>
+                  <p class="lock-ink compact-model" style="margin:0 0 2px 0; font-size:17px; line-height:22px; mso-line-height-rule:exactly; font-weight:bold; color:#000000;">MG4 EV</p>
+                  <p class="lock-body compact-deriv" style="margin:0 0 8px 0; font-size:11px; line-height:16px; mso-line-height-rule:exactly; color:#787580; min-height:32px;">Trophy Long Range 64kWh 5dr Auto</p>
+                  <p style="margin:0; line-height:26px; mso-line-height-rule:exactly;"><span class="lock-red compact-price" style="font-size:22px; font-weight:bold; color:#E30613;">£249</span></p>
+                  <p class="lock-body" style="margin:0 0 2px 0; font-size:10px; line-height:14px; mso-line-height-rule:exactly; color:#787580;">per month inc VAT</p>
+                  <p class="lock-body" style="margin:0 0 8px 0; font-size:10px; line-height:14px; mso-line-height-rule:exactly; color:#787580;">Valid until 30 Sep 2026</p>
+                  <p class="compact-spec" style="margin:0 0 10px 0; font-size:11px; line-height:16px; mso-line-height-rule:exactly; color:#393838;">36 mo &middot; 8k miles &middot; £2,241 initial</p>
+                  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" class="cta-btn">
+                    <tr>
+                      <td align="center" style="background-color:#31BD51; border-radius:999px; padding:9px 10px; mso-padding-alt:0;">
+                        <a href="{{ offer.ctaHref }}" style="display:block; font-family:Arial, Helvetica, sans-serif; font-size:13px; line-height:16px; mso-line-height-rule:exactly; font-weight:bold; color:#FFFFFF; text-decoration:none;" class="lock-white">View offer</a>
+                      </td>
+                    </tr>
+                  </table>
+                  <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin:8px auto 0 auto;">
+                    <tr>
+                      <td style="padding:0 5px 0 0; vertical-align:middle;"><img src="assets/icon-doc-2x.png" width="14" height="14" alt="PDF document" style="display:block; border:0; width:14px; height:14px;" /></td>
+                      <td class="appleLinks" style="vertical-align:middle; font-family:Arial, Helvetica, sans-serif; font-size:11px; line-height:14px; mso-line-height-rule:exactly; white-space:nowrap;">
+                        <a href="{{ offer.brochureHref }}" style="color:#787580; text-decoration:underline;" class="lock-body">Brochure (PDF)</a>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+      <!--== OFFER CARD END ==-->
+      <!--[if mso]></td></tr></table><![endif]-->
+
+    </td>
+  </tr>
+  <tr>
+    <td class="gutter" style="padding:0 24px 8px 24px;">
+      <p class="lock-body" style="margin:0; font-family:Arial, Helvetica, sans-serif; font-size:11px; line-height:16px; mso-line-height-rule:exactly; color:#787580;">All offers: processing fee £299.99 inc VAT. Brochure figures are the manufacturer's and may differ from this offer.</p>
+    </td>
+  </tr>
+  <!--== LAYOUT D END ==-->
+
+
+  <!-- Signature -->
+  <tr>
+    <td class="gutter" style="padding:8px 24px 28px 24px;">
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-top:1px solid #E1E0E4;">
+        <tr>
+          <td width="72" style="padding:22px 16px 0 0; vertical-align:top;">
+            <img src="assets/headshot-placeholder.png" width="56" height="56" alt="{{ sender.name }}" style="display:block; border:0; width:56px; height:56px; border-radius:50%;" />
+          </td>
+          <td style="padding:22px 0 0 0; vertical-align:top; font-family:Arial, Helvetica, sans-serif;">
+            <p class="lock-ink" style="margin:0 0 2px 0; font-size:16px; line-height:22px; mso-line-height-rule:exactly; font-weight:bold; color:#000000;"><!--{{ sender.name }}-->Sam Carter</p>
+            <p class="lock-body" style="margin:0 0 8px 0; font-size:14px; line-height:20px; mso-line-height-rule:exactly; color:#787580;"><!--{{ sender.title }}-->Account Manager, DreamLease</p>
+            <p class="lock-body" style="margin:0; font-size:14px; line-height:22px; mso-line-height-rule:exactly; color:#787580;"><!--{{ sender.phone }}-->01234 567 890<br />
+              <a href="mailto:<!--{{ sender.email }}-->" style="color:#E30613; text-decoration:underline;" class="lock-red"><!--{{ sender.email }}-->sam.carter@dreamlease.co.uk</a></p>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+
+  <!-- Compliance footer — locked block, do not edit per send -->
+  <tr>
+    <td class="gutter" style="padding:0 24px 24px 24px;">
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+        <tr>
+          <td class="lock-tint" style="background-color:#F6F6F7; border-radius:12px; padding:20px; font-family:Arial, Helvetica, sans-serif;">
+            <p style="margin:0 0 10px 0; font-size:11px; line-height:14px; mso-line-height-rule:exactly; font-weight:bold; letter-spacing:1px; text-transform:uppercase; color:#393838;"><!--{{ compliance.title }}-->Personal contract hire</p>
+            <p class="lock-body" style="margin:0 0 8px 0; font-size:12px; line-height:18px; mso-line-height-rule:exactly; color:#787580;">Prices shown include VAT and are based on the term, annual mileage and initial payment stated on each offer. Excess mileage charges and a fair wear and tear standard apply at the end of the agreement.</p>
+            <p class="lock-body" style="margin:0 0 8px 0; font-size:12px; line-height:18px; mso-line-height-rule:exactly; color:#787580;">A processing fee of £299.99 inc VAT is payable on all orders. At the end of the lease the vehicle must be returned in its original condition. You will not own the vehicle.</p>
+            <p class="lock-body" style="margin:0 0 8px 0; font-size:12px; line-height:18px; mso-line-height-rule:exactly; color:#787580;">Offers are subject to status and availability, are for UK residents aged 18 or over, and are valid until the date shown on each offer. Guarantees may be required.</p>
+            <p class="lock-body" style="margin:0 0 8px 0; font-size:12px; line-height:18px; mso-line-height-rule:exactly; color:#787580;">DreamLease Ltd is a credit broker, not a lender, and is authorised and regulated by the Financial Conduct Authority, firm reference number [000000]. We may receive commission from the funder for introducing your business.</p>
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-top:12px; border-top:1px solid #E1E0E4;">
+              <tr><td style="padding-top:12px;">
+                <p class="lock-body" style="margin:0; font-family:Arial, Helvetica, sans-serif; font-size:12px; line-height:18px; mso-line-height-rule:exactly; color:#787580;">Don't want offers from DreamLease? Reply to this email and tell us, and we'll stop.</p>
+                <p class="lock-body" style="margin:8px 0 0 0; font-family:Arial, Helvetica, sans-serif; font-size:11px; line-height:16px; mso-line-height-rule:exactly; color:#787580;">DreamLease Ltd, [registered address], registered in England and Wales no. [00000000]. <a href="https://www.dreamlease.co.uk" style="color:#787580; text-decoration:underline;" class="lock-body">dreamlease.co.uk</a></p>
+              </td></tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+
+</table>
+<!-- ================= /EMAIL WRAPPER ================= -->
+
+<!--[if mso]>
+</td></tr></table>
+<![endif]-->
+
+</td>
+</tr>
+</table>
+
+</body>
+</html>

@@ -214,6 +214,8 @@ export const Sender = z.object({
   whatsapp: e164.optional(),
   /** Microsoft Bookings page. Enables the "Book a call" CTA. */
   bookingUrl: httpsUrl.optional(),
+  /** Square headshot, 112px or larger, on our origin. Absent for department senders (brief §7.1). */
+  headshotUrl: httpsUrl.optional(),
   /** Graph mailbox to draft into (user's own, or sales@/renewals@). */
   mailbox: email,
 });
