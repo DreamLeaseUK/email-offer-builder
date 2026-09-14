@@ -57,7 +57,7 @@ export const templates = sqliteTable(
     approvedBy: text('approved_by'),
     approvedAt: text('approved_at'),
     createdAt: text('created_at').notNull(),
-    /** Template JSON (validated by Template schema): markupVersion, complianceBlocks, footer */
+    /** Template JSON incl. mjml and complianceBlocks */
     data: text('data', { mode: 'json' }).notNull(),
   },
   (t) => [uniqueIndex('templates_name_version').on(t.name, t.version), index('templates_status').on(t.status)],
@@ -111,7 +111,7 @@ export const suppressions = sqliteTable('suppressions', {
   note: text('note'),
 });
 
-/** 24-hour lookup cache: the parsed lookup result (Offer plus the site's configuration options), never HTML. */
+/** 24-hour lookup cache: parsed Offer JSON only, never HTML. */
 export const lookupCache = sqliteTable('lookup_cache', {
   urlKey: text('url_key').primaryKey(),
   fetchedAt: text('fetched_at').notNull(),

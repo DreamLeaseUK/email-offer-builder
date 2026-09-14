@@ -4,11 +4,9 @@ export interface Env {
   HOSTED: R2Bucket;
   BROCHURES: R2Bucket;
   ASSETS: Fetcher;
-  /** Cloudflare Images binding; optional so a missing binding degrades to "no image" rather than a crash. */
-  TRANSFORM?: ImagesBinding;
   ACCESS_TEAM_DOMAIN: string;
   ACCESS_AUD: string;
-  /** Origin serving /r, /c, /b, /f and /a (workers.dev now, offers.dreamlease.co.uk later). */
+  /** Origin serving /r, /c, /b and /a (workers.dev now, offers.dreamlease.co.uk later). */
   PUBLIC_BASE_URL: string;
   TOOL_BASE_URL: string;
   APP_VERSION?: string;

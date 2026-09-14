@@ -83,7 +83,6 @@ export const OfferImage = z.object({
   width: z.number().int().positive(),
   height: z.number().int().positive(),
 });
-export type OfferImage = z.infer<typeof OfferImage>;
 
 export const SalsacPricing = z.object({
   net20: z.number().nonnegative(),
@@ -243,7 +242,7 @@ export const Campaign = z.object({
   preheader: z.string().max(150).optional(),
   /** Rep's personal message, plain text with line breaks. Recorded in the register. */
   intro: z.string().min(1).max(4000),
-  /** 'auto' picks single for 1 offer, stack for 3, grid2 otherwise (resolveLayout in packages/render). */
+  /** 'auto' picks single for 1 offer, grid2 for 2 or 4, grid3 otherwise. */
   layout: z.enum(['auto', 'single', 'stack', 'grid2', 'grid3']),
   /** Snapshot copies, not references: what was sent must not change when the library does. */
   offers: z.array(Offer).min(1).max(6),

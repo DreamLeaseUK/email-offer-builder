@@ -1,10 +1,7 @@
 import { Hono } from 'hono';
-import { brochureLink, brochuresApi } from './brochures.js';
 import { dev } from './dev.js';
 import type { AppEnv } from './env.js';
-import { files } from './files.js';
 import { hosted } from './hosted.js';
-import { lookup } from './lookup.js';
 import { requireAccess } from './middleware/access.js';
 
 const app = new Hono<AppEnv>();
@@ -21,22 +18,19 @@ app.get('/health', async (c) => {
       db = 'error';
     }
   }
-  return c.json({ ok: true, service: 'offer-mailer', version: c.env.APP_VERSION ?? 'dev', db, images: !!c.env.TRANSFORM, firecrawl: !!c.env.FIRECRAWL_API_KEY, time: new Date().toISOString() });
+  return c.json({ ok: true, service: 'offer-mailer', version: c.env.APP_VERSION ?? 'dev', db, time: new Date().toISOString() });
 });
 
-// Hosted pages (§5.4), stored files (§5.3, §5.8), brochure links (§5.8) and click redirects (§5.6) need no login.
+// Hosted pages (§5.4), click redirects (§5.6) and brochure links (§5.8) need no login.
 app.route('/', hosted);
-app.route('/', files);
-app.route('/', brochureLink);
 app.get('/r/:slug/:link', (c) => c.text('Link not found.', 404)); // build step 6
+app.get('/b/:id', (c) => c.text('Brochure not found.', 404)); // build step 3
 
 // ---------- tool API (behind Cloudflare Access) ----------
 
 const api = new Hono<AppEnv>();
 api.use('*', requireAccess());
 api.get('/me', (c) => c.json(c.get('user')));
-api.route('/', lookup);
-api.route('/', brochuresApi);
 api.route('/dev', dev);
 app.route('/api', api);
 
