@@ -12,7 +12,7 @@ You are resuming work on the DreamLease Offer Mailer, an internal tool where a s
 
 Facts you can rely on without re-checking:
 
-- Step 1 is done and committed. Step 2 (`packages/render`, hosted page route, dev preview) is built and deployed but **not committed**. Your first action is `git add -A && git commit` with a message summarising step 2 as described in the status doc, ending with `Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>`.
+- Steps 1 and 2 are done and committed (`7bc5777`, `f2b6372`). On 14 Sept a three-part card diagnostic (`packages/render/scripts/diag-card.ts`, rows R/D1–D6, I1–I6, S1–S3; see status doc §5) was sent to Matt. If his results are not yet in the conversation, ask for them before touching `cards.ts`.
 - The Worker is live at https://offer-mailer.matt-wilson-9b8.workers.dev. `pnpm test` and `pnpm typecheck` were clean at handover. Wrangler auth expires; if a deploy fails with an auth error, ask Matt to run the login command in the status doc from his own terminal.
 - Matt (Head of Marketing, the only stakeholder you'll talk to) tests emails by opening the `.eml` fixtures in classic Outlook and New Outlook on Windows and forwarding from New Outlook to his phone (Outlook iOS and Gmail iOS). He sends screenshots. He is direct and wants an agile, frictionless build; he has explicitly said "do full diagnostics before churning another version" after a day of single-screenshot fixes.
 
