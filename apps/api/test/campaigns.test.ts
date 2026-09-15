@@ -72,12 +72,33 @@ describe('POST /api/campaigns', () => {
     expect(row!.links).not.toMatch(/capId|motorleaseplatform/i);
   });
 
+  it('returns the rendered html (with working /r links) for Copy-for-Outlook', async () => {
+    const res = await post(draft(), authed());
+    const body = (await res.json()) as { campaign: Campaign; html: string; text: string };
+    expect(body.html).toContain('<!DOCTYPE');
+    expect(body.html).toContain(`/r/${body.campaign.hostedPage.slug}/`);
+    expect(body.text).toContain('View these offers online');
+  });
+
   it('rejects mixed contract types and an invalid body', async () => {
     const mixed = draft();
     (mixed.offers as { contractType: string }[])[1]!.contractType = 'business';
     expect((await post(mixed, authed())).status).toBe(422);
     expect((await post({ name: '' }, authed())).status).toBe(422);
     expect((await app.request('/api/campaigns', { method: 'POST', body: 'not json' }, authed())).status).toBe(400);
+  });
+});
+
+describe('POST /api/campaigns/preview', () => {
+  it('renders a draft without persisting it', async () => {
+    const before = (await env.DB.prepare('select count(*) as n from campaigns').first<{ n: number }>())!.n;
+    const res = await app.request('/api/campaigns/preview', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(draft({ layout: 'stack' })) }, authed());
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { html: string; layout: string };
+    expect(body.layout).toBe('stack');
+    expect(body.html).toContain('<!DOCTYPE');
+    const after = (await env.DB.prepare('select count(*) as n from campaigns').first<{ n: number }>())!.n;
+    expect(after).toBe(before);
   });
 });
 

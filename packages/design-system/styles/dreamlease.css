@@ -1,0 +1,254 @@
+/* ==========================================================================
+   DreamLease Design System — core stylesheet
+   v1.1 — aligned to the LIVE dreamlease.co.uk design language (2026-07-09),
+   verified against the production stylesheet. Where the official Brand Sheet
+   and the live site disagree, the live site wins: WP7 pages served via the
+   Cloudflare origin rule must feel seamless next to existing pages.
+   Live-verified values: CTA green #31BD51 (hover #47CF66 + green glow),
+   body text #787580, headings #000, dark surfaces #393838, borders #E1E0E4,
+   red #E30613 for prices/badges/links/accents (always 100%, never tinted).
+   Brand-sheet colours the live site does not use (Midnight Drive, Skybound,
+   Flashpoint) remain available as tokens for NEW functional UI only
+   (info/warning states) — never for primary chrome.
+   Sizes are in px deliberately: the production theme sets
+   html{font-size:62.5%}, so rem-based sizing would render at 62.5% scale.
+   ========================================================================== */
+
+/* ---- Sofia Pro ----
+   Family name 'Sofia Pro' is distinct from the theme's 'sofia-pro' (Adobe/OTF)
+   so the two can coexist; both render the same face. */
+@font-face { font-family: 'Sofia Pro'; src: url('../fonts/SofiaPro-Light.woff2') format('woff2'); font-weight: 300; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Sofia Pro'; src: url('../fonts/SofiaPro-Regular.woff2') format('woff2'); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Sofia Pro'; src: url('../fonts/SofiaPro-Italic.woff2') format('woff2'); font-weight: 400; font-style: italic; font-display: swap; }
+@font-face { font-family: 'Sofia Pro'; src: url('../fonts/SofiaPro-Medium.woff2') format('woff2'); font-weight: 500; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Sofia Pro'; src: url('../fonts/SofiaPro-SemiBold.woff2') format('woff2'); font-weight: 600; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Sofia Pro'; src: url('../fonts/SofiaPro-Bold.woff2') format('woff2'); font-weight: 700; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Sofia Pro'; src: url('../fonts/SofiaPro-Black.woff2') format('woff2'); font-weight: 900; font-style: normal; font-display: swap; }
+
+/* ---- Design tokens ---- */
+:root {
+  /* Live-site palette (production-verified) */
+  --dl-cta-green: #31BD51;         /* default CTA — the live .button colour */
+  --dl-cta-green-hover: #47CF66;   /* live hover */
+  --dl-ignition-red: #E30613;      /* prices, badges, links, accents. Pantone 485. NEVER tint. */
+  --dl-ink: #000000;               /* headings (live h1-h4) */
+  --dl-dark: #393838;              /* dark surfaces (footer), emphasis text, Pantone 447 wordmark grey */
+  --dl-graphite-grey: #787580;     /* body text (live body colour) */
+  --dl-text-muted: #928F99;        /* secondary text (live) */
+  --dl-ice-white: #FFFFFF;
+  --dl-grey-100: #F6F6F7;          /* light panels (live) */
+  --dl-grey-200: #E1E0E4;          /* borders (live) */
+  --dl-grey-300: #DCDBDF;          /* stronger borders (live) */
+
+  /* Brand-sheet extension colours — functional UI only (alerts, info,
+     warnings on the richer WP7 pages). Not part of live page chrome. */
+  --dl-midnight-drive: #002E5F;
+  --dl-skybound-blue: #71C5E9;
+  --dl-flashpoint-orange: #FF8811;
+  --dl-sky-tint: #EAF7FC;
+  --dl-orange-tint: #FFF3E5;
+  --dl-red-hover: #C1050F;         /* darkened, not tinted */
+
+  /* Semantic */
+  --dl-bg: var(--dl-ice-white);
+  --dl-surface: var(--dl-ice-white);
+  --dl-text: var(--dl-graphite-grey);
+  --dl-text-secondary: var(--dl-text-muted);
+  --dl-heading: var(--dl-ink);
+  --dl-border: var(--dl-grey-200);
+  --dl-cta: var(--dl-cta-green);
+  --dl-danger: var(--dl-ignition-red);
+  --dl-warning: var(--dl-flashpoint-orange);
+  --dl-info: var(--dl-skybound-blue);
+
+  /* Typography — px on purpose (theme sets html{font-size:62.5%}) */
+  --dl-font: 'Sofia Pro', sofia-pro, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+  --dl-fs-display: 44px;
+  --dl-fs-h1: 33px;               /* live h1 */
+  --dl-fs-h2: 26px;               /* live h2 */
+  --dl-fs-h3: 22px;
+  --dl-fs-h4: 18px;
+  --dl-fs-body: 16px;             /* live base */
+  --dl-fs-small: 14px;
+  --dl-fs-caption: 12px;
+
+  /* Spacing (4px base) */
+  --dl-sp-1: 4px; --dl-sp-2: 8px; --dl-sp-3: 12px; --dl-sp-4: 16px;
+  --dl-sp-5: 20px; --dl-sp-6: 24px; --dl-sp-8: 32px; --dl-sp-10: 40px; --dl-sp-12: 48px;
+
+  /* Shape & elevation */
+  --dl-radius-sm: 6px;
+  --dl-radius: 10px;
+  --dl-radius-lg: 16px;
+  --dl-radius-pill: 999em;        /* live pill radius */
+  --dl-shadow-sm: 0 1px 3px rgba(57, 56, 56, 0.10);
+  --dl-shadow: 0 4px 16px rgba(57, 56, 56, 0.12);
+  --dl-shadow-lg: 0 12px 32px rgba(57, 56, 56, 0.16);
+  --dl-shadow-cta: 0 4px 25px rgba(80, 210, 109, 0.33);  /* live button hover glow */
+  --dl-ease: cubic-bezier(0.645, 0.045, 0.355, 1);       /* live transition curve */
+}
+
+/* ---- Base ---- */
+.dl-root {
+  font-family: var(--dl-font);
+  font-weight: 400;
+  font-size: var(--dl-fs-body);
+  line-height: 1.55;
+  color: var(--dl-text);
+  background: var(--dl-bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---- Typography (live: headings #000, Sofia Pro Bold) ---- */
+.dl-display { font-size: var(--dl-fs-display); font-weight: 900; line-height: 1.05; color: var(--dl-heading); letter-spacing: -0.02em; margin: 0; }
+.dl-h1 { font-size: var(--dl-fs-h1); font-weight: 700; line-height: 1; color: var(--dl-heading); margin: 0; }
+.dl-h2 { font-size: var(--dl-fs-h2); font-weight: 700; line-height: 1.3; color: var(--dl-heading); margin: 0; }
+.dl-h3 { font-size: var(--dl-fs-h3); font-weight: 700; line-height: 1.2; color: var(--dl-heading); margin: 0; }
+.dl-h4 { font-size: var(--dl-fs-h4); font-weight: 700; line-height: 1.35; color: var(--dl-heading); margin: 0; }
+.dl-body { font-size: var(--dl-fs-body); font-weight: 400; margin: 0; }
+.dl-body-medium { font-size: var(--dl-fs-body); font-weight: 500; margin: 0; }
+.dl-small { font-size: var(--dl-fs-small); font-weight: 400; color: var(--dl-text-secondary); margin: 0; }
+.dl-caption { font-size: var(--dl-fs-caption); font-weight: 500; color: var(--dl-text-secondary); margin: 0; }
+.dl-eyebrow {
+  font-size: var(--dl-fs-caption); font-weight: 700; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--dl-ignition-red); margin: 0;
+}
+.dl-link { color: var(--dl-ignition-red); text-decoration: underline; }
+
+/* ---- Logo ---- */
+.dl-logo { display: inline-flex; align-items: flex-end; gap: 2px; text-decoration: none; line-height: 1; }
+.dl-logo__word { font-family: var(--dl-font); font-weight: 700; letter-spacing: -0.02em; }
+.dl-logo__dream { color: var(--dl-dark); }
+.dl-logo__lease { color: var(--dl-ignition-red); }
+.dl-logo--reversed .dl-logo__dream { color: var(--dl-ice-white); }
+.dl-logo__mark { flex: none; }
+
+/* ---- Buttons (live .button: green pill, white text, w500, 200ms ease) ---- */
+.dl-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--dl-sp-2);
+  font-family: var(--dl-font); font-weight: 500; font-size: var(--dl-fs-body);
+  min-height: 48px; padding: 10px 30px; border-radius: var(--dl-radius-pill);
+  border: 2px solid transparent; cursor: pointer; text-decoration: none;
+  transition: background 200ms var(--dl-ease), border 200ms var(--dl-ease),
+              color 200ms var(--dl-ease), box-shadow 200ms var(--dl-ease);
+  line-height: 1.2; white-space: nowrap; text-align: center;
+}
+.dl-btn:focus-visible { outline: none; box-shadow: var(--dl-shadow-cta); }
+.dl-btn--primary { background: var(--dl-cta-green); color: var(--dl-ice-white); }
+.dl-btn--primary:hover { background: var(--dl-cta-green-hover); box-shadow: var(--dl-shadow-cta); }
+.dl-btn--secondary { background: var(--dl-dark); color: var(--dl-ice-white); }
+.dl-btn--secondary:hover { background: #000; }
+/* live .button--outline: green border, red label */
+.dl-btn--outline { background: transparent; color: var(--dl-ignition-red); border-color: var(--dl-cta-green); }
+.dl-btn--outline:hover { background: var(--dl-cta-green); color: var(--dl-ice-white); }
+.dl-btn--ghost { background: transparent; color: var(--dl-dark); }
+.dl-btn--ghost:hover { background: var(--dl-grey-100); }
+.dl-btn--reversed { background: var(--dl-ice-white); color: var(--dl-dark); }
+.dl-btn--reversed:hover { background: var(--dl-grey-100); }
+.dl-btn--sm { font-size: var(--dl-fs-small); min-height: 38px; padding: 6px 22px; }
+.dl-btn--lg { font-size: var(--dl-fs-h4); min-height: 64px; padding: 14px 38px; }
+.dl-btn:disabled, .dl-btn--disabled {
+  background: var(--dl-grey-200); color: var(--dl-text-muted);
+  border-color: transparent; cursor: not-allowed; pointer-events: none; box-shadow: none;
+}
+
+/* ---- Badges ---- */
+.dl-badge {
+  display: inline-flex; align-items: center; gap: var(--dl-sp-1);
+  font-family: var(--dl-font); font-weight: 600; font-size: var(--dl-fs-caption);
+  padding: 4px 12px; border-radius: var(--dl-radius-pill); line-height: 1.4;
+  letter-spacing: 0.02em;
+}
+.dl-badge--navy { background: var(--dl-dark); color: var(--dl-ice-white); }   /* dark pill (name kept for compat) */
+.dl-badge--sky { background: var(--dl-sky-tint); color: var(--dl-midnight-drive); }
+.dl-badge--orange { background: var(--dl-orange-tint); color: #B35A00; }
+.dl-badge--red { background: var(--dl-ignition-red); color: var(--dl-ice-white); }  /* live "Special offer" flash */
+.dl-badge--green { background: var(--dl-cta-green); color: var(--dl-ice-white); }
+.dl-badge--grey { background: var(--dl-grey-100); color: var(--dl-dark); }
+.dl-badge--outline { background: transparent; color: var(--dl-dark); box-shadow: inset 0 0 0 1.5px var(--dl-dark); }
+
+/* ---- Cards ---- */
+.dl-card {
+  background: var(--dl-surface); border: 1px solid var(--dl-border);
+  border-radius: var(--dl-radius-lg); box-shadow: var(--dl-shadow-sm);
+  overflow: hidden; transition: box-shadow 200ms var(--dl-ease);
+}
+.dl-card:hover { box-shadow: var(--dl-shadow); }
+.dl-card__media { background: var(--dl-grey-100); aspect-ratio: 16 / 9; display: flex; align-items: center; justify-content: center; position: relative; }
+.dl-card__body { padding: var(--dl-sp-5); }
+.dl-card__badge-slot { position: absolute; top: var(--dl-sp-3); left: var(--dl-sp-3); }
+
+/* Offer card price block (live: price in red) */
+.dl-price { display: flex; align-items: baseline; gap: var(--dl-sp-1); }
+.dl-price__amount { font-size: var(--dl-fs-h2); font-weight: 700; color: var(--dl-ignition-red); }
+.dl-price__period { font-size: var(--dl-fs-small); font-weight: 500; color: var(--dl-text-secondary); }
+.dl-price__note { font-size: var(--dl-fs-caption); color: var(--dl-text-secondary); }
+
+/* ---- Forms ---- */
+.dl-field { display: flex; flex-direction: column; gap: var(--dl-sp-2); }
+.dl-label { font-size: var(--dl-fs-small); font-weight: 600; color: var(--dl-dark); }
+.dl-input, .dl-select, .dl-textarea {
+  font-family: var(--dl-font); font-size: var(--dl-fs-body); color: var(--dl-dark);
+  background: var(--dl-ice-white); border: 1.5px solid var(--dl-grey-300);
+  border-radius: var(--dl-radius); padding: 11px 14px; width: 100%; box-sizing: border-box;
+  transition: border-color 200ms var(--dl-ease), box-shadow 200ms var(--dl-ease);
+}
+.dl-input::placeholder, .dl-textarea::placeholder { color: var(--dl-text-muted); }
+.dl-input:focus, .dl-select:focus, .dl-textarea:focus {
+  outline: none; border-color: var(--dl-cta-green); box-shadow: 0 0 0 3px rgba(49, 189, 81, 0.18);
+}
+.dl-field--error .dl-input, .dl-field--error .dl-select, .dl-field--error .dl-textarea { border-color: var(--dl-ignition-red); }
+.dl-help { font-size: var(--dl-fs-caption); color: var(--dl-text-secondary); }
+.dl-error-text { font-size: var(--dl-fs-caption); font-weight: 600; color: var(--dl-ignition-red); }
+
+/* ---- Alerts (functional states — extension palette) ---- */
+.dl-alert {
+  display: flex; gap: var(--dl-sp-3); padding: var(--dl-sp-4) var(--dl-sp-5);
+  border-radius: var(--dl-radius); border: 1.5px solid; font-size: var(--dl-fs-small);
+  align-items: flex-start;
+}
+.dl-alert__title { font-weight: 700; display: block; margin-bottom: 2px; font-size: var(--dl-fs-body); }
+.dl-alert--info { background: var(--dl-sky-tint); border-color: var(--dl-skybound-blue); color: var(--dl-midnight-drive); }
+.dl-alert--warning { background: var(--dl-orange-tint); border-color: var(--dl-flashpoint-orange); color: #7A3D00; }
+.dl-alert--error { background: #FDEBEC; border-color: var(--dl-ignition-red); color: #8F040C; }
+.dl-alert--neutral { background: var(--dl-grey-100); border-color: var(--dl-grey-300); color: var(--dl-dark); }
+.dl-alert--success { background: #EAF9EE; border-color: var(--dl-cta-green); color: #1B6B33; }
+
+/* ---- Stat tiles ---- */
+.dl-stat {
+  background: var(--dl-surface); border: 1px solid var(--dl-border);
+  border-radius: var(--dl-radius-lg); padding: var(--dl-sp-5) var(--dl-sp-6);
+  display: flex; flex-direction: column; gap: var(--dl-sp-1);
+}
+.dl-stat__label { font-size: var(--dl-fs-caption); font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--dl-text-muted); }
+.dl-stat__value { font-size: var(--dl-fs-h1); font-weight: 700; color: var(--dl-ink); line-height: 1.1; }
+.dl-stat__delta { font-size: var(--dl-fs-small); font-weight: 600; }
+.dl-stat__delta--up { color: #1B8A3C; }   /* readable dark green (CTA green fails contrast at 14px) */
+.dl-stat__delta--down { color: var(--dl-ignition-red); }
+
+/* ---- Header / nav (live: dark links, red hover/active) ---- */
+.dl-header {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: var(--dl-sp-6); padding: var(--dl-sp-4) var(--dl-sp-8);
+  background: var(--dl-ice-white); border-bottom: 1px solid var(--dl-border);
+}
+.dl-nav { display: flex; align-items: center; gap: var(--dl-sp-6); }
+.dl-nav__link {
+  font-size: var(--dl-fs-body); font-weight: 500; color: var(--dl-dark);
+  text-decoration: none; padding: var(--dl-sp-2) 0; border-bottom: 2px solid transparent;
+  transition: color 200ms var(--dl-ease), border-color 200ms var(--dl-ease);
+}
+.dl-nav__link:hover { color: var(--dl-ignition-red); }
+.dl-nav__link--active { color: var(--dl-ignition-red); border-bottom-color: var(--dl-ignition-red); font-weight: 600; }
+
+/* ---- Footer (live: #393838, white text) ---- */
+.dl-footer { background: var(--dl-dark); color: var(--dl-ice-white); padding: var(--dl-sp-12) var(--dl-sp-8) var(--dl-sp-8); font-size: var(--dl-fs-body); }
+.dl-footer a { color: var(--dl-ice-white); text-decoration: none; }
+.dl-footer a:hover { text-decoration: underline; }
+.dl-footer .dl-h4 { color: var(--dl-ice-white); }
+.dl-footer__meta { color: rgba(255,255,255,.55); font-size: var(--dl-fs-caption); margin-top: var(--dl-sp-8); }
+
+/* ---- Dark surface helper (live dark = #393838, not navy) ---- */
+.dl-surface-dark { background: var(--dl-dark); color: var(--dl-ice-white); }
+.dl-surface-dark .dl-h1, .dl-surface-dark .dl-h2, .dl-surface-dark .dl-h3, .dl-surface-dark .dl-h4, .dl-surface-dark .dl-display { color: var(--dl-ice-white); }
+.dl-surface-dark .dl-small, .dl-surface-dark .dl-caption { color: rgba(255,255,255,.65); }

@@ -31,10 +31,11 @@ Do not start a build step, a review, a diagnostic or any other new piece of work
 
 ```
 apps/api           Cloudflare Worker (Hono): API, hosted pages, redirects, static assets for the web app
-apps/web           Vite + React tool UI (build step 4)
+apps/web           Vite + React tool UI (build step 4, in progress): compose screen wired to the API
 packages/schema    Zod schemas from brief §5.1, CAP ID guard
 packages/adapters  Source and output adapter interfaces (§5.2) and implementations: url lookup (normalise, HTMLRewriter page parser, site pricing JSON, offer assembly), Firecrawl client, brochure allowlist/harvest/manual/ensure. Pure: I/O is injected.
 packages/render    render(), card markup from the v4 design, fixtures, .eml helper for client testing
+packages/design-system  Vendored DreamLease design system: dl-* React components, tokens, Sofia Pro, styles/dreamlease.css. apps/web imports it (workspace package). Source, not built dist.
 docs/              Briefs
 design/            Claude Design export of the email template and its assets
 ```
@@ -43,7 +44,8 @@ design/            Claude Design export of the email template and its assets
 
 ```
 pnpm install
-pnpm dev                 # wrangler dev for the API
+pnpm dev                 # wrangler dev for the API (localhost:8787)
+pnpm --filter @offer-mailer/web dev   # Vite dev server for the tool UI; proxies /api etc. to wrangler dev
 pnpm test                # vitest across packages
 pnpm typecheck
 pnpm db:generate         # drizzle-kit generate -> apps/api/migrations

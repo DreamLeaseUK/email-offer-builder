@@ -1,0 +1,28 @@
+<!-- @dsCard group="Colors" -->
+<title>Colour palette</title>
+<link rel="stylesheet" href="../styles/dreamlease.css">
+<style>
+  .sw { border-radius: 12px; overflow: hidden; border: 1px solid var(--dl-grey-200); }
+  .sw__chip { height: 72px; }
+  .sw__meta { padding: 10px 12px; background: #fff; }
+</style>
+<div class="dl-root" style="padding:32px">
+  <p class="dl-eyebrow" style="margin-bottom:14px">Live site palette (production-verified)</p>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:16px">
+    <div class="sw"><div class="sw__chip" style="background:#31BD51"></div><div class="sw__meta"><p class="dl-body-medium">CTA Green</p><p class="dl-caption">#31BD51 · default buttons · hover #47CF66</p></div></div>
+    <div class="sw"><div class="sw__chip" style="background:#E30613"></div><div class="sw__meta"><p class="dl-body-medium">Ignition Red</p><p class="dl-caption">#E30613 · Pantone 485 · prices, badges, links — never tinted</p></div></div>
+    <div class="sw"><div class="sw__chip" style="background:#000000"></div><div class="sw__meta"><p class="dl-body-medium">Ink</p><p class="dl-caption">#000000 · headings</p></div></div>
+    <div class="sw"><div class="sw__chip" style="background:#393838"></div><div class="sw__meta"><p class="dl-body-medium">Dark</p><p class="dl-caption">#393838 · footer, dark surfaces, wordmark grey</p></div></div>
+    <div class="sw"><div class="sw__chip" style="background:#787580"></div><div class="sw__meta"><p class="dl-body-medium">Graphite Grey</p><p class="dl-caption">#787580 · body text</p></div></div>
+    <div class="sw"><div class="sw__chip" style="background:#928F99"></div><div class="sw__meta"><p class="dl-body-medium">Muted</p><p class="dl-caption">#928F99 · secondary text</p></div></div>
+    <div class="sw"><div class="sw__chip" style="background:#E1E0E4"></div><div class="sw__meta"><p class="dl-body-medium">Border grey</p><p class="dl-caption">#E1E0E4 · borders · panels #F6F6F7</p></div></div>
+    <div class="sw"><div class="sw__chip" style="background:#FFFFFF;border-bottom:1px solid var(--dl-grey-200)"></div><div class="sw__meta"><p class="dl-body-medium">Ice White</p><p class="dl-caption">#FFFFFF · background, text on dark/green</p></div></div>
+  </div>
+  <p class="dl-eyebrow" style="margin:26px 0 14px">Extension colours — functional states only, never page chrome</p>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:16px">
+    <div class="sw"><div class="sw__chip" style="background:#71C5E9"></div><div class="sw__meta"><p class="dl-body-medium">Skybound Blue</p><p class="dl-caption">#71C5E9 · info states</p></div></div>
+    <div class="sw"><div class="sw__chip" style="background:#FF8811"></div><div class="sw__meta"><p class="dl-body-medium">Flashpoint Orange</p><p class="dl-caption">#FF8811 · warning states</p></div></div>
+    <div class="sw"><div class="sw__chip" style="background:#002E5F"></div><div class="sw__meta"><p class="dl-body-medium">Midnight Drive</p><p class="dl-caption">#002E5F · reserved (brand sheet; unused on live site)</p></div></div>
+  </div>
+  <p class="dl-small" style="margin-top:20px">Red is always used at 100% — darken for hover, never tint. Grey tints are fine. CTA green is the live site's conversion colour; the Brand Sheet's navy/sky/orange never shipped to production and stay functional-only.</p>
+</div>

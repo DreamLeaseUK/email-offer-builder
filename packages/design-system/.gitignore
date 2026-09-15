@@ -1,0 +1,14 @@
+# design-sync staged scripts, build output, and machine state
+.ds-sync/
+ds-bundle/
+dist/
+node_modules/
+.design-sync/.cache/
+.design-sync/learnings/
+.design-sync/node_modules
+
+# durable design-sync inputs (config.json, NOTES.md, conventions.md,
+# previews/, overrides/) are NOT ignored — they are committed.
+
+# machine-local Claude Code settings
+.claude/

@@ -1,0 +1,24 @@
+<!-- @dsCard group="Components" -->
+<title>Form fields</title>
+<link rel="stylesheet" href="../styles/dreamlease.css">
+<div class="dl-root" style="padding:32px;max-width:420px;display:flex;flex-direction:column;gap:20px">
+  <div class="dl-field">
+    <label class="dl-label" for="f1">Full name</label>
+    <input class="dl-input" id="f1" placeholder="Joe Bloggs">
+    <span class="dl-help">As it appears on your driving licence.</span>
+  </div>
+  <div class="dl-field">
+    <label class="dl-label" for="f2">Annual mileage</label>
+    <select class="dl-select" id="f2">
+      <option>8,000 miles</option>
+      <option>10,000 miles</option>
+      <option>15,000 miles</option>
+    </select>
+  </div>
+  <div class="dl-field dl-field--error">
+    <label class="dl-label" for="f3">Email address</label>
+    <input class="dl-input" id="f3" value="joe.bloggs@">
+    <span class="dl-error-text">Please enter a valid email address.</span>
+  </div>
+  <button class="dl-btn dl-btn--primary" style="align-self:flex-start">Submit enquiry</button>
+</div>

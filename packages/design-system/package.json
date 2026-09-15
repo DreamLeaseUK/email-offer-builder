@@ -1,0 +1,20 @@
+{
+  "name": "dreamlease-design-system",
+  "version": "1.0.0",
+  "description": "DreamLease Design System — Sofia Pro, brand tokens, and dl-* React components.",
+  "private": true,
+  "type": "module",
+  "main": "./components/index.ts",
+  "module": "./components/index.ts",
+  "types": "./components/index.ts",
+  "exports": {
+    ".": "./components/index.ts",
+    "./tokens": "./tokens/tokens.ts",
+    "./styles/dreamlease.css": "./styles/dreamlease.css"
+  },
+  "peerDependencies": { "react": ">=18" },
+  "devDependencies": {
+    "@types/react": "^18.3.12",
+    "react": "^18.3.1"
+  }
+}

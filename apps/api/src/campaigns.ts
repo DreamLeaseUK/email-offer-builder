@@ -150,50 +150,86 @@ function buildCampaign(input: DraftCampaign, template: TemplateT, createdBy: str
   return Campaign.parse(draft);
 }
 
-// ---------- tool API (behind Access) ----------
+// ---------- assemble (shared by preview and create) ----------
 
-export const campaignsApi = new Hono<AppEnv>();
-
-campaignsApi.post('/campaigns', async (c) => {
-  const raw = await c.req.json().catch(() => undefined);
-  if (raw === undefined) return c.json({ error: 'Send a JSON campaign.' }, 400);
-  const parsed = DraftCampaign.safeParse(raw);
-  if (!parsed.success) {
-    return c.json({ error: 'That campaign is not valid.', issues: parsed.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`) }, 422);
+class AssembleError extends Error {
+  constructor(
+    message: string,
+    readonly status: 400 | 404 | 422,
+  ) {
+    super(message);
   }
-  const input = parsed.data;
+}
+
+/** Validate the template, resolve any included brochures, build the Campaign and render it. No I/O writes. */
+async function assemble(env: Env, input: DraftCampaign, createdBy: string): Promise<{ campaign: CampaignT; rendered: ReturnType<typeof render> }> {
   if (!input.offers.every((o) => o.contractType === input.offers[0]!.contractType)) {
-    return c.json({ error: 'All offers in one campaign must be the same contract type.' }, 422);
+    throw new AssembleError('All offers in one campaign must be the same contract type.', 422);
   }
-
-  const templates = templatesRepo(c.env);
+  const templates = templatesRepo(env);
   const template = input.templateId ? await templates.getById(input.templateId) : await templates.approvedDefault();
-  if (!template) return c.json({ error: 'That template does not exist.' }, 404);
-  if (template.status !== 'approved') return c.json({ error: 'That template is not approved.' }, 422);
+  if (!template) throw new AssembleError('That template does not exist.', 404);
+  if (template.status !== 'approved') throw new AssembleError('That template is not approved.', 422);
 
   // Resolve the brochure record for any offer whose "include brochure" toggle is on; render() needs it.
-  const brochureRepo = d1BrochureRepo(c.env);
+  const brochureRepo = d1BrochureRepo(env);
   const brochures: Record<string, Brochure> = {};
   for (const o of input.offers) {
     if (!o.brochure?.include) continue;
     const b = await brochureRepo.findById(o.brochure.brochureId);
-    if (!b) return c.json({ error: `The brochure for one of the offers no longer exists. Re-attach it.` }, 422);
+    if (!b) throw new AssembleError('The brochure for one of the offers no longer exists. Re-attach it.', 422);
     brochures[b.id] = b;
   }
 
-  const base = c.env.PUBLIC_BASE_URL.replace(/\/$/, '');
-  let campaign: CampaignT;
-  let rendered;
+  const base = env.PUBLIC_BASE_URL.replace(/\/$/, '');
   try {
-    campaign = buildCampaign(input, template, c.get('user').email, base);
-    rendered = render(campaign, template, { publicBaseUrl: base, brochures });
+    const campaign = buildCampaign(input, template, createdBy, base);
+    const rendered = render(campaign, template, { publicBaseUrl: base, brochures });
+    return { campaign, rendered };
   } catch (err) {
-    return c.json({ error: err instanceof Error ? err.message : 'The campaign could not be rendered.' }, 422);
+    throw new AssembleError(err instanceof Error ? err.message : 'The campaign could not be rendered.', 422);
   }
+}
 
+/** Parse and validate the request body as a draft campaign, or throw AssembleError. */
+async function readDraft(c: { req: { json(): Promise<unknown> } }): Promise<DraftCampaign> {
+  const raw = await c.req.json().catch(() => undefined);
+  if (raw === undefined) throw new AssembleError('Send a JSON campaign.', 400);
+  const parsed = DraftCampaign.safeParse(raw);
+  if (!parsed.success) throw new AssembleError(`That campaign is not valid: ${parsed.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('; ')}`, 422);
+  return parsed.data;
+}
+
+// ---------- tool API (behind Access) ----------
+
+export const campaignsApi = new Hono<AppEnv>();
+
+/** Render a draft for the live preview without persisting anything. */
+campaignsApi.post('/campaigns/preview', async (c) => {
+  try {
+    const input = await readDraft(c);
+    const { rendered } = await assemble(c.env, input, c.get('user').email);
+    return c.json({ html: rendered.html, hostedHtml: rendered.hostedHtml, layout: rendered.layout });
+  } catch (err) {
+    if (err instanceof AssembleError) return c.json({ error: err.message }, err.status);
+    throw err;
+  }
+});
+
+campaignsApi.post('/campaigns', async (c) => {
+  let campaign: CampaignT;
+  let rendered: ReturnType<typeof render>;
+  try {
+    const input = await readDraft(c);
+    ({ campaign, rendered } = await assemble(c.env, input, c.get('user').email));
+  } catch (err) {
+    if (err instanceof AssembleError) return c.json({ error: err.message }, err.status);
+    throw err;
+  }
   await writeHostedPage(c.env.HOSTED, campaign, rendered.hostedHtml);
   await campaignsRepo(c.env).save(campaign, rendered.links);
-  return c.json({ campaign, hostedUrl: campaign.hostedPage.url, layout: rendered.layout }, 201);
+  // html/text carry working /r links (the campaign is now stored) for Copy-for-Outlook.
+  return c.json({ campaign, hostedUrl: campaign.hostedPage.url, layout: rendered.layout, html: rendered.html, text: rendered.text }, 201);
 });
 
 campaignsApi.get('/campaigns', async (c) => {
