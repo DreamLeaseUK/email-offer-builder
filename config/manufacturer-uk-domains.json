@@ -1,7 +1,7 @@
 {
   "_comment": "Brochure harvest allowlist (brief §5.8). A brochure is only auto-attached from one of these hosts or path prefixes. Maintained by Matt; add a brand when its models start appearing in offers.",
   "domains": [
-    "kia.co.uk",
+    "kia.com",
     "hyundai.co.uk",
     "bmw.co.uk",
     "mini.co.uk",
@@ -28,7 +28,8 @@
     "mg.co.uk",
     "jaguar.co.uk",
     "landrover.co.uk",
-    "omodajaecoo.co.uk",
+    "omodaauto.co.uk",
+    "jaecoo.co.uk",
     "smart.com/gb",
     "dacia.co.uk",
     "fiat.co.uk",
@@ -36,8 +37,8 @@
     "alfaromeo.co.uk",
     "porsche.com/uk",
     "genesis.com/uk",
-    "ora.co.uk",
-    "xpeng.co.uk",
-    "leapmotor.co.uk"
+    "gwmcars.co.uk",
+    "xpengcars.co.uk",
+    "leapmotor.net/uk"
   ]
 }

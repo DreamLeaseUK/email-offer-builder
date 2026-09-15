@@ -1,6 +1,8 @@
 /**
- * Manufacturer UK domain allowlist — brief §5.8 step 5. Entries are hosts ("kia.co.uk") or a host
- * plus a path prefix ("volvocars.com/uk"). A brochure is only auto-attached from one of them.
+ * Manufacturer UK domain allowlist — brief §5.8 step 5. An entry is a host ("bmw.co.uk"), a host plus
+ * a leading path prefix ("volvocars.com/uk"), or a bare global host ("kia.com") whose UK content is
+ * recognised by a /uk|/gb|/en-gb path segment (many OEMs serve UK brochures from a global domain, e.g.
+ * kia.com/content/dam/.../uk/en/...). A brochure is only auto-attached from one of these.
  */
 
 export interface AllowlistMatch {
@@ -13,6 +15,11 @@ function splitEntry(entry: string): { host: string; prefix: string } {
   const prefix = rest.join('/').replace(/\/+$/, '');
   return { host, prefix };
 }
+
+/** A UK TLD is UK by definition; a global host (.com/.net) needs a UK segment in the path. */
+const isUkTld = (host: string): boolean => host.endsWith('.co.uk') || host.endsWith('.uk');
+const UK_PATH_SEGMENTS = ['uk', 'gb', 'en-gb', 'en_gb', 'uk-en', 'en-uk'];
+const hasUkPathSegment = (path: string): boolean => path.split('/').some((seg) => UK_PATH_SEGMENTS.includes(seg));
 
 /** The allowlist entry the URL falls under, or null. */
 export function matchAllowlist(url: string, allowlist: string[]): AllowlistMatch | null {
@@ -30,8 +37,14 @@ export function matchAllowlist(url: string, allowlist: string[]): AllowlistMatch
     if (!h) continue;
     const hostOk = host === h || host.endsWith(`.${h}`);
     if (!hostOk) continue;
-    if (prefix && !(path === `/${prefix}` || path.startsWith(`/${prefix}/`))) continue;
-    return { entry, host };
+    if (prefix) {
+      // Explicit leading path prefix, e.g. volvocars.com/uk, tesla.com/en_gb.
+      if (path === `/${prefix}` || path.startsWith(`/${prefix}/`)) return { entry, host };
+      continue;
+    }
+    // Bare host: a UK TLD matches any path; a global host (e.g. kia.com) must carry a UK path segment
+    // somewhere, so its UK brochures match but its /eu and /us content does not.
+    if (isUkTld(h) || hasUkPathSegment(path)) return { entry, host };
   }
   return null;
 }
@@ -47,10 +60,10 @@ const MAKE_ALIASES: Record<string, string> = {
   landrover: 'landrover',
   mercedes: 'mercedesbenz',
   mercedesbenz: 'mercedesbenz',
-  jaecoo: 'omodajaecoo',
-  omoda: 'omodajaecoo',
-  gwmora: 'ora',
-  gwm: 'ora',
+  omoda: 'omodaauto',
+  gwm: 'gwmcars',
+  gwmora: 'gwmcars',
+  ora: 'gwmcars',
 };
 
 /** The allowlist entry for a make ("Kia" -> "kia.co.uk"), or undefined when the make is not listed. */

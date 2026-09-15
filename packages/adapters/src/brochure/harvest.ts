@@ -57,6 +57,13 @@ export const isPdfUrl = (url: string): boolean => {
   }
 };
 
+/**
+ * Upgrade http -> https. A Firecrawl search/scrape/map result can be an http URL, but allowlisted
+ * manufacturer sites all serve https and the Brochure schema stores https only (a stored http URL
+ * would fail Brochure.parse on load and 500 any campaign that used it). The recipient link is https too.
+ */
+export const toHttps = (url: string): string => url.replace(/^http:\/\//i, 'https://');
+
 export function brochureExpiresAt(fetchedAt: Date): string {
   return new Date(fetchedAt.getTime() + BROCHURE_TTL_DAYS * 24 * 60 * 60 * 1000).toISOString();
 }
@@ -194,7 +201,7 @@ export class FirecrawlBrochureSource implements BrochureSource {
       vehicleKey: r.key,
       title: r.title,
       kind: r.kind,
-      sourceUrl: r.sourceUrl,
+      sourceUrl: toHttps(r.sourceUrl),
       source: 'harvest',
       ukVerified: { by: r.by, note: r.note },
       fetchedAt: now.toISOString(),

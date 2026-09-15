@@ -26,6 +26,10 @@ describe('allowlist', () => {
     expect(matchAllowlist('https://www.kia.de/brochures/ev3.pdf', ALLOWLIST)).toBeNull();
     expect(matchAllowlist('https://www.volvocars.com/uk/brochures/', ALLOWLIST)?.entry).toBe('volvocars.com/uk');
     expect(matchAllowlist('https://www.volvocars.com/de/brochures/', ALLOWLIST)).toBeNull();
+    // Global domain (kia.com): UK content matches by a /uk path segment; other regions do not.
+    expect(matchAllowlist('https://www.kia.com/content/dam/kwcms/kme/uk/en/ev2-brochure.pdf', ALLOWLIST)?.entry).toBe('kia.com');
+    expect(matchAllowlist('https://www.kia.com/eu/new-cars/ev2/', ALLOWLIST)).toBeNull();
+    expect(matchAllowlist('https://www.kia.com/us/vehicles/', ALLOWLIST)).toBeNull();
     expect(matchAllowlist('https://notkia.co.uk/x.pdf', ALLOWLIST)).toBeNull();
     expect(matchAllowlist('ftp://www.kia.co.uk/x.pdf', ALLOWLIST)).toBeNull();
     expect(matchAllowlist('garbage', ALLOWLIST)).toBeNull();
@@ -141,6 +145,15 @@ describe('FirecrawlBrochureSource', () => {
     expect(b.sourceUrl).toBe(page);
     expect(b.ukVerified.by).toBe('domain');
     expect(Brochure.parse(b)).toEqual(b);
+  });
+
+  it('stores a gated page found over http as https (schema is https-only; would 500 on load otherwise)', async () => {
+    const calls = newCalls();
+    const page = 'http://www.kia.co.uk/request-a-brochure';
+    const b = await harvester({ search: [{ url: page }], links: { [page]: ['http://www.kia.co.uk/privacy'] } }, calls).harvest({ make: 'Kia', model: 'EV2' });
+    expect(b.kind).toBe('gated');
+    expect(b.sourceUrl).toBe('https://www.kia.co.uk/request-a-brochure');
+    expect(Brochure.parse(b)).toEqual(b); // https passes the httpsUrl schema
   });
 
   it('maps the manufacturer site when search finds nothing useful', async () => {
