@@ -2,7 +2,7 @@
  * Thin client for the Worker API (apps/api). Everything is same-origin: Vite proxies /api, /c, /r,
  * /f, /b and /a to the Worker in dev, and in production the Worker serves the built app too.
  */
-import type { Offer, Sender } from '@offer-mailer/schema';
+import type { Campaign, Offer, Sender } from '@offer-mailer/schema';
 
 export interface LeaseOption {
   title: string;
@@ -53,6 +53,15 @@ export interface CreateResponse {
   text: string;
 }
 
+export interface CampaignStats {
+  clicks: number;
+  views: number;
+  byLink: { linkId: string; count: number }[];
+  scannerHits: number;
+  firstActivity: string | null;
+  lastActivity: string | null;
+}
+
 async function jsonOrThrow<T>(r: Response): Promise<T> {
   const body = (await r.json().catch(() => ({}))) as T & { error?: string };
   if (!r.ok) throw new Error(body.error ?? `Request failed (${r.status})`);
@@ -66,4 +75,6 @@ export const api = {
   lookup: (url: string) => jsonPost('/api/offers/lookup', { url }).then((r) => jsonOrThrow<LookupResponse>(r)),
   preview: (draft: Draft) => jsonPost('/api/campaigns/preview', draft).then((r) => jsonOrThrow<PreviewResponse>(r)),
   create: (draft: Draft) => jsonPost('/api/campaigns', draft).then((r) => jsonOrThrow<CreateResponse>(r)),
+  listCampaigns: () => fetch('/api/campaigns').then((r) => jsonOrThrow<{ campaigns: Campaign[] }>(r)),
+  stats: (id: string) => fetch(`/api/campaigns/${id}/stats`).then((r) => jsonOrThrow<CampaignStats>(r)),
 };
