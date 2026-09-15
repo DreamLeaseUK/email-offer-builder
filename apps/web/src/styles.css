@@ -156,6 +156,58 @@ body {
   cursor: default;
 }
 
+.salsac {
+  display: grid;
+  gap: 6px;
+  width: 100%;
+  padding: 10px;
+  background: var(--dl-grey-100, #f6f6f7);
+  border: 1px solid var(--dl-grey-200, #e1e0e4);
+  border-radius: 8px;
+}
+.salsac__row {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  align-items: center;
+  gap: 8px;
+}
+.salsac__label {
+  color: var(--dl-graphite-grey, #787580);
+}
+.salsac .dl-input {
+  padding: 5px 8px;
+}
+
+.brochure {
+  display: grid;
+  gap: 6px;
+  width: 100%;
+}
+.brochure__btns {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.brochure__manual {
+  display: grid;
+  gap: 6px;
+}
+.brochure__on {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--dl-ink, #000);
+}
+.brochure__title {
+  font-size: 13px;
+  color: var(--dl-ink, #000);
+}
+.brochure__err {
+  color: var(--dl-ignition-red, #e30613);
+}
+
 .preview__actions {
   display: flex;
   gap: 8px;

@@ -39,6 +39,8 @@ export interface OfferCardProps {
   derivative?: string;
   /** Monthly price, e.g. "£299" — rendered in Ignition Red. */
   monthly: string;
+  /** Caption under the price. Defaults to "per month inc. VAT". */
+  period?: string;
   /** e.g. "48 months · 8,000 miles p.a. · £2,691 initial rental" */
   terms?: string;
   image?: React.ReactNode;
@@ -57,6 +59,7 @@ export function OfferCard({
   model,
   derivative,
   monthly,
+  period = 'per month inc. VAT',
   terms,
   image,
   badge,
@@ -83,7 +86,7 @@ export function OfferCard({
         {derivative && <p className="dl-small">{derivative}</p>}
         <div className="dl-price" style={{ margin: '14px 0 4px' }}>
           <span className="dl-price__amount">{monthly}</span>
-          <span className="dl-price__period">per month inc. VAT</span>
+          <span className="dl-price__period">{period}</span>
         </div>
         {terms && <p className="dl-price__note">{terms}</p>}
         <div style={{ marginTop: 16 }}>

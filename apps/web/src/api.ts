@@ -2,7 +2,7 @@
  * Thin client for the Worker API (apps/api). Everything is same-origin: Vite proxies /api, /c, /r,
  * /f, /b and /a to the Worker in dev, and in production the Worker serves the built app too.
  */
-import type { Campaign, Offer, Sender } from '@offer-mailer/schema';
+import type { Brochure, Campaign, Offer, Sender } from '@offer-mailer/schema';
 
 export interface LeaseOption {
   title: string;
@@ -27,11 +27,23 @@ export interface LookupResponse {
 
 export type LayoutChoice = 'auto' | 'single' | 'stack' | 'grid2' | 'grid3';
 export type UseCase = 'follow_up' | 'offer_pack' | 'renewal';
+/** The audience / lease product. Drives the compliance block, terms and (for salsac) the pricing shape. */
+export type Audience = 'personal' | 'business' | 'salary_sacrifice';
 
 /** An offer in the compose tray; options (the chips) are present for freshly-looked-up offers only. */
 export interface Item {
   offer: Offer;
   options?: PricingOptions;
+  /** The attached brochure record, kept for display; the offer itself only stores its id + include flag. */
+  brochure?: Brochure;
+}
+
+export interface EnsureBrochureResponse {
+  brochure: Brochure;
+  /** stored: unexpired copy; fresh: harvested now; stale: expired copy kept after a failed harvest. */
+  state: 'stored' | 'fresh' | 'stale';
+  error?: string;
+  warning?: string;
 }
 
 export interface Draft {
@@ -94,6 +106,20 @@ export const api = {
   create: (draft: Draft) => jsonPost('/api/campaigns', draft).then((r) => jsonOrThrow<CreateResponse>(r)),
   listCampaigns: () => fetch('/api/campaigns').then((r) => jsonOrThrow<{ campaigns: Campaign[] }>(r)),
   stats: (id: string) => fetch(`/api/campaigns/${id}/stats`).then((r) => jsonOrThrow<CampaignStats>(r)),
+  /** Attach a brochure for a vehicle: stored copy, or a Firecrawl harvest. Throws on 404/503 (offer the manual path). */
+  ensureBrochure: (make: string, model: string) => jsonPost('/api/brochures/ensure', { make, model }).then((r) => jsonOrThrow<EnsureBrochureResponse>(r)),
+  /** The manual path: a pasted PDF/brochure-page link, or an uploaded PDF (multipart). */
+  manualBrochure: (make: string, model: string, opts: { url?: string; file?: File }) => {
+    if (opts.file) {
+      const fd = new FormData();
+      fd.set('make', make);
+      fd.set('model', model);
+      fd.set('pdf', opts.file);
+      if (opts.url) fd.set('url', opts.url);
+      return fetch('/api/brochures/manual', { method: 'POST', body: fd }).then((r) => jsonOrThrow<{ brochure: Brochure; state: string }>(r));
+    }
+    return jsonPost('/api/brochures/manual', { make, model, url: opts.url }).then((r) => jsonOrThrow<{ brochure: Brochure; state: string }>(r));
+  },
   saveOffer: (offer: Offer) => jsonPost('/api/offers/library', { offer }).then((r) => jsonOrThrow<{ offer: Offer }>(r)),
   listLibrary: () => fetch('/api/offers/library').then((r) => jsonOrThrow<{ offers: Offer[] }>(r)),
   deleteLibraryOffer: (id: string) => fetch(`/api/offers/library/${id}`, { method: 'DELETE' }).then((r) => jsonOrThrow<{ ok: boolean }>(r)),

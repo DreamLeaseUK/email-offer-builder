@@ -1,17 +1,47 @@
 import type React from 'react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Badge, Button, Field, Input, OfferCard, Select, Textarea } from 'dreamlease-design-system';
-import type { Offer, Sender } from '@offer-mailer/schema';
-import { api, type CreateResponse, type Draft, type Item, type LayoutChoice, type LeaseOption, type UseCase } from './api';
+import type { Brochure, Offer, Sender } from '@offer-mailer/schema';
+import { api, type Audience, type CreateResponse, type Draft, type Item, type LayoutChoice, type LeaseOption, type UseCase } from './api';
 
 const gbp = (n: number): string => '£' + Math.round(n).toLocaleString('en-GB');
 const errMsg = (e: unknown): string => (e instanceof Error ? e.message : String(e));
 const kMiles = (n: number): string => (n % 1000 === 0 ? `${n / 1000}k` : n.toLocaleString('en-GB'));
 
+/** The three audiences / lease products, in select order. */
+const AUDIENCES: { value: Audience; label: string; short: string }[] = [
+  { value: 'personal', label: 'PCH — Personal contract hire', short: 'personal (PCH)' },
+  { value: 'business', label: 'BCH — Business contract hire', short: 'business (BCH)' },
+  { value: 'salary_sacrifice', label: 'Salary sacrifice', short: 'salary sacrifice' },
+];
+const audienceShort = (a: Audience): string => AUDIENCES.find((x) => x.value === a)?.short ?? a;
+const isSalsac = (o: Offer): boolean => o.contractType === 'salary_sacrifice';
+
+/**
+ * Turn a looked-up (personal) offer into a salary-sacrifice offer: the vehicle identity, image and
+ * options come from the page, but there is no initial payment and the price is entered by hand as
+ * two net figures. Existing nets are preserved so re-pricing the term/mileage keeps them.
+ */
+function toSalsac(o: Offer, keep?: Offer): Offer {
+  return {
+    ...o,
+    contractType: 'salary_sacrifice',
+    pricing: {
+      ...o.pricing,
+      vat: 'inc',
+      initialPayment: 0,
+      maintenance: true,
+      salsac: keep?.pricing.salsac ?? o.pricing.salsac ?? { net20: 0, net40: 0 },
+    },
+  };
+}
+const salsacReady = (o: Offer): boolean => (o.pricing.salsac?.net20 ?? 0) > 0 && (o.pricing.salsac?.net40 ?? 0) > 0;
+
 function offerTerms(o: Offer): string {
   const p = o.pricing;
   const parts = [`${p.termMonths} months`, `${p.annualMileage.toLocaleString('en-GB')} miles p.a.`];
-  parts.push(o.contractType === 'salary_sacrifice' ? (p.maintenance ? 'maintenance incl.' : 'salary sacrifice') : `${gbp(p.initialPayment)} initial`);
+  if (isSalsac(o)) parts.push(p.salsac?.net40 ? `${gbp(p.salsac.net40)}/mo at 40% · maint. & insurance` : 'maint. & insurance incl.');
+  else parts.push(`${gbp(p.initialPayment)} initial`);
   return parts.join(' · ');
 }
 
@@ -30,6 +60,99 @@ function ChipRow({ label, options, current, disabled, format, onPick }: { label:
   );
 }
 
+/**
+ * Brief §5.8 "Include brochure". Tries the stored copy / Firecrawl harvest first (`ensure`); if that
+ * finds nothing or harvest is not configured, it drops to the manual path (upload a PDF or paste a link).
+ * The offer stores only { brochureId, include }; the full record rides on the tray Item for display.
+ */
+function BrochureControl({ item, onAttach, onToggle, onRemove }: { item: Item; onAttach: (b: Brochure) => void; onToggle: (include: boolean) => void; onRemove: () => void }) {
+  const o = item.offer;
+  const attached = item.brochure;
+  const included = o.brochure?.include ?? false;
+  const [busy, setBusy] = useState(false);
+  const [manual, setManual] = useState(false);
+  const [murl, setMurl] = useState('');
+  const [err, setErr] = useState('');
+  const [note, setNote] = useState('');
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  async function doEnsure() {
+    setBusy(true);
+    setErr('');
+    setNote('');
+    try {
+      const res = await api.ensureBrochure(o.vehicle.make, o.vehicle.model);
+      onAttach(res.brochure);
+      setManual(false);
+      setNote(res.state === 'fresh' ? 'Harvested a fresh brochure.' : res.state === 'stale' ? `Kept the stored copy — harvest failed: ${res.error ?? 'unknown error'}.` : (res.warning ?? 'Attached the stored brochure.'));
+    } catch (e) {
+      setErr(errMsg(e));
+      setManual(true); // nothing found, or harvest not configured — offer the manual path
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function doManual(file?: File) {
+    if (!file && !murl.trim()) {
+      setErr('Paste a PDF or brochure-page link, or choose a PDF file.');
+      return;
+    }
+    setBusy(true);
+    setErr('');
+    try {
+      const res = await api.manualBrochure(o.vehicle.make, o.vehicle.model, { url: murl.trim() || undefined, file });
+      onAttach(res.brochure);
+      setManual(false);
+      setMurl('');
+      setNote('Brochure attached.');
+    } catch (e) {
+      setErr(errMsg(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (attached) {
+    return (
+      <div className="brochure">
+        <label className="brochure__on">
+          <input type="checkbox" checked={included} onChange={(e) => onToggle(e.target.checked)} /> Include brochure in the email
+        </label>
+        <span className="brochure__title">{attached.kind === 'pdf' ? '📄' : '🔗'} {attached.title} <span className="app__muted">({attached.kind === 'pdf' ? 'PDF' : 'request page'})</span></span>
+        <div className="brochure__btns">
+          <Button variant="ghost" size="sm" onClick={doEnsure} disabled={busy}>{busy ? '…' : 'Replace'}</Button>
+          <Button variant="ghost" size="sm" onClick={onRemove} disabled={busy}>Remove brochure</Button>
+        </div>
+        {note && <span className="dl-small app__muted">{note}</span>}
+        {err && <span className="dl-small brochure__err">{err}</span>}
+      </div>
+    );
+  }
+
+  return (
+    <div className="brochure">
+      {!manual ? (
+        <div className="brochure__btns">
+          <Button variant="outline" size="sm" onClick={doEnsure} disabled={busy}>{busy ? 'Finding brochure…' : 'Add brochure'}</Button>
+          <Button variant="ghost" size="sm" onClick={() => { setManual(true); setErr(''); }} disabled={busy}>Upload / paste link</Button>
+        </div>
+      ) : (
+        <div className="brochure__manual">
+          <Input placeholder="Paste a PDF or brochure-page link (https)" value={murl} onChange={(e) => setMurl(e.target.value)} />
+          <input ref={fileRef} type="file" accept="application/pdf" hidden onChange={(e) => { const f = e.target.files?.[0]; if (f) doManual(f); }} />
+          <div className="brochure__btns">
+            <Button variant="outline" size="sm" onClick={() => fileRef.current?.click()} disabled={busy}>Choose PDF…</Button>
+            <Button size="sm" onClick={() => doManual()} disabled={busy}>{busy ? 'Attaching…' : 'Attach link'}</Button>
+            <Button variant="ghost" size="sm" onClick={() => { setManual(false); setErr(''); }} disabled={busy}>Cancel</Button>
+          </div>
+        </div>
+      )}
+      {err && <span className="dl-small brochure__err">{err}</span>}
+    </div>
+  );
+}
+
 export function Compose({ email, base, items, setItems }: { email: string; base: string; items: Item[]; setItems: React.Dispatch<React.SetStateAction<Item[]>> }) {
   // Our-origin asset/link URLs are stamped absolute (the email needs that), but they only resolve on
   // the public origin. For in-app display, strip our origin so they become same-origin (served by the
@@ -38,6 +161,7 @@ export function Compose({ email, base, items, setItems }: { email: string; base:
   const displayHtml = (html: string): string => (base ? html.split(base).join('') : html);
 
   const [name, setName] = useState('Follow-up offers');
+  const [audience, setAudience] = useState<Audience>('personal');
   const [useCase, setUseCase] = useState<UseCase>('follow_up');
   const [subject, setSubject] = useState('The options we talked about');
   const [preheader, setPreheader] = useState('');
@@ -98,7 +222,14 @@ export function Compose({ email, base, items, setItems }: { email: string; base:
     [name, useCase, subject, preheader, intro, layout, items, sender, recipientFirst],
   );
 
-  const ready = items.length > 0 && !!name.trim() && !!subject.trim() && !!intro.trim() && !!email;
+  const salsacNeedsFigures = items.some((x) => isSalsac(x.offer) && !salsacReady(x.offer));
+  const ready = items.length > 0 && !!name.trim() && !!subject.trim() && !!intro.trim() && !!email && !salsacNeedsFigures;
+
+  /** Any change to the offer set invalidates the rendered output; clear it so the preview is never stale. */
+  const clearOutput = () => {
+    setCreated(null);
+    setPreviewHtml('');
+  };
 
   async function addOffer(e: React.FormEvent) {
     e.preventDefault();
@@ -108,9 +239,16 @@ export function Compose({ email, base, items, setItems }: { email: string; base:
     setWarnings([]);
     try {
       const res = await api.lookup(url.trim());
-      setItems((it) => [...it, { offer: res.offer, options: res.options }].slice(0, 6));
+      let offer = res.offer;
+      if (audience === 'salary_sacrifice') {
+        offer = toSalsac(offer); // the URL gives the vehicle; the price is entered by hand below
+      } else if (offer.contractType !== audience) {
+        setAddError(`That URL is a ${audienceShort(offer.contractType)} lease, but the audience is set to ${audienceShort(audience)}. Switch the audience above, or paste the matching URL.`);
+        return;
+      }
+      setItems((it) => [...it, { offer, options: res.options }].slice(0, 6));
       setUrl('');
-      setCreated(null);
+      clearOutput();
       if (res.warnings.length) setWarnings(res.warnings);
     } catch (err) {
       setAddError(errMsg(err));
@@ -124,16 +262,40 @@ export function Compose({ email, base, items, setItems }: { email: string; base:
     setReloading(i);
     setAddError('');
     try {
-      const u = new URL(items[i]!.offer.offerUrl);
+      const prev = items[i]!.offer;
+      const u = new URL(prev.offerUrl);
       u.searchParams.set(param, String(value));
       const res = await api.lookup(u.toString());
-      setItems((it) => it.map((x, k) => (k === i ? { offer: res.offer, options: res.options } : x)));
-      setCreated(null);
+      const offer = isSalsac(prev) ? toSalsac(res.offer, prev) : res.offer; // keep the hand-entered nets
+      setItems((it) => it.map((x, k) => (k === i ? { offer, options: res.options } : x)));
+      clearOutput();
     } catch (err) {
       setAddError(errMsg(err));
     } finally {
       setReloading(null);
     }
+  }
+
+  /**
+   * Switch the campaign's audience. The three audiences use different URLs and pricing, so the offer
+   * list is cleared on a change — a campaign is always one audience, built from scratch for it.
+   */
+  function changeAudience(next: Audience) {
+    if (next === audience) return;
+    const had = items.length;
+    setAudience(next);
+    setItems([]);
+    setAddError('');
+    clearOutput();
+    setWarnings(had ? [`Audience set to ${audienceShort(next)} — the offer list was cleared. Add offers from a ${audienceShort(next)} URL.`] : []);
+  }
+
+  /** Edit a salary-sacrifice offer's hand-entered net figures in place. */
+  function setSalsac(i: number, patch: Partial<{ net20: number; net40: number }>) {
+    setItems((it) =>
+      it.map((x, k) => (k === i ? { ...x, offer: { ...x.offer, pricing: { ...x.offer.pricing, salsac: { ...(x.offer.pricing.salsac ?? { net20: 0, net40: 0 }), ...patch } } } } : x)),
+    );
+    clearOutput();
   }
 
   async function saveToLibrary(o: Offer) {
@@ -151,8 +313,29 @@ export function Compose({ email, base, items, setItems }: { email: string; base:
 
   const removeOffer = (i: number) => {
     setItems((it) => it.filter((_, k) => k !== i));
-    setCreated(null);
+    clearOutput();
   };
+
+  /** Attach a resolved brochure to one offer (id + include on the offer; full record on the Item for display). */
+  function attachBrochure(i: number, brochure: Brochure) {
+    setItems((it) => it.map((x, k) => (k === i ? { ...x, brochure, offer: { ...x.offer, brochure: { brochureId: brochure.id, include: true } } } : x)));
+    clearOutput();
+  }
+  function toggleBrochure(i: number, include: boolean) {
+    setItems((it) => it.map((x, k) => (k === i && x.offer.brochure ? { ...x, offer: { ...x.offer, brochure: { ...x.offer.brochure, include } } } : x)));
+    clearOutput();
+  }
+  function removeBrochure(i: number) {
+    setItems((it) =>
+      it.map((x, k) => {
+        if (k !== i) return x;
+        const { brochure: _drop, ...offer } = x.offer;
+        const { brochure: _rec, ...rest } = x;
+        return { ...rest, offer };
+      }),
+    );
+    clearOutput();
+  }
 
   async function doPreview() {
     setPreviewing(true);
@@ -202,6 +385,13 @@ export function Compose({ email, base, items, setItems }: { email: string; base:
       <section className="panel">
         <h2 className="dl-h4">Campaign</h2>
         <Field label="Campaign name">{(id) => <Input id={id} value={name} onChange={(e) => setName(e.target.value)} />}</Field>
+        <Field label="Audience type" help="Sets the compliance wording, terms and disclaimer for the whole campaign.">{(id) => (
+          <Select id={id} value={audience} onChange={(e) => changeAudience(e.target.value as Audience)}>
+            {AUDIENCES.map((a) => (
+              <option key={a.value} value={a.value}>{a.label}</option>
+            ))}
+          </Select>
+        )}</Field>
         <Field label="Use case">{(id) => (
           <Select id={id} value={useCase} onChange={(e) => setUseCase(e.target.value as UseCase)}>
             <option value="follow_up">Cold-lead follow-up</option>
@@ -236,30 +426,45 @@ export function Compose({ email, base, items, setItems }: { email: string; base:
           <Input placeholder="Paste a dreamlease.co.uk vehicle URL" value={url} onChange={(e) => setUrl(e.target.value)} disabled={items.length >= 6} />
           <Button type="submit" size="sm" disabled={fetching || !url.trim() || items.length >= 6}>{fetching ? 'Fetching…' : 'Add'}</Button>
         </form>
+        {audience === 'salary_sacrifice' && <p className="dl-small app__muted">Salary sacrifice: paste the vehicle URL for the make, model and image, then enter the net monthly figures by hand. The price includes finance, maintenance and insurance.</p>}
         {addError && <Alert tone="error">{addError}</Alert>}
         {warnings.map((w, i) => <Alert key={i} tone="warning">{w}</Alert>)}
 
         <div className="offers">
           {items.length === 0 && <p className="dl-small app__muted">No offers yet. Paste a vehicle URL above, or add one from the Library tab.</p>}
-          {items.map(({ offer: o, options }, i) => (
+          {items.map(({ offer: o, options, brochure }, i) => (
             <div key={i} className={`offers__item${reloading === i ? ' offers__item--busy' : ''}`}>
               <OfferCard
                 make={o.vehicle.make}
                 model={o.vehicle.model}
                 derivative={o.vehicle.derivative}
-                monthly={gbp(o.pricing.monthly)}
+                monthly={isSalsac(o) ? (o.pricing.salsac?.net20 ? gbp(o.pricing.salsac.net20) : '—') : gbp(o.pricing.monthly)}
+                period={isSalsac(o) ? 'per month net · 20% taxpayer' : undefined}
                 terms={offerTerms(o)}
                 image={o.image ? <img src={sameOrigin(o.image.url)} alt={`${o.vehicle.make} ${o.vehicle.model}`} style={{ width: '100%', display: 'block' }} /> : undefined}
                 badge={o.hotBadge ? { label: o.hotBadge, tone: 'red' } : o.badges[0] ? { label: o.badges[0], tone: 'orange' } : undefined}
                 ctaLabel="View this offer"
               />
+              {isSalsac(o) && (
+                <div className="salsac">
+                  <div className="salsac__row">
+                    <label className="salsac__label dl-small">Net · 20% taxpayer</label>
+                    <Input type="number" min={0} inputMode="numeric" placeholder="£/mo" value={o.pricing.salsac?.net20 || ''} onChange={(e) => setSalsac(i, { net20: Number(e.target.value) })} />
+                  </div>
+                  <div className="salsac__row">
+                    <label className="salsac__label dl-small">Net · 40% taxpayer</label>
+                    <Input type="number" min={0} inputMode="numeric" placeholder="£/mo" value={o.pricing.salsac?.net40 || ''} onChange={(e) => setSalsac(i, { net40: Number(e.target.value) })} />
+                  </div>
+                </div>
+              )}
               {options && (
                 <div className="chips">
                   <ChipRow label="Term" options={options.contractLength} current={o.pricing.termMonths} disabled={reloading !== null} format={(v) => `${v} mo`} onPick={(v) => reLook(i, 'contractLength', v)} />
                   <ChipRow label="Mileage" options={options.annualMileage} current={o.pricing.annualMileage} disabled={reloading !== null} format={kMiles} onPick={(v) => reLook(i, 'annualMileage', v)} />
-                  <ChipRow label="Initial" options={options.initialRental} current={o.pricing.initialMonths} disabled={reloading !== null} format={(v) => `${v} mo`} onPick={(v) => reLook(i, 'initialRental', v)} />
+                  {!isSalsac(o) && <ChipRow label="Initial" options={options.initialRental} current={o.pricing.initialMonths} disabled={reloading !== null} format={(v) => `${v} mo`} onPick={(v) => reLook(i, 'initialRental', v)} />}
                 </div>
               )}
+              <BrochureControl item={{ offer: o, options, brochure }} onAttach={(b) => attachBrochure(i, b)} onToggle={(inc) => toggleBrochure(i, inc)} onRemove={() => removeBrochure(i)} />
               <div className="offers__btns">
                 <Button variant="outline" size="sm" onClick={() => saveToLibrary(o)} disabled={saving === o.id || savedIds.has(o.id)}>{savedIds.has(o.id) ? 'Saved ✓' : saving === o.id ? 'Saving…' : 'Save to library'}</Button>
                 <Button variant="ghost" size="sm" onClick={() => removeOffer(i)} disabled={reloading === i}>Remove</Button>
@@ -275,6 +480,7 @@ export function Compose({ email, base, items, setItems }: { email: string; base:
           <Button variant="secondary" size="sm" onClick={doPreview} disabled={!ready || previewing}>{previewing ? 'Rendering…' : 'Update preview'}</Button>
           <Button size="sm" onClick={doCreate} disabled={!ready || creating}>{creating ? 'Creating…' : 'Create campaign'}</Button>
         </div>
+        {salsacNeedsFigures && <p className="dl-small app__muted" style={{ marginBottom: 12 }}>Enter the 20% and 40% net figures for every salary-sacrifice offer to preview and create.</p>}
         {previewError && <Alert tone="error">{previewError}</Alert>}
         {createError && <Alert tone="error">{createError}</Alert>}
 
