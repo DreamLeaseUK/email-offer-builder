@@ -102,10 +102,10 @@ describe('POST /api/offers/lookup', () => {
     expect((await app.request('/api/offers/lookup', post({}), authed())).status).toBe(400);
   });
 
-  it('rejects a non-offer URL with a message the UI can show', async () => {
+  it('rejects a non-vehicle URL with a message the UI can show', async () => {
     const res = await app.request('/api/offers/lookup', post({ url: 'https://www.dreamlease.co.uk/hubs/in-stock/' }), authed());
     expect(res.status).toBe(422);
-    expect(((await res.json()) as { error: string }).error).toMatch(/offer page/);
+    expect(((await res.json()) as { error: string }).error).toMatch(/vehicle page/);
     expect(calls).toEqual([]);
   });
 

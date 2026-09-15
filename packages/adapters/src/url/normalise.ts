@@ -21,9 +21,14 @@ export interface LeaseConfig {
 
 export interface OfferUrl {
   contractType: LookupContractType;
-  slug: string;
+  /**
+   * The vehicle page path on the site — any page that carries the vehicle data, not just `/offers/`.
+   * Two shapes seen live: `/offers/<type>/<slug>/` and `/<make>-car-lease-deals/<type>/<model>/<derivative>/`.
+   * A `personal` or `business` path segment is what identifies a vehicle page (and its contract type).
+   */
+  path: string;
   config: LeaseConfig;
-  /** https://www.dreamlease.co.uk/offers/<type>/<slug>/?initialRental=..&contractLength=..&annualMileage=..&includeMaintenance=.. */
+  /** SITE_ORIGIN + path + the normalised configuration. The cache key and the URL we fetch. */
   canonical: string;
 }
 
@@ -40,9 +45,9 @@ const positiveInt = (raw: string | null): number | undefined => {
   return Number.isInteger(n) && n > 0 ? n : undefined;
 };
 
-/** Build the canonical URL for a contract type, slug and configuration. */
-export function canonicalOfferUrl(contractType: LookupContractType, slug: string, config: LeaseConfig, offerCode?: string): string {
-  const u = new URL(`${SITE_ORIGIN}/offers/${contractType}/${slug}/`);
+/** Build a site URL from a vehicle page path, a lease configuration and an optional offer code. */
+export function canonicalOfferUrl(path: string, config: LeaseConfig, offerCode?: string): string {
+  const u = new URL(`${SITE_ORIGIN}${path}`);
   if (offerCode) u.searchParams.set('offer', offerCode);
   if (config.initialRental !== undefined) u.searchParams.set('initialRental', String(config.initialRental));
   if (config.contractLength !== undefined) u.searchParams.set('contractLength', String(config.contractLength));
@@ -53,8 +58,12 @@ export function canonicalOfferUrl(contractType: LookupContractType, slug: string
 
 /**
  * Validate and normalise a pasted URL. Throws OfferUrlError with a message the UI can show.
- * The `offer=p-12-48-6000-n` code is read as a fallback for the configuration when the explicit
- * parameters are missing (the homepage links carry only the code).
+ * Any dreamlease.co.uk vehicle page is accepted — the `/offers/<type>/<slug>/` form and the
+ * `/<make>-car-lease-deals/<type>/<model>/<derivative>/` form both carry the vehicle data; a
+ * `personal` or `business` path segment identifies a vehicle page and its contract type, and keeps
+ * listing pages (`/hubs/…`, `/news/…`) out. The vehicle identity itself comes from the page, not the
+ * URL, so the exact path shape does not matter. The `offer=p-12-48-6000-n` code is read as a fallback
+ * for the configuration when the explicit parameters are missing (homepage links carry only the code).
  */
 export function parseOfferUrl(input: string): OfferUrl {
   let u: URL;
@@ -63,11 +72,13 @@ export function parseOfferUrl(input: string): OfferUrl {
   } catch {
     throw new OfferUrlError('That is not a web address.');
   }
-  if (!HOSTS.has(u.hostname.toLowerCase())) throw new OfferUrlError('Only dreamlease.co.uk offer pages can be looked up.');
-  const m = u.pathname.match(/^\/offers\/(personal|business)\/([a-z0-9][a-z0-9-]*)\/?$/i);
-  if (!m) throw new OfferUrlError('That is not an offer page. It should look like dreamlease.co.uk/offers/personal/<vehicle>/.');
-  const contractType = m[1]!.toLowerCase() as LookupContractType;
-  const slug = m[2]!.toLowerCase();
+  if (!HOSTS.has(u.hostname.toLowerCase())) throw new OfferUrlError('Only dreamlease.co.uk vehicle pages can be looked up.');
+  const segments = u.pathname.split('/').filter(Boolean).map((s) => s.toLowerCase());
+  const contractType = segments.includes('business') ? 'business' : segments.includes('personal') ? 'personal' : undefined;
+  if (!contractType) {
+    throw new OfferUrlError('That does not look like a vehicle page. Open a specific car on dreamlease.co.uk and paste its address — it has /personal/ or /business/ in it.');
+  }
+  const path = `/${segments.join('/')}/`;
 
   const q = u.searchParams;
   const code = (q.get('offer') ?? '').match(/^([pb])-(\d+)-(\d+)-(\d+)-([a-z])$/i);
@@ -81,5 +92,5 @@ export function parseOfferUrl(input: string): OfferUrl {
   const maint = q.get('includeMaintenance');
   if (maint === 'true' || maint === 'false') config.includeMaintenance = maint === 'true';
 
-  return { contractType, slug, config, canonical: canonicalOfferUrl(contractType, slug, config) };
+  return { contractType, path, config, canonical: canonicalOfferUrl(path, config) };
 }

@@ -130,12 +130,14 @@ export class UrlOfferSource implements OfferSource<LookupInput> {
 
   private async fetchHtml(url: string): Promise<string> {
     let status = 0;
+    let loadedButNotVehicle = false;
     try {
       const res = await this.d.fetch(url, { headers: { 'user-agent': this.d.userAgent ?? DEFAULT_UA, accept: 'text/html' }, redirect: 'follow' });
       status = res.status;
       if (res.ok) {
         const html = await res.text();
         if (html.includes('window.motorleaseInit')) return html;
+        loadedButNotVehicle = true;
       }
     } catch {
       /* fall through to the fallback */
@@ -145,6 +147,7 @@ export class UrlOfferSource implements OfferSource<LookupInput> {
       if (html.includes('window.motorleaseInit')) return html;
       throw new LookupError('The offer page could not be read, even through the fallback fetcher.');
     }
+    if (loadedButNotVehicle) throw new LookupError('That page loaded but has no vehicle data. Open a specific car on dreamlease.co.uk and paste its URL.');
     throw new LookupError(status ? `The offer page could not be fetched (HTTP ${status}).` : 'The offer page could not be fetched.');
   }
 

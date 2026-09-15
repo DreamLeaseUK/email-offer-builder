@@ -132,8 +132,7 @@ export function buildOffer(i: BuildOfferInput): OfferT {
     },
     badges: badges.slice(0, 3),
     offerUrl: canonicalOfferUrl(
-      contractType,
-      i.url.slug,
+      i.url.path,
       { initialRental: priced.initialRental, contractLength: priced.contractLength, annualMileage: priced.annualMileage, includeMaintenance: priced.includesMaintenance },
       priced.offerCode,
     ),
