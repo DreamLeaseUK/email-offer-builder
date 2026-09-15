@@ -153,3 +153,29 @@ describe('stats', () => {
     expect((await app.request('/api/campaigns/00000000-0000-4000-8000-000000000000/stats', {}, authed())).status).toBe(404);
   });
 });
+
+describe('promotions register', () => {
+  it('returns the register as JSON columns + rows', async () => {
+    const { campaign } = await createCampaign();
+    const res = await app.request('/api/register', {}, authed());
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { columns: { key: string; label: string }[]; rows: Record<string, string>[] };
+    expect(body.columns.map((c) => c.key)).toContain('subject');
+    const row = body.rows.find((r) => r.campaignCode === campaign.tracking.campaignCode);
+    expect(row?.subject).toBe(campaign.subject);
+    expect(row?.hostedUrl).toBe(campaign.hostedPage.url);
+    expect(row?.intro).toBe(campaign.intro);
+  });
+
+  it('exports the same as a CSV download', async () => {
+    const { campaign } = await createCampaign();
+    const res = await app.request('/api/register.csv', {}, authed());
+    expect(res.status).toBe(200);
+    expect(res.headers.get('content-type')).toMatch(/text\/csv/);
+    expect(res.headers.get('content-disposition')).toMatch(/promotions-register\.csv/);
+    const csv = await res.text();
+    expect(csv.split('\r\n')[0]).toContain('Subject');
+    expect(csv).toContain(campaign.subject);
+    expect(csv).toContain(campaign.hostedPage.url);
+  });
+});

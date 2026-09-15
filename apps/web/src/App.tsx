@@ -5,10 +5,11 @@ import { api, type Item } from './api';
 import { Campaigns } from './Campaigns';
 import { Compose } from './Compose';
 import { Library } from './Library';
+import { Register } from './Register';
 
 const errMsg = (e: unknown): string => (e instanceof Error ? e.message : String(e));
 
-type View = 'compose' | 'campaigns' | 'library';
+type View = 'compose' | 'campaigns' | 'library' | 'register';
 
 export function App() {
   const [email, setEmail] = useState('');
@@ -48,6 +49,7 @@ export function App() {
           {tab('compose', 'Compose')}
           {tab('campaigns', 'Campaigns')}
           {tab('library', 'Library')}
+          {tab('register', 'Register')}
         </nav>
         <span className="app__spacer" />
         <span className="dl-small app__user">{email || (meError ? 'not signed in' : '…')}</span>
@@ -67,6 +69,7 @@ export function App() {
       </div>
       {view === 'campaigns' && <Campaigns />}
       {view === 'library' && <Library base={base} onAdd={addFromLibrary} />}
+      {view === 'register' && <Register />}
     </div>
   );
 }

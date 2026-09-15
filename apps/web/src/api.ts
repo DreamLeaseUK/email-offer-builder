@@ -59,6 +59,15 @@ export interface CreateResponse {
   text: string;
 }
 
+export interface RegisterColumn {
+  key: string;
+  label: string;
+}
+export interface RegisterData {
+  columns: RegisterColumn[];
+  rows: Record<string, string>[];
+}
+
 export interface CampaignStats {
   clicks: number;
   views: number;
@@ -88,4 +97,5 @@ export const api = {
   saveOffer: (offer: Offer) => jsonPost('/api/offers/library', { offer }).then((r) => jsonOrThrow<{ offer: Offer }>(r)),
   listLibrary: () => fetch('/api/offers/library').then((r) => jsonOrThrow<{ offers: Offer[] }>(r)),
   deleteLibraryOffer: (id: string) => fetch(`/api/offers/library/${id}`, { method: 'DELETE' }).then((r) => jsonOrThrow<{ ok: boolean }>(r)),
+  register: () => fetch('/api/register').then((r) => jsonOrThrow<RegisterData>(r)),
 };

@@ -200,6 +200,43 @@ body {
   padding: 16px 20px 40px;
   max-width: 820px;
 }
+.register {
+  padding: 16px 20px 40px;
+}
+.reg-scroll {
+  overflow-x: auto;
+  margin-top: 8px;
+  border: 1px solid var(--dl-grey-200, #e1e0e4);
+  border-radius: 8px;
+}
+.reg-table {
+  border-collapse: collapse;
+  font-size: 13px;
+  width: 100%;
+}
+.reg-table th,
+.reg-table td {
+  text-align: left;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--dl-grey-200, #e1e0e4);
+  white-space: nowrap;
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.reg-table th {
+  background: var(--dl-grey-100, #f6f6f7);
+  color: var(--dl-graphite-grey, #787580);
+  font-weight: 700;
+  position: sticky;
+  top: 0;
+}
+.reg-table tbody tr:hover {
+  background: var(--dl-grey-100, #f6f6f7);
+}
+.reg-table a {
+  color: var(--dl-ignition-red, #e30613);
+}
 .lib-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
@@ -215,6 +252,17 @@ body {
   display: flex;
   gap: 8px;
   align-items: center;
+}
+.list__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.list__export {
+  color: var(--dl-ignition-red, #e30613);
+  white-space: nowrap;
 }
 .camp-list {
   display: grid;

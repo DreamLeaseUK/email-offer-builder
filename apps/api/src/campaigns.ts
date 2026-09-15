@@ -117,7 +117,72 @@ function campaignsRepo(env: Env) {
       const rows = await d.select({ data: campaignsTable.data }).from(campaignsTable).where(eq(campaignsTable.createdBy, email)).orderBy(desc(campaignsTable.createdAt)).all();
       return rows.map((r) => Campaign.parse(r.data));
     },
+    /** Every campaign, for the promotions register (Emma's compliance record). */
+    async listAll(): Promise<CampaignT[]> {
+      const rows = await d.select({ data: campaignsTable.data }).from(campaignsTable).orderBy(desc(campaignsTable.createdAt)).all();
+      return rows.map((r) => Campaign.parse(r.data));
+    },
   };
+}
+
+// ---------- promotions register (brief §5.5) ----------
+
+/** The register's columns, in order — used for both the in-app table and the CSV. */
+const REGISTER_FIELDS = [
+  ['created', 'Created'],
+  ['campaign', 'Campaign'],
+  ['useCase', 'Use case'],
+  ['status', 'Status'],
+  ['sender', 'Sender'],
+  ['senderEmail', 'Sender email'],
+  ['subject', 'Subject'],
+  ['preheader', 'Preheader'],
+  ['intro', 'Intro'],
+  ['ctaLabels', 'CTA labels'],
+  ['offers', 'Offers'],
+  ['layout', 'Layout'],
+  ['templateVersion', 'Template version'],
+  ['wordingVersion', 'Wording version'],
+  ['campaignCode', 'Campaign code'],
+  ['hostedUrl', 'Hosted URL'],
+  ['sentAt', 'Sent at'],
+  ['sentVia', 'Sent via'],
+] as const;
+
+/** One campaign flattened to the register's fields (the rep-authored copy plus the metadata). */
+function registerRow(c: CampaignT): Record<string, string> {
+  return {
+    created: c.createdAt,
+    campaign: c.name,
+    useCase: c.useCase,
+    status: c.status,
+    sender: c.sender.displayName,
+    senderEmail: c.sender.email,
+    subject: c.subject,
+    preheader: c.preheader ?? '',
+    intro: c.intro,
+    ctaLabels: [...new Set(c.offers.map((o) => o.cta?.label).filter((l): l is string => !!l))].join('; '),
+    offers: c.offers.map((o) => `${o.vehicle.make} ${o.vehicle.model} ${o.vehicle.derivative}`).join('; '),
+    layout: c.layout,
+    templateVersion: String(c.templateVersion),
+    wordingVersion: String(c.compliance.approvedWordingVersion),
+    campaignCode: c.tracking.campaignCode,
+    hostedUrl: c.hostedPage.url,
+    sentAt: c.sentAt ?? '',
+    sentVia: c.sentVia ?? '',
+  };
+}
+
+const csvCell = (v: string): string => (/[",\n\r]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v);
+
+/** CSV of every campaign's register row, for the FCA promotions record. */
+function promotionsCsv(campaigns: CampaignT[]): string {
+  const header = REGISTER_FIELDS.map(([, label]) => csvCell(label)).join(',');
+  const rows = campaigns.map((c) => {
+    const r = registerRow(c);
+    return REGISTER_FIELDS.map(([key]) => csvCell(r[key] ?? '')).join(',');
+  });
+  return [header, ...rows].join('\r\n') + '\r\n';
 }
 
 // ---------- build ----------
@@ -271,6 +336,19 @@ campaignsApi.get('/campaigns/:id/stats', async (c) => {
     lastActivity: ts[ts.length - 1] ?? null,
     lastClick: last('click'),
     lastView: last('view'),
+  });
+});
+
+/** The promotions register (brief §5.5): every campaign's rep-authored copy and metadata. */
+campaignsApi.get('/register', async (c) => {
+  const campaigns = await campaignsRepo(c.env).listAll();
+  return c.json({ columns: REGISTER_FIELDS.map(([key, label]) => ({ key, label })), rows: campaigns.map(registerRow) });
+});
+
+campaignsApi.get('/register.csv', async (c) => {
+  const campaigns = await campaignsRepo(c.env).listAll();
+  return new Response(promotionsCsv(campaigns), {
+    headers: { 'content-type': 'text/csv; charset=utf-8', 'content-disposition': 'attachment; filename="dreamlease-promotions-register.csv"' },
   });
 });
 
