@@ -2,16 +2,11 @@ import type React from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import { Alert, Badge, Button, Field, Input, OfferCard, Select, Textarea } from 'dreamlease-design-system';
 import type { Offer, Sender } from '@offer-mailer/schema';
-import { api, type CreateResponse, type Draft, type LayoutChoice, type LeaseOption, type PricingOptions, type UseCase } from './api';
+import { api, type CreateResponse, type Draft, type Item, type LayoutChoice, type LeaseOption, type UseCase } from './api';
 
 const gbp = (n: number): string => '£' + Math.round(n).toLocaleString('en-GB');
 const errMsg = (e: unknown): string => (e instanceof Error ? e.message : String(e));
 const kMiles = (n: number): string => (n % 1000 === 0 ? `${n / 1000}k` : n.toLocaleString('en-GB'));
-
-interface Item {
-  offer: Offer;
-  options: PricingOptions;
-}
 
 function offerTerms(o: Offer): string {
   const p = o.pricing;
@@ -35,7 +30,7 @@ function ChipRow({ label, options, current, disabled, format, onPick }: { label:
   );
 }
 
-export function Compose({ email, base }: { email: string; base: string }) {
+export function Compose({ email, base, items, setItems }: { email: string; base: string; items: Item[]; setItems: React.Dispatch<React.SetStateAction<Item[]>> }) {
   // Our-origin asset/link URLs are stamped absolute (the email needs that), but they only resolve on
   // the public origin. For in-app display, strip our origin so they become same-origin (served by the
   // Vite proxy in dev, the Worker in production). The Copy-for-Outlook HTML stays absolute.
@@ -54,10 +49,11 @@ export function Compose({ email, base }: { email: string; base: string }) {
   const [senderTitle, setSenderTitle] = useState('Account Manager, DreamLease');
   const [senderPhone, setSenderPhone] = useState('');
 
-  const [items, setItems] = useState<Item[]>([]);
   const [url, setUrl] = useState('');
   const [fetching, setFetching] = useState(false);
   const [reloading, setReloading] = useState<number | null>(null);
+  const [saving, setSaving] = useState<string | null>(null);
+  const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
   const [addError, setAddError] = useState('');
   const [warnings, setWarnings] = useState<string[]>([]);
 
@@ -137,6 +133,19 @@ export function Compose({ email, base }: { email: string; base: string }) {
       setAddError(errMsg(err));
     } finally {
       setReloading(null);
+    }
+  }
+
+  async function saveToLibrary(o: Offer) {
+    setSaving(o.id);
+    setAddError('');
+    try {
+      await api.saveOffer(o);
+      setSavedIds((s) => new Set(s).add(o.id));
+    } catch (err) {
+      setAddError(errMsg(err));
+    } finally {
+      setSaving(null);
     }
   }
 
@@ -231,7 +240,7 @@ export function Compose({ email, base }: { email: string; base: string }) {
         {warnings.map((w, i) => <Alert key={i} tone="warning">{w}</Alert>)}
 
         <div className="offers">
-          {items.length === 0 && <p className="dl-small app__muted">No offers yet. Paste a vehicle URL above to fetch one.</p>}
+          {items.length === 0 && <p className="dl-small app__muted">No offers yet. Paste a vehicle URL above, or add one from the Library tab.</p>}
           {items.map(({ offer: o, options }, i) => (
             <div key={i} className={`offers__item${reloading === i ? ' offers__item--busy' : ''}`}>
               <OfferCard
@@ -244,12 +253,17 @@ export function Compose({ email, base }: { email: string; base: string }) {
                 badge={o.hotBadge ? { label: o.hotBadge, tone: 'red' } : o.badges[0] ? { label: o.badges[0], tone: 'orange' } : undefined}
                 ctaLabel="View this offer"
               />
-              <div className="chips">
-                <ChipRow label="Term" options={options.contractLength} current={o.pricing.termMonths} disabled={reloading !== null} format={(v) => `${v} mo`} onPick={(v) => reLook(i, 'contractLength', v)} />
-                <ChipRow label="Mileage" options={options.annualMileage} current={o.pricing.annualMileage} disabled={reloading !== null} format={kMiles} onPick={(v) => reLook(i, 'annualMileage', v)} />
-                <ChipRow label="Initial" options={options.initialRental} current={o.pricing.initialMonths} disabled={reloading !== null} format={(v) => `${v} mo`} onPick={(v) => reLook(i, 'initialRental', v)} />
+              {options && (
+                <div className="chips">
+                  <ChipRow label="Term" options={options.contractLength} current={o.pricing.termMonths} disabled={reloading !== null} format={(v) => `${v} mo`} onPick={(v) => reLook(i, 'contractLength', v)} />
+                  <ChipRow label="Mileage" options={options.annualMileage} current={o.pricing.annualMileage} disabled={reloading !== null} format={kMiles} onPick={(v) => reLook(i, 'annualMileage', v)} />
+                  <ChipRow label="Initial" options={options.initialRental} current={o.pricing.initialMonths} disabled={reloading !== null} format={(v) => `${v} mo`} onPick={(v) => reLook(i, 'initialRental', v)} />
+                </div>
+              )}
+              <div className="offers__btns">
+                <Button variant="outline" size="sm" onClick={() => saveToLibrary(o)} disabled={saving === o.id || savedIds.has(o.id)}>{savedIds.has(o.id) ? 'Saved ✓' : saving === o.id ? 'Saving…' : 'Save to library'}</Button>
+                <Button variant="ghost" size="sm" onClick={() => removeOffer(i)} disabled={reloading === i}>Remove</Button>
               </div>
-              <Button variant="ghost" size="sm" onClick={() => removeOffer(i)} disabled={reloading === i}>Remove</Button>
             </div>
           ))}
         </div>

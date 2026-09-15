@@ -5,6 +5,7 @@ import { dev } from './dev.js';
 import type { AppEnv } from './env.js';
 import { files } from './files.js';
 import { hosted } from './hosted.js';
+import { libraryApi } from './library.js';
 import { lookup } from './lookup.js';
 import { requireAccess } from './middleware/access.js';
 
@@ -41,6 +42,7 @@ api.get('/me', (c) => c.json({ ...c.get('user'), publicBaseUrl: c.env.PUBLIC_BAS
 api.route('/', lookup);
 api.route('/', brochuresApi);
 api.route('/', campaignsApi);
+api.route('/', libraryApi);
 api.route('/dev', dev);
 app.route('/api', api);
 

@@ -28,6 +28,12 @@ export interface LookupResponse {
 export type LayoutChoice = 'auto' | 'single' | 'stack' | 'grid2' | 'grid3';
 export type UseCase = 'follow_up' | 'offer_pack' | 'renewal';
 
+/** An offer in the compose tray; options (the chips) are present for freshly-looked-up offers only. */
+export interface Item {
+  offer: Offer;
+  options?: PricingOptions;
+}
+
 export interface Draft {
   name: string;
   useCase: UseCase;
@@ -79,4 +85,7 @@ export const api = {
   create: (draft: Draft) => jsonPost('/api/campaigns', draft).then((r) => jsonOrThrow<CreateResponse>(r)),
   listCampaigns: () => fetch('/api/campaigns').then((r) => jsonOrThrow<{ campaigns: Campaign[] }>(r)),
   stats: (id: string) => fetch(`/api/campaigns/${id}/stats`).then((r) => jsonOrThrow<CampaignStats>(r)),
+  saveOffer: (offer: Offer) => jsonPost('/api/offers/library', { offer }).then((r) => jsonOrThrow<{ offer: Offer }>(r)),
+  listLibrary: () => fetch('/api/offers/library').then((r) => jsonOrThrow<{ offers: Offer[] }>(r)),
+  deleteLibraryOffer: (id: string) => fetch(`/api/offers/library/${id}`, { method: 'DELETE' }).then((r) => jsonOrThrow<{ ok: boolean }>(r)),
 };
