@@ -138,11 +138,15 @@ describe('stats', () => {
       views: number;
       byLink: { linkId: string; count: number }[];
       scannerHits: number;
+      lastClick: string | null;
+      lastView: string | null;
     };
     expect(stats.clicks).toBe(1);
     expect(stats.views).toBe(1);
     expect(stats.scannerHits).toBe(1);
     expect(stats.byLink).toContainEqual({ linkId: 'o1-cta', count: 1 });
+    expect(stats.lastClick).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+    expect(stats.lastView).toMatch(/^\d{4}-\d{2}-\d{2}T/);
   });
 
   it('404s stats for an unknown campaign', async () => {

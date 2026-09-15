@@ -207,3 +207,8 @@ body {
   gap: 10px;
   align-items: center;
 }
+.stats__when {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+}

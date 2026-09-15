@@ -41,9 +41,13 @@ function StatsPanel({ id }: { id: string }) {
           ))}
         </div>
       )}
-      <p className="dl-small app__muted">
-        {stats.lastActivity ? `Last activity ${when(stats.lastActivity)}` : 'No clicks or views yet. Link scanners are excluded, so a genuine click will show here.'}
-      </p>
+      <div className="stats__when dl-small app__muted">
+        <span>Last click: {stats.lastClick ? when(stats.lastClick) : '—'}</span>
+        <span>Last view: {stats.lastView ? when(stats.lastView) : '—'}</span>
+      </div>
+      {!stats.lastClick && !stats.lastView && (
+        <p className="dl-small app__muted">No clicks or views yet. Link scanners are excluded, so a genuine click will show here.</p>
+      )}
     </div>
   );
 }

@@ -60,6 +60,8 @@ export interface CampaignStats {
   scannerHits: number;
   firstActivity: string | null;
   lastActivity: string | null;
+  lastClick: string | null;
+  lastView: string | null;
 }
 
 async function jsonOrThrow<T>(r: Response): Promise<T> {

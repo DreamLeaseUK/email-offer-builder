@@ -258,6 +258,10 @@ campaignsApi.get('/campaigns/:id/stats', async (c) => {
     }
   }
   const ts = real.map((r) => r.ts).sort();
+  const last = (kind: 'click' | 'view') => {
+    const t = real.filter((r) => r.kind === kind).map((r) => r.ts).sort();
+    return t[t.length - 1] ?? null;
+  };
   return c.json({
     clicks,
     views,
@@ -265,6 +269,8 @@ campaignsApi.get('/campaigns/:id/stats', async (c) => {
     scannerHits: rows.length - real.length,
     firstActivity: ts[0] ?? null,
     lastActivity: ts[ts.length - 1] ?? null,
+    lastClick: last('click'),
+    lastView: last('view'),
   });
 });
 
