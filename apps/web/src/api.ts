@@ -62,7 +62,7 @@ async function jsonOrThrow<T>(r: Response): Promise<T> {
 const jsonPost = (url: string, data: unknown) => fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(data) });
 
 export const api = {
-  me: () => fetch('/api/me').then((r) => jsonOrThrow<{ email: string; sub: string }>(r)),
+  me: () => fetch('/api/me').then((r) => jsonOrThrow<{ email: string; sub: string; publicBaseUrl: string }>(r)),
   lookup: (url: string) => jsonPost('/api/offers/lookup', { url }).then((r) => jsonOrThrow<LookupResponse>(r)),
   preview: (draft: Draft) => jsonPost('/api/campaigns/preview', draft).then((r) => jsonOrThrow<PreviewResponse>(r)),
   create: (draft: Draft) => jsonPost('/api/campaigns', draft).then((r) => jsonOrThrow<CreateResponse>(r)),

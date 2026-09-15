@@ -47,7 +47,7 @@ describe('Access middleware', () => {
     const dev = { ...baseEnv, DEV_USER_EMAIL: 'matt.wilson@dreamlease.co.uk' };
     const res = await app.request('/api/me', {}, dev);
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ email: 'matt.wilson@dreamlease.co.uk', sub: 'dev' });
+    expect(await res.json()).toEqual({ email: 'matt.wilson@dreamlease.co.uk', sub: 'dev', publicBaseUrl: 'https://offers.dreamlease.co.uk' });
   });
 
   it('ignores DEV_USER_EMAIL once ACCESS_AUD is set', async () => {

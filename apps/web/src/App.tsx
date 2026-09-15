@@ -16,7 +16,14 @@ function offerTerms(o: Offer): string {
 
 export function App() {
   const [email, setEmail] = useState('');
+  const [base, setBase] = useState('');
   const [meError, setMeError] = useState('');
+
+  // Our-origin asset/link URLs are stamped absolute (the email needs that), but they only resolve on
+  // the public origin. For in-app display, strip our origin so they become same-origin: served by the
+  // Vite proxy in dev, and by the Worker itself in production. The Copy-for-Outlook HTML stays absolute.
+  const sameOrigin = (u: string): string => (base && u.startsWith(base) ? u.slice(base.length) || '/' : u);
+  const displayHtml = (html: string): string => (base ? html.split(base).join('') : html);
 
   const [name, setName] = useState('Follow-up offers');
   const [useCase, setUseCase] = useState<UseCase>('follow_up');
@@ -49,6 +56,7 @@ export function App() {
       .me()
       .then((m) => {
         setEmail(m.email);
+        setBase(m.publicBaseUrl.replace(/\/$/, ''));
         const guess = (m.email.split('@')[0] ?? '').replace(/\./g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
         setSenderName((n) => n || guess);
       })
@@ -112,7 +120,7 @@ export function App() {
     setPreviewing(true);
     setPreviewError('');
     try {
-      setPreviewHtml((await api.preview(draft)).html);
+      setPreviewHtml(displayHtml((await api.preview(draft)).html));
     } catch (err) {
       setPreviewError(errMsg(err));
     } finally {
@@ -125,8 +133,8 @@ export function App() {
     setCreateError('');
     try {
       const res = await api.create(draft);
-      setCreated(res);
-      setPreviewHtml(res.html);
+      setCreated(res); // res.html stays absolute — Copy-for-Outlook needs it that way
+      setPreviewHtml(displayHtml(res.html));
     } catch (err) {
       setCreateError(errMsg(err));
     } finally {
@@ -219,7 +227,7 @@ export function App() {
                   derivative={o.vehicle.derivative}
                   monthly={gbp(o.pricing.monthly)}
                   terms={offerTerms(o)}
-                  image={o.image ? <img src={o.image.url} alt={`${o.vehicle.make} ${o.vehicle.model}`} style={{ width: '100%', display: 'block' }} /> : undefined}
+                  image={o.image ? <img src={sameOrigin(o.image.url)} alt={`${o.vehicle.make} ${o.vehicle.model}`} style={{ width: '100%', display: 'block' }} /> : undefined}
                   badge={o.hotBadge ? { label: o.hotBadge, tone: 'red' } : o.badges[0] ? { label: o.badges[0], tone: 'orange' } : undefined}
                   ctaLabel="View this offer"
                 />

@@ -35,7 +35,9 @@ app.route('/', redirect); // /r/:slug/:link — resolves a stored campaign's lin
 
 const api = new Hono<AppEnv>();
 api.use('*', requireAccess());
-api.get('/me', (c) => c.json(c.get('user')));
+// The web app uses publicBaseUrl to rewrite our-origin asset/link URLs to same-origin for display
+// (absolute URLs are required in the email itself, but they only resolve on the public origin).
+api.get('/me', (c) => c.json({ ...c.get('user'), publicBaseUrl: c.env.PUBLIC_BASE_URL }));
 api.route('/', lookup);
 api.route('/', brochuresApi);
 api.route('/', campaignsApi);
