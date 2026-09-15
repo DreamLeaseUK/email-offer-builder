@@ -2,16 +2,37 @@ import type React from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import { Alert, Badge, Button, Field, Input, OfferCard, Select, Textarea } from 'dreamlease-design-system';
 import type { Offer, Sender } from '@offer-mailer/schema';
-import { api, type CreateResponse, type Draft, type LayoutChoice, type UseCase } from './api';
+import { api, type CreateResponse, type Draft, type LayoutChoice, type LeaseOption, type PricingOptions, type UseCase } from './api';
 
 const gbp = (n: number): string => '£' + Math.round(n).toLocaleString('en-GB');
 const errMsg = (e: unknown): string => (e instanceof Error ? e.message : String(e));
+const kMiles = (n: number): string => (n % 1000 === 0 ? `${n / 1000}k` : n.toLocaleString('en-GB'));
+
+interface Item {
+  offer: Offer;
+  options: PricingOptions;
+}
 
 function offerTerms(o: Offer): string {
   const p = o.pricing;
   const parts = [`${p.termMonths} months`, `${p.annualMileage.toLocaleString('en-GB')} miles p.a.`];
   parts.push(o.contractType === 'salary_sacrifice' ? (p.maintenance ? 'maintenance incl.' : 'salary sacrifice') : `${gbp(p.initialPayment)} initial`);
   return parts.join(' · ');
+}
+
+/** A row of configuration chips for one lease dimension; hidden when the site offers only one value. */
+function ChipRow({ label, options, current, disabled, format, onPick }: { label: string; options: LeaseOption[]; current: number; disabled: boolean; format: (v: number) => string; onPick: (v: number) => void }) {
+  if (!options || options.length <= 1) return null;
+  return (
+    <div className="chiprow">
+      <span className="chiprow__label dl-small">{label}</span>
+      {options.map((opt) => (
+        <button key={opt.value} type="button" className={`chip${opt.value === current ? ' chip--active' : ''}`} disabled={disabled || opt.value === current} onClick={() => onPick(opt.value)}>
+          {format(opt.value)}
+        </button>
+      ))}
+    </div>
+  );
 }
 
 export function Compose({ email, base }: { email: string; base: string }) {
@@ -33,9 +54,10 @@ export function Compose({ email, base }: { email: string; base: string }) {
   const [senderTitle, setSenderTitle] = useState('Account Manager, DreamLease');
   const [senderPhone, setSenderPhone] = useState('');
 
-  const [offers, setOffers] = useState<Offer[]>([]);
+  const [items, setItems] = useState<Item[]>([]);
   const [url, setUrl] = useState('');
   const [fetching, setFetching] = useState(false);
+  const [reloading, setReloading] = useState<number | null>(null);
   const [addError, setAddError] = useState('');
   const [warnings, setWarnings] = useState<string[]>([]);
 
@@ -47,7 +69,6 @@ export function Compose({ email, base }: { email: string; base: string }) {
   const [createError, setCreateError] = useState('');
   const [copied, setCopied] = useState(false);
 
-  // Default the sender name from the signed-in email once it arrives.
   useEffect(() => {
     if (!email) return;
     const guess = (email.split('@')[0] ?? '').replace(/\./g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
@@ -74,14 +95,14 @@ export function Compose({ email, base }: { email: string; base: string }) {
       ...(preheader ? { preheader } : {}),
       intro,
       layout,
-      offers,
+      offers: items.map((x) => x.offer),
       sender,
       ...(recipientFirst ? { recipient: { firstName: recipientFirst } } : {}),
     }),
-    [name, useCase, subject, preheader, intro, layout, offers, sender, recipientFirst],
+    [name, useCase, subject, preheader, intro, layout, items, sender, recipientFirst],
   );
 
-  const ready = offers.length > 0 && !!name.trim() && !!subject.trim() && !!intro.trim() && !!email;
+  const ready = items.length > 0 && !!name.trim() && !!subject.trim() && !!intro.trim() && !!email;
 
   async function addOffer(e: React.FormEvent) {
     e.preventDefault();
@@ -91,7 +112,7 @@ export function Compose({ email, base }: { email: string; base: string }) {
     setWarnings([]);
     try {
       const res = await api.lookup(url.trim());
-      setOffers((o) => [...o, res.offer].slice(0, 6));
+      setItems((it) => [...it, { offer: res.offer, options: res.options }].slice(0, 6));
       setUrl('');
       setCreated(null);
       if (res.warnings.length) setWarnings(res.warnings);
@@ -102,8 +123,25 @@ export function Compose({ email, base }: { email: string; base: string }) {
     }
   }
 
-  const removeOffer = (id: string) => {
-    setOffers((o) => o.filter((x) => x.id !== id));
+  /** Re-price one offer for a changed term / mileage / initial-payment months, in place. */
+  async function reLook(i: number, param: 'contractLength' | 'annualMileage' | 'initialRental', value: number) {
+    setReloading(i);
+    setAddError('');
+    try {
+      const u = new URL(items[i]!.offer.offerUrl);
+      u.searchParams.set(param, String(value));
+      const res = await api.lookup(u.toString());
+      setItems((it) => it.map((x, k) => (k === i ? { offer: res.offer, options: res.options } : x)));
+      setCreated(null);
+    } catch (err) {
+      setAddError(errMsg(err));
+    } finally {
+      setReloading(null);
+    }
+  }
+
+  const removeOffer = (i: number) => {
+    setItems((it) => it.filter((_, k) => k !== i));
     setCreated(null);
   };
 
@@ -184,18 +222,18 @@ export function Compose({ email, base }: { email: string; base: string }) {
 
       {/* ---- offers ---- */}
       <section className="panel">
-        <h2 className="dl-h4">Offers <span className="dl-small">{offers.length}/6</span></h2>
+        <h2 className="dl-h4">Offers <span className="dl-small">{items.length}/6</span></h2>
         <form onSubmit={addOffer} className="addoffer">
-          <Input placeholder="Paste a dreamlease.co.uk vehicle URL" value={url} onChange={(e) => setUrl(e.target.value)} disabled={offers.length >= 6} />
-          <Button type="submit" size="sm" disabled={fetching || !url.trim() || offers.length >= 6}>{fetching ? 'Fetching…' : 'Add'}</Button>
+          <Input placeholder="Paste a dreamlease.co.uk vehicle URL" value={url} onChange={(e) => setUrl(e.target.value)} disabled={items.length >= 6} />
+          <Button type="submit" size="sm" disabled={fetching || !url.trim() || items.length >= 6}>{fetching ? 'Fetching…' : 'Add'}</Button>
         </form>
         {addError && <Alert tone="error">{addError}</Alert>}
         {warnings.map((w, i) => <Alert key={i} tone="warning">{w}</Alert>)}
 
         <div className="offers">
-          {offers.length === 0 && <p className="dl-small app__muted">No offers yet. Paste a vehicle URL above to fetch one.</p>}
-          {offers.map((o) => (
-            <div key={o.id} className="offers__item">
+          {items.length === 0 && <p className="dl-small app__muted">No offers yet. Paste a vehicle URL above to fetch one.</p>}
+          {items.map(({ offer: o, options }, i) => (
+            <div key={i} className={`offers__item${reloading === i ? ' offers__item--busy' : ''}`}>
               <OfferCard
                 make={o.vehicle.make}
                 model={o.vehicle.model}
@@ -206,7 +244,12 @@ export function Compose({ email, base }: { email: string; base: string }) {
                 badge={o.hotBadge ? { label: o.hotBadge, tone: 'red' } : o.badges[0] ? { label: o.badges[0], tone: 'orange' } : undefined}
                 ctaLabel="View this offer"
               />
-              <Button variant="ghost" size="sm" onClick={() => removeOffer(o.id)}>Remove</Button>
+              <div className="chips">
+                <ChipRow label="Term" options={options.contractLength} current={o.pricing.termMonths} disabled={reloading !== null} format={(v) => `${v} mo`} onPick={(v) => reLook(i, 'contractLength', v)} />
+                <ChipRow label="Mileage" options={options.annualMileage} current={o.pricing.annualMileage} disabled={reloading !== null} format={kMiles} onPick={(v) => reLook(i, 'annualMileage', v)} />
+                <ChipRow label="Initial" options={options.initialRental} current={o.pricing.initialMonths} disabled={reloading !== null} format={(v) => `${v} mo`} onPick={(v) => reLook(i, 'initialRental', v)} />
+              </div>
+              <Button variant="ghost" size="sm" onClick={() => removeOffer(i)} disabled={reloading === i}>Remove</Button>
             </div>
           ))}
         </div>
