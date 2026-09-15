@@ -94,7 +94,18 @@ export class FirecrawlBrochureSource implements BrochureSource {
     let gatedPage: string | undefined;
 
     const finishPdf = async (pdfUrl: string, viaPage?: string): Promise<Brochure | undefined> => {
-      const d = await this.d.download(pdfUrl);
+      let d = await this.d.download(pdfUrl);
+      // A blocked or failed direct download (e.g. a manufacturer CDN 403ing the Worker) yields no bytes.
+      // Firecrawl's proxies fetch the original file; rawBase64 returns it. Only spend a credit then.
+      if (d.bytes.byteLength === 0 && budgetLeft(2)) {
+        try {
+          const f = await this.d.firecrawl.fetchFile(pdfUrl);
+          spend(f.creditsUsed);
+          if (f.ok) d = { bytes: f.bytes, contentType: f.contentType };
+        } catch {
+          /* keep the empty direct result; this PDF is skipped */
+        }
+      }
       if (!looksLikePdf(d) || d.bytes.byteLength === 0 || d.bytes.byteLength > MAX_PDF_BYTES) return undefined;
       const file = await this.d.store.putPdf(d.bytes);
       let by: Brochure['ukVerified']['by'] = 'domain';

@@ -69,8 +69,27 @@ export function brochureStore(env: Env): BrochureStore {
 }
 
 /** Direct download by the Worker (no Firecrawl credits), capped at 40 MB. */
+const BROWSER_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36';
+
 export async function downloadFile(url: string): Promise<Downloaded> {
-  const res = await fetch(url, { headers: { accept: 'application/pdf,*/*', 'user-agent': UA }, redirect: 'follow' });
+  // Manufacturer CDNs (Akamai) 403 a bot-identifying UA; send a browser-like header set for these
+  // public brochure PDFs.
+  const origin = (() => {
+    try {
+      return new URL(url).origin + '/';
+    } catch {
+      return undefined;
+    }
+  })();
+  const res = await fetch(url, {
+    headers: {
+      accept: 'application/pdf,application/octet-stream;q=0.9,*/*;q=0.8',
+      'accept-language': 'en-GB,en;q=0.9',
+      'user-agent': BROWSER_UA,
+      ...(origin ? { referer: origin } : {}),
+    },
+    redirect: 'follow',
+  });
   if (!res.ok) return { bytes: new ArrayBuffer(0), contentType: null };
   const declared = Number(res.headers.get('content-length') ?? 0);
   if (declared > MAX_PDF_BYTES) return { bytes: new ArrayBuffer(0), contentType: res.headers.get('content-type') };

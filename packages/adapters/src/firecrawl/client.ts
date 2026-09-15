@@ -17,6 +17,12 @@ export interface FirecrawlClient {
     opts?: { formats?: ('markdown' | 'html' | 'rawHtml' | 'links')[]; onlyMainContent?: boolean; pdfMaxPages?: number },
   ): Promise<{ markdown?: string; html?: string; rawHtml?: string; links?: string[]; creditsUsed: number }>;
   map(url: string, opts?: { search?: string; limit?: number }): Promise<{ links: string[]; creditsUsed: number }>;
+  /**
+   * Fetch a URL's original response body (the `rawBase64` format) and decode it to bytes. Used when a
+   * direct Worker download is blocked by the origin's bot protection — Firecrawl's proxies fetch the
+   * real file. `ok` is true only when the origin returned a clean (2xx/304) status.
+   */
+  fetchFile(url: string): Promise<{ bytes: ArrayBuffer; contentType: string | null; ok: boolean; creditsUsed: number }>;
 }
 
 export class FirecrawlError extends Error {
@@ -46,6 +52,20 @@ interface MapBody {
   creditsUsed?: number;
   links?: (string | { url?: string })[];
   error?: string;
+}
+interface RawBody {
+  success?: boolean;
+  creditsUsed?: number;
+  data?: { rawBase64?: string; metadata?: { statusCode?: number; contentType?: string; creditsUsed?: number } };
+  error?: string;
+}
+
+/** Decode bare Base64 (Firecrawl's rawBase64) to bytes. Runs in workerd; atob is available there. */
+function base64ToBytes(b64: string): ArrayBuffer {
+  const bin = atob(b64);
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out.buffer;
 }
 
 export function createFirecrawlClient(apiKey: string, fetchFn: typeof fetch = fetch, base = 'https://api.firecrawl.dev/v2'): FirecrawlClient {
@@ -100,6 +120,16 @@ export function createFirecrawlClient(apiKey: string, fetchFn: typeof fetch = fe
       const body = await post<MapBody>('/map', req);
       const links = (body.links ?? []).map((l) => (typeof l === 'string' ? l : (l.url ?? ''))).filter(Boolean);
       return { links, creditsUsed: body.creditsUsed ?? 1 };
+    },
+
+    async fetchFile(url) {
+      // rawBase64 must be requested alone; it returns the origin's raw response body.
+      const body = await post<RawBody>('/scrape', { url, formats: ['rawBase64'] });
+      const meta = body.data?.metadata;
+      const status = meta?.statusCode ?? 0;
+      const b64 = body.data?.rawBase64 ?? '';
+      const ok = b64.length > 0 && ((status >= 200 && status < 300) || status === 304);
+      return { bytes: b64 ? base64ToBytes(b64) : new ArrayBuffer(0), contentType: meta?.contentType ?? null, ok, creditsUsed: body.creditsUsed ?? meta?.creditsUsed ?? 2 };
     },
   };
 }

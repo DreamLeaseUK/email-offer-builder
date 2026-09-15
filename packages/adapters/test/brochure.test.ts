@@ -50,9 +50,13 @@ interface Calls {
   scrape: string[];
   map: string[];
   downloads: string[];
+  fetchFile: string[];
 }
 
-function mockFirecrawl(plan: { search?: { url: string }[]; links?: Record<string, string[]>; map?: string[]; pdfText?: string; searchCredits?: number }, calls: Calls): FirecrawlClient {
+function mockFirecrawl(
+  plan: { search?: { url: string }[]; links?: Record<string, string[]>; map?: string[]; pdfText?: string; searchCredits?: number; filePdf?: boolean; fileOk?: boolean },
+  calls: Calls,
+): FirecrawlClient {
   return {
     async search(q) {
       calls.search.push(q);
@@ -67,6 +71,11 @@ function mockFirecrawl(plan: { search?: { url: string }[]; links?: Record<string
       calls.map.push(url);
       return { links: plan.map ?? [], creditsUsed: 1 };
     },
+    async fetchFile(url) {
+      calls.fetchFile.push(url);
+      const bytes = plan.filePdf ? pdfBytes() : (new TextEncoder().encode('<html>blocked</html>').buffer as ArrayBuffer);
+      return { bytes, contentType: plan.filePdf ? 'application/pdf' : 'text/html', ok: plan.fileOk ?? true, creditsUsed: 2 };
+    },
   };
 }
 
@@ -76,15 +85,27 @@ const store: BrochureStore = {
   },
 };
 
-const download = (calls: Calls, ok = true) => async (url: string): Promise<Downloaded> => {
+/** mode: 'ok' → a PDF; 'html' → non-PDF content; 'blocked' → no bytes (a 403/failed fetch). */
+const download = (calls: Calls, mode: 'ok' | 'html' | 'blocked' = 'ok') => async (url: string): Promise<Downloaded> => {
   calls.downloads.push(url);
-  return ok ? { bytes: pdfBytes(), contentType: 'application/pdf' } : { bytes: new TextEncoder().encode('<html>').buffer as ArrayBuffer, contentType: 'text/html' };
+  if (mode === 'blocked') return { bytes: new ArrayBuffer(0), contentType: null };
+  if (mode === 'html') return { bytes: new TextEncoder().encode('<html>').buffer as ArrayBuffer, contentType: 'text/html' };
+  return { bytes: pdfBytes(), contentType: 'application/pdf' };
 };
 
-const harvester = (plan: Parameters<typeof mockFirecrawl>[0], calls: Calls, extra: { creditCap?: number; downloadOk?: boolean } = {}) =>
-  new FirecrawlBrochureSource({ firecrawl: mockFirecrawl(plan, calls), allowlist: ALLOWLIST, download: download(calls, extra.downloadOk ?? true), store, createdBy: BY, now: () => NOW, newId: () => 'b0000000-0000-4000-8000-000000000009', ...(extra.creditCap ? { creditCap: extra.creditCap } : {}) });
+const harvester = (plan: Parameters<typeof mockFirecrawl>[0], calls: Calls, extra: { creditCap?: number; downloadOk?: boolean; blocked?: boolean } = {}) =>
+  new FirecrawlBrochureSource({
+    firecrawl: mockFirecrawl(plan, calls),
+    allowlist: ALLOWLIST,
+    download: download(calls, extra.blocked ? 'blocked' : extra.downloadOk === false ? 'html' : 'ok'),
+    store,
+    createdBy: BY,
+    now: () => NOW,
+    newId: () => 'b0000000-0000-4000-8000-000000000009',
+    ...(extra.creditCap ? { creditCap: extra.creditCap } : {}),
+  });
 
-const newCalls = (): Calls => ({ search: [], scrape: [], map: [], downloads: [] });
+const newCalls = (): Calls => ({ search: [], scrape: [], map: [], downloads: [], fetchFile: [] });
 
 describe('FirecrawlBrochureSource', () => {
   it('takes a direct PDF from an allowlisted UK host and ignores a German one', async () => {
@@ -138,6 +159,24 @@ describe('FirecrawlBrochureSource', () => {
   it('skips a link that does not download as a PDF', async () => {
     const calls = newCalls();
     await expect(harvester({ search: [{ url: 'https://www.kia.co.uk/not-really.pdf' }] }, calls, { downloadOk: false }).harvest({ make: 'Kia', model: 'EV3' })).rejects.toThrow(BrochureNotFoundError);
+    expect(calls.fetchFile).toEqual([]); // non-PDF content (not a block) does not trigger the Firecrawl fetch
+  });
+
+  it('falls back to a Firecrawl rawBase64 fetch when the direct download is blocked (a CDN 403)', async () => {
+    const calls = newCalls();
+    const pdf = 'https://www.kia.co.uk/content/dam/ev3-brochure.pdf';
+    const b = await harvester({ search: [{ url: pdf }], filePdf: true }, calls, { blocked: true }).harvest({ make: 'Kia', model: 'EV3' });
+    expect(b.kind).toBe('pdf');
+    expect(b.sourceUrl).toBe(pdf);
+    expect(b.file?.sizeBytes).toBeGreaterThan(0);
+    expect(calls.downloads).toEqual([pdf]); // direct is tried first
+    expect(calls.fetchFile).toEqual([pdf]); // then Firecrawl fetches the bytes
+  });
+
+  it('does not spend a Firecrawl credit when the direct download succeeds', async () => {
+    const calls = newCalls();
+    await harvester({ search: [{ url: 'https://www.kia.co.uk/ev3.pdf' }], filePdf: true }, calls).harvest({ make: 'Kia', model: 'EV3' });
+    expect(calls.fetchFile).toEqual([]);
   });
 
   it('stops spending once the credit cap is reached', async () => {

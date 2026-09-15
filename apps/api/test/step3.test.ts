@@ -16,6 +16,8 @@ import { vehicleImageStore } from '../src/files.js';
 
 const USER = 'matt.wilson@dreamlease.co.uk';
 const authed = (over: Partial<Env> = {}): Env => ({ ...env, DEV_USER_EMAIL: USER, ...over }) as Env;
+/** .dev.vars may carry a real FIRECRAWL_API_KEY; tests of the no-key behaviour force it empty. */
+const noKey = (over: Partial<Env> = {}): Env => authed({ ...over, FIRECRAWL_API_KEY: '' });
 /** The pool loads .dev.vars, so the bare env already has a dev user; this one has none. */
 const { DEV_USER_EMAIL: _devUser, ...anonRest } = env as Env;
 const anon = anonRest as Env;
@@ -138,7 +140,7 @@ describe('POST /api/offers/lookup', () => {
 
   it('answers 502 with a clear message when the site cannot be read', async () => {
     on('https://www.dreamlease.co.uk', (p) => p.startsWith('/offers/'), text('blocked', 'text/html', 503));
-    const res = await app.request('/api/offers/lookup', post({ url: 'https://www.dreamlease.co.uk/offers/personal/kia-ev3-gt-line-81kwh-5dr-auto-109ty/?offer=p-9-36-8000-n' }), authed());
+    const res = await app.request('/api/offers/lookup', post({ url: 'https://www.dreamlease.co.uk/offers/personal/kia-ev3-gt-line-81kwh-5dr-auto-109ty/?offer=p-9-36-8000-n' }), noKey());
     expect(res.status).toBe(502);
     expect(((await res.json()) as { error: string }).error).toMatch(/could not be fetched/);
   });
@@ -152,12 +154,12 @@ describe('brochures', () => {
   });
 
   it('refuses to harvest without a Firecrawl key but still returns a stored copy', async () => {
-    const before = await app.request('/api/brochures/ensure', post(vehicle), authed());
+    const before = await app.request('/api/brochures/ensure', post(vehicle), noKey());
     expect(before.status).toBe(503);
     on('https://www.kia.co.uk', '/ev3.pdf', bytes(PDF, 'application/pdf'));
-    const manual = await app.request('/api/brochures/manual', post({ ...vehicle, url: 'https://www.kia.co.uk/ev3.pdf' }), authed());
+    const manual = await app.request('/api/brochures/manual', post({ ...vehicle, url: 'https://www.kia.co.uk/ev3.pdf' }), noKey());
     expect(manual.status).toBe(200);
-    const after = await app.request('/api/brochures/ensure', post(vehicle), authed());
+    const after = await app.request('/api/brochures/ensure', post(vehicle), noKey());
     expect(after.status).toBe(200);
     expect(((await after.json()) as { state: string }).state).toBe('stored');
   });
@@ -228,7 +230,7 @@ describe('brochures', () => {
 
 describe('health', () => {
   it('reports the images and firecrawl bindings', async () => {
-    const body = (await (await app.request('/health', {}, env)).json()) as { images: boolean; firecrawl: boolean; db: string };
+    const body = (await (await app.request('/health', {}, noKey())).json()) as { images: boolean; firecrawl: boolean; db: string };
     expect(body.db).toBe('ok');
     expect(body.images).toBe(true);
     expect(body.firecrawl).toBe(false);
