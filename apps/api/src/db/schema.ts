@@ -5,6 +5,7 @@
  *
  * Nothing in here may ever hold a CAP ID or a source image URL. See packages/schema/src/capid.ts.
  */
+import { sql } from 'drizzle-orm';
 import { index, integer, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core';
 
 export const campaigns = sqliteTable(
@@ -21,6 +22,9 @@ export const campaigns = sqliteTable(
     createdAt: text('created_at').notNull(),
     updatedAt: text('updated_at').notNull(),
     sentAt: text('sent_at'),
+    sentVia: text('sent_via'),
+    /** linkId -> destination, from render(). The /r/<slug>/<linkId> redirect resolves against this. */
+    links: text('links', { mode: 'json' }).notNull().default(sql`'{}'`),
     /** Campaign JSON snapshot (validated by Campaign schema) */
     data: text('data', { mode: 'json' }).notNull(),
   },

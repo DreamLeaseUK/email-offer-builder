@@ -6,6 +6,7 @@
 import type { Campaign } from '@offer-mailer/schema';
 import { Hono } from 'hono';
 import type { AppEnv } from './env.js';
+import { logHit } from './tracking.js';
 
 export const hostedKey = (slug: string): string => `c/${slug}.html`;
 
@@ -36,6 +37,8 @@ hosted.get('/c/:slug', async (c) => {
   if (expiresAt && new Date(expiresAt).getTime() < Date.now()) {
     return c.html(page('These offers have expired', 'The prices in this email were valid until the date shown on each offer. Reply to the email that brought you here and we\'ll send current figures.'), 410);
   }
+  const campaignId = obj.customMetadata?.campaignId;
+  if (campaignId) await logHit(c.env, campaignId, 'view', 'view', c.req.header('user-agent') ?? '');
   return new Response(obj.body, {
     status: 200,
     headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'private, no-cache', 'x-robots-tag': 'noindex, nofollow' },

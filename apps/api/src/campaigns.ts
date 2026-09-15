@@ -1,0 +1,246 @@
+/**
+ * Campaign persistence and delivery-adjacent routes — brief §5.4, §5.6.
+ *
+ *   POST /api/campaigns            assemble → render → write the hosted page → store the snapshot + link map
+ *   GET  /api/campaigns            the caller's campaigns, newest first
+ *   GET  /api/campaigns/:id        one campaign
+ *   GET  /api/campaigns/:id/stats  clicks and hosted views, scanner hits excluded
+ *   GET  /r/:slug/:link            public: resolve a stored link, log the click, redirect (was a stub)
+ *
+ * The rep supplies the parts they author (name, subject, intro, layout, offers, sender); the server
+ * owns identity, the hosted slug, the tracking code, the template and the compliance variant, so a
+ * campaign can never be stored against an unapproved template or with mixed contract types. The link
+ * map render() produces is stored so the redirect can resolve /r/<slug>/<linkId> without re-rendering.
+ */
+import { render } from '@offer-mailer/render';
+import { fixtureTemplate } from '@offer-mailer/render/fixtures';
+import { Campaign, CampaignUseCase, Offer, RecipientContext, Sender, Template, assertNoCapId } from '@offer-mailer/schema';
+import type { Campaign as CampaignT, Template as TemplateT } from '@offer-mailer/schema';
+import { desc, eq } from 'drizzle-orm';
+import { Hono } from 'hono';
+import { z } from 'zod';
+import { d1BrochureRepo } from './brochures.js';
+import { db } from './db/index.js';
+import { campaigns as campaignsTable, clicks as clicksTable, templates as templatesTable } from './db/schema.js';
+import type { AppEnv, Env } from './env.js';
+import { writeHostedPage } from './hosted.js';
+import { logHit } from './tracking.js';
+import type { Brochure } from '@offer-mailer/schema';
+
+/**
+ * The working default template until the template admin (build step 7) lets Matt author one and Emma
+ * approves it. It reuses the fixture's compliance wording — a starting point, not Emma-approved (see
+ * status doc §7) — but with a real UUID, since the fixture's id is a test placeholder, not a valid one.
+ */
+const DEFAULT_TEMPLATE_ID = 'd1000000-0000-4000-8000-000000000001';
+const DEFAULT_TEMPLATE: TemplateT = { ...fixtureTemplate, id: DEFAULT_TEMPLATE_ID };
+
+const DraftCampaign = z.object({
+  name: z.string().min(1).max(120),
+  useCase: CampaignUseCase,
+  subject: z.string().min(1).max(150),
+  preheader: z.string().max(150).optional(),
+  intro: z.string().min(1).max(4000),
+  layout: z.enum(['auto', 'single', 'stack', 'grid2', 'grid3']).default('auto'),
+  offers: z.array(Offer).min(1).max(6),
+  sender: Sender,
+  recipient: RecipientContext.optional(),
+  /** Optional; defaults to the approved default template. */
+  templateId: z.uuid().optional(),
+});
+type DraftCampaign = z.infer<typeof DraftCampaign>;
+
+const newId = (): string => crypto.randomUUID();
+/** Unguessable hosted slug: 32 hex chars (128 bits), matching the schema's [A-Za-z0-9_-]{16,}. */
+const newSlug = (): string => crypto.randomUUID().replace(/-/g, '');
+const newCampaignCode = (): string => `C-${crypto.randomUUID().slice(0, 8)}`;
+
+// ---------- repositories ----------
+
+function templatesRepo(env: Env) {
+  const d = db(env.DB);
+  return {
+    async getById(id: string): Promise<TemplateT | undefined> {
+      const row = await d.select().from(templatesTable).where(eq(templatesTable.id, id)).get();
+      return row ? Template.parse(row.data) : undefined;
+    },
+    /** The newest approved template, seeding the default once when none exists yet. */
+    async approvedDefault(): Promise<TemplateT> {
+      const row = await d.select().from(templatesTable).where(eq(templatesTable.status, 'approved')).orderBy(desc(templatesTable.version)).get();
+      if (row) return Template.parse(row.data);
+      const seed = DEFAULT_TEMPLATE;
+      await d
+        .insert(templatesTable)
+        .values({ id: seed.id, name: seed.name, version: seed.version, status: seed.status, approvedBy: seed.approvedBy ?? null, approvedAt: seed.approvedAt ?? null, createdAt: seed.approvedAt ?? new Date().toISOString(), data: seed })
+        .onConflictDoNothing()
+        .run();
+      return seed;
+    },
+  };
+}
+
+function campaignsRepo(env: Env) {
+  const d = db(env.DB);
+  return {
+    async save(campaign: CampaignT, links: Record<string, string>): Promise<void> {
+      assertNoCapId({ campaign, links }, 'campaign');
+      await d
+        .insert(campaignsTable)
+        .values({
+          id: campaign.id,
+          name: campaign.name,
+          useCase: campaign.useCase,
+          status: campaign.status,
+          hostedSlug: campaign.hostedPage.slug,
+          templateId: campaign.templateId,
+          templateVersion: campaign.templateVersion,
+          createdBy: campaign.createdBy,
+          createdAt: campaign.createdAt,
+          updatedAt: campaign.updatedAt,
+          sentAt: campaign.sentAt ?? null,
+          sentVia: campaign.sentVia ?? null,
+          links,
+          data: campaign,
+        })
+        .run();
+    },
+    async get(id: string): Promise<CampaignT | undefined> {
+      const row = await d.select().from(campaignsTable).where(eq(campaignsTable.id, id)).get();
+      return row ? Campaign.parse(row.data) : undefined;
+    },
+    /** Just the id and link map for the slug — all the redirect needs. */
+    async linksForSlug(slug: string): Promise<{ id: string; links: Record<string, string> } | undefined> {
+      const row = await d.select({ id: campaignsTable.id, links: campaignsTable.links }).from(campaignsTable).where(eq(campaignsTable.hostedSlug, slug)).get();
+      return row ? { id: row.id, links: (row.links ?? {}) as Record<string, string> } : undefined;
+    },
+    async listByUser(email: string): Promise<CampaignT[]> {
+      const rows = await d.select({ data: campaignsTable.data }).from(campaignsTable).where(eq(campaignsTable.createdBy, email)).orderBy(desc(campaignsTable.createdAt)).all();
+      return rows.map((r) => Campaign.parse(r.data));
+    },
+  };
+}
+
+// ---------- build ----------
+
+function buildCampaign(input: DraftCampaign, template: TemplateT, createdBy: string, base: string): CampaignT {
+  const variant = input.offers[0]!.contractType;
+  const nowIso = new Date().toISOString();
+  const slug = newSlug();
+  const draft = {
+    id: newId(),
+    name: input.name,
+    useCase: input.useCase,
+    templateId: template.id,
+    templateVersion: template.version,
+    subject: input.subject,
+    ...(input.preheader ? { preheader: input.preheader } : {}),
+    intro: input.intro,
+    layout: input.layout,
+    offers: input.offers,
+    ...(input.recipient ? { recipient: input.recipient } : {}),
+    sender: input.sender,
+    compliance: { variant, approvedWordingVersion: template.version },
+    hostedPage: { slug, url: `${base}/c/${slug}`, enabled: true },
+    tracking: { campaignCode: newCampaignCode(), utm: {} },
+    status: 'draft' as const,
+    createdBy,
+    createdAt: nowIso,
+    updatedAt: nowIso,
+  };
+  return Campaign.parse(draft);
+}
+
+// ---------- tool API (behind Access) ----------
+
+export const campaignsApi = new Hono<AppEnv>();
+
+campaignsApi.post('/campaigns', async (c) => {
+  const raw = await c.req.json().catch(() => undefined);
+  if (raw === undefined) return c.json({ error: 'Send a JSON campaign.' }, 400);
+  const parsed = DraftCampaign.safeParse(raw);
+  if (!parsed.success) {
+    return c.json({ error: 'That campaign is not valid.', issues: parsed.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`) }, 422);
+  }
+  const input = parsed.data;
+  if (!input.offers.every((o) => o.contractType === input.offers[0]!.contractType)) {
+    return c.json({ error: 'All offers in one campaign must be the same contract type.' }, 422);
+  }
+
+  const templates = templatesRepo(c.env);
+  const template = input.templateId ? await templates.getById(input.templateId) : await templates.approvedDefault();
+  if (!template) return c.json({ error: 'That template does not exist.' }, 404);
+  if (template.status !== 'approved') return c.json({ error: 'That template is not approved.' }, 422);
+
+  // Resolve the brochure record for any offer whose "include brochure" toggle is on; render() needs it.
+  const brochureRepo = d1BrochureRepo(c.env);
+  const brochures: Record<string, Brochure> = {};
+  for (const o of input.offers) {
+    if (!o.brochure?.include) continue;
+    const b = await brochureRepo.findById(o.brochure.brochureId);
+    if (!b) return c.json({ error: `The brochure for one of the offers no longer exists. Re-attach it.` }, 422);
+    brochures[b.id] = b;
+  }
+
+  const base = c.env.PUBLIC_BASE_URL.replace(/\/$/, '');
+  let campaign: CampaignT;
+  let rendered;
+  try {
+    campaign = buildCampaign(input, template, c.get('user').email, base);
+    rendered = render(campaign, template, { publicBaseUrl: base, brochures });
+  } catch (err) {
+    return c.json({ error: err instanceof Error ? err.message : 'The campaign could not be rendered.' }, 422);
+  }
+
+  await writeHostedPage(c.env.HOSTED, campaign, rendered.hostedHtml);
+  await campaignsRepo(c.env).save(campaign, rendered.links);
+  return c.json({ campaign, hostedUrl: campaign.hostedPage.url, layout: rendered.layout }, 201);
+});
+
+campaignsApi.get('/campaigns', async (c) => {
+  const list = await campaignsRepo(c.env).listByUser(c.get('user').email);
+  return c.json({ campaigns: list });
+});
+
+campaignsApi.get('/campaigns/:id', async (c) => {
+  const campaign = await campaignsRepo(c.env).get(c.req.param('id'));
+  return campaign ? c.json({ campaign }) : c.json({ error: 'Campaign not found.' }, 404);
+});
+
+campaignsApi.get('/campaigns/:id/stats', async (c) => {
+  const id = c.req.param('id');
+  if (!(await campaignsRepo(c.env).get(id))) return c.json({ error: 'Campaign not found.' }, 404);
+  const rows = await db(c.env.DB).select().from(clicksTable).where(eq(clicksTable.campaignId, id)).all();
+  const real = rows.filter((r) => r.uaClass !== 'scanner');
+  const byLink = new Map<string, number>();
+  let views = 0;
+  let clicks = 0;
+  for (const r of real) {
+    if (r.kind === 'view') views += 1;
+    else {
+      clicks += 1;
+      byLink.set(r.linkId, (byLink.get(r.linkId) ?? 0) + 1);
+    }
+  }
+  const ts = real.map((r) => r.ts).sort();
+  return c.json({
+    clicks,
+    views,
+    byLink: [...byLink.entries()].map(([linkId, count]) => ({ linkId, count })).sort((a, b) => b.count - a.count),
+    scannerHits: rows.length - real.length,
+    firstActivity: ts[0] ?? null,
+    lastActivity: ts[ts.length - 1] ?? null,
+  });
+});
+
+// ---------- public redirect (brief §5.6) ----------
+
+export const redirect = new Hono<AppEnv>();
+
+redirect.get('/r/:slug/:link', async (c) => {
+  const { slug, link } = c.req.param();
+  const found = await campaignsRepo(c.env).linksForSlug(slug);
+  const dest = found?.links[link];
+  if (!found || !dest) return c.text('Link not found.', 404);
+  await logHit(c.env, found.id, link, 'click', c.req.header('user-agent') ?? '');
+  return c.redirect(dest, 302);
+});

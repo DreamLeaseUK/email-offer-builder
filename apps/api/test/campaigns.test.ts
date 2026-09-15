@@ -1,0 +1,130 @@
+/**
+ * Campaign persistence, the /r redirect and click/view logging (brief §5.4, §5.6), end to end inside
+ * workerd with real local D1 and R2. No outbound fetch: rendering is pure and the offers are fixtures.
+ */
+import { env } from 'cloudflare:test';
+import { describe, expect, it } from 'vitest';
+import { findCapIdLeak } from '@offer-mailer/schema';
+import type { Campaign } from '@offer-mailer/schema';
+import { fixtureCampaign } from '@offer-mailer/render/fixtures';
+import app from '../src/index.js';
+import type { Env } from '../src/env.js';
+
+const USER = 'matt.wilson@dreamlease.co.uk';
+const authed = (over: Partial<Env> = {}): Env => ({ ...env, DEV_USER_EMAIL: USER, ...over }) as Env;
+const { DEV_USER_EMAIL: _dev, ...anonRest } = env as Env;
+const anon = anonRest as Env;
+
+const post = (body: unknown, e: Env) => app.request('/api/campaigns', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }, e);
+
+/** A valid draft built from the render fixtures (real, schema-valid offers and sender). */
+function draft(over: Record<string, unknown> = {}) {
+  const { campaign } = fixtureCampaign({ offerCount: 2, brochure: 'none' });
+  return {
+    name: campaign.name,
+    useCase: campaign.useCase,
+    subject: campaign.subject,
+    preheader: campaign.preheader,
+    intro: campaign.intro,
+    layout: 'grid2',
+    offers: campaign.offers,
+    sender: campaign.sender,
+    recipient: campaign.recipient,
+    ...over,
+  };
+}
+
+async function createCampaign(e = authed()): Promise<{ campaign: Campaign; hostedUrl: string; layout: string }> {
+  const res = await post(draft(), e);
+  expect(res.status).toBe(201);
+  return (await res.json()) as { campaign: Campaign; hostedUrl: string; layout: string };
+}
+
+describe('POST /api/campaigns', () => {
+  it('needs a login', async () => {
+    expect((await post(draft(), anon)).status).toBe(503);
+  });
+
+  it('assembles, renders, writes the hosted page and stores the campaign with its link map', async () => {
+    const { campaign, hostedUrl, layout } = await createCampaign();
+    expect(layout).toBe('grid2');
+    expect(campaign.hostedPage.slug).toMatch(/^[A-Za-z0-9_-]{16,}$/);
+    expect(campaign.createdBy).toBe(USER);
+    expect(campaign.status).toBe('draft');
+    expect(hostedUrl).toBe(campaign.hostedPage.url);
+    expect(findCapIdLeak(campaign)).toBeNull();
+
+    // hosted page is live
+    const hosted = await app.request(`/c/${campaign.hostedPage.slug}`, {}, env);
+    expect(hosted.status).toBe(200);
+
+    // retrievable by id and in the caller's list
+    const one = await app.request(`/api/campaigns/${campaign.id}`, {}, authed());
+    expect(one.status).toBe(200);
+    const list = (await (await app.request('/api/campaigns', {}, authed())).json()) as { campaigns: Campaign[] };
+    expect(list.campaigns.some((c) => c.id === campaign.id)).toBe(true);
+
+    // the link map was stored: the offer CTA and the hosted link resolve
+    const row = await env.DB.prepare('select links from campaigns where id = ?').bind(campaign.id).first<{ links: string }>();
+    const links = JSON.parse(row!.links) as Record<string, string>;
+    expect(links['hosted']).toBe(campaign.hostedPage.url);
+    expect(Object.keys(links)).toContain('o1-cta');
+    expect(row!.links).not.toMatch(/capId|motorleaseplatform/i);
+  });
+
+  it('rejects mixed contract types and an invalid body', async () => {
+    const mixed = draft();
+    (mixed.offers as { contractType: string }[])[1]!.contractType = 'business';
+    expect((await post(mixed, authed())).status).toBe(422);
+    expect((await post({ name: '' }, authed())).status).toBe(422);
+    expect((await app.request('/api/campaigns', { method: 'POST', body: 'not json' }, authed())).status).toBe(400);
+  });
+});
+
+describe('GET /r/:slug/:link', () => {
+  it('resolves a stored link, logs the click and 302s to the destination', async () => {
+    const { campaign } = await createCampaign();
+    const res = await app.request(`/r/${campaign.hostedPage.slug}/o1-cta`, {}, env);
+    expect(res.status).toBe(302);
+    const dest = res.headers.get('location')!;
+    expect(dest).toContain('dreamlease.co.uk');
+    expect(dest).toContain('utm_source=offer_mailer');
+
+    const click = await env.DB.prepare("select kind, ua_class from clicks where campaign_id = ? and link_id = 'o1-cta'").bind(campaign.id).first<{ kind: string; ua_class: string }>();
+    expect(click?.kind).toBe('click');
+  });
+
+  it('404s for an unknown slug or an unknown link id', async () => {
+    const { campaign } = await createCampaign();
+    expect((await app.request('/r/nosuchslugnosuchslug/o1-cta', {}, env)).status).toBe(404);
+    expect((await app.request(`/r/${campaign.hostedPage.slug}/o9-cta`, {}, env)).status).toBe(404);
+  });
+});
+
+describe('stats', () => {
+  it('counts clicks and hosted views and excludes link scanners', async () => {
+    const { campaign } = await createCampaign();
+    const slug = campaign.hostedPage.slug;
+    const desktop = { headers: { 'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' } };
+    const scanner = { headers: { 'user-agent': 'Mozilla/5.0 (Proofpoint URL Defense)' } };
+
+    await app.request(`/r/${slug}/o1-cta`, desktop, env); // real click
+    await app.request(`/r/${slug}/o1-cta`, scanner, env); // scanner pre-fetch, excluded
+    await app.request(`/c/${slug}`, desktop, env); // hosted view
+
+    const stats = (await (await app.request(`/api/campaigns/${campaign.id}/stats`, {}, authed())).json()) as {
+      clicks: number;
+      views: number;
+      byLink: { linkId: string; count: number }[];
+      scannerHits: number;
+    };
+    expect(stats.clicks).toBe(1);
+    expect(stats.views).toBe(1);
+    expect(stats.scannerHits).toBe(1);
+    expect(stats.byLink).toContainEqual({ linkId: 'o1-cta', count: 1 });
+  });
+
+  it('404s stats for an unknown campaign', async () => {
+    expect((await app.request('/api/campaigns/00000000-0000-4000-8000-000000000000/stats', {}, authed())).status).toBe(404);
+  });
+});

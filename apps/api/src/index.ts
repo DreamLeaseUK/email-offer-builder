@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import { brochureLink, brochuresApi } from './brochures.js';
+import { campaignsApi, redirect } from './campaigns.js';
 import { dev } from './dev.js';
 import type { AppEnv } from './env.js';
 import { files } from './files.js';
@@ -28,7 +29,7 @@ app.get('/health', async (c) => {
 app.route('/', hosted);
 app.route('/', files);
 app.route('/', brochureLink);
-app.get('/r/:slug/:link', (c) => c.text('Link not found.', 404)); // build step 6
+app.route('/', redirect); // /r/:slug/:link — resolves a stored campaign's link and logs the click
 
 // ---------- tool API (behind Cloudflare Access) ----------
 
@@ -37,6 +38,7 @@ api.use('*', requireAccess());
 api.get('/me', (c) => c.json(c.get('user')));
 api.route('/', lookup);
 api.route('/', brochuresApi);
+api.route('/', campaignsApi);
 api.route('/dev', dev);
 app.route('/api', api);
 
