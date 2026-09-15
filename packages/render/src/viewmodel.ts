@@ -110,10 +110,10 @@ export function buildCards(campaign: Campaign, opts: VmOptions): CardVM[] {
     const spec = [term, `${number(p.annualMileage)} miles p.a.`];
     const specShort = [`${p.termMonths} mo`, `${kMiles(p.annualMileage)} miles`];
     if (isSalsac) {
-      if (p.maintenance) {
-        spec.push('maintenance included');
-        specShort.push('maintenance incl.');
-      }
+      // Salary sacrifice: no initial payment. The net figure is all-in — it already includes the
+      // finance payment, maintenance and insurance (Matt, 15 Sept) — so the card states the cover.
+      spec.push('Maintenance & insurance included');
+      specShort.push('Maint. & insurance incl.');
     } else {
       spec.push(`${gbp(p.initialPayment)} initial payment`);
       specShort.push(`${gbp(p.initialPayment)} initial`);
