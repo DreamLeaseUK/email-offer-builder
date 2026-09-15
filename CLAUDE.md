@@ -2,7 +2,7 @@
 
 Internal tool: a rep pastes a dreamlease.co.uk offer URL, assembles a branded HTML email of one to six lease offers, and gets an Outlook draft plus a hosted web page. The full brief is `docs/dreamlease-offer-mailer-brief.md` (v1.1). The email markup source of truth is `design/dreamlease-offer-mailer-v5.html` with its implementation notes in `docs/offer-mailer-implementation-notes.md`; the visual preview is `design/offer-mailer-email-template-v2.dc.html` (where they disagree, the HTML file wins). Read the brief before changing anything that touches the data model, rendering, delivery or compliance.
 
-**Current state, decisions and open issues live in `docs/status-2026-09-15.md`** (`docs/status-2026-09-14.md` is kept for the 14 Sept history). **Resuming a session: `docs/PICKUP-PROMPT.md`.**
+**Current state, decisions and open issues live in `docs/status-2026-09-15.md`** (`docs/status-2026-09-14.md` is kept for the 14 Sept history). **Resuming a session: `docs/PICKUP-PROMPT.md`** (rewritten end of session 2, 15 Sept — the definitive hand-off). **The next major task — replacing brochure discovery — is briefed in `docs/brochure-finder-brief.md`.**
 
 ## Working method for the email template
 
