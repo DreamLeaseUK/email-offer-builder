@@ -1,19 +1,21 @@
 import { useEffect, useState } from 'react';
 import { Alert, Logo } from 'dreamlease-design-system';
 import type { Offer } from '@offer-mailer/schema';
-import { api, type Item } from './api';
+import { api, type Item, type Role } from './api';
 import { Campaigns } from './Campaigns';
 import { Compose } from './Compose';
 import { Library } from './Library';
 import { Register } from './Register';
+import { Templates } from './Templates';
 
 const errMsg = (e: unknown): string => (e instanceof Error ? e.message : String(e));
 
-type View = 'compose' | 'campaigns' | 'library' | 'register';
+type View = 'compose' | 'campaigns' | 'library' | 'register' | 'templates';
 
 export function App() {
   const [email, setEmail] = useState('');
   const [base, setBase] = useState('');
+  const [role, setRole] = useState<Role>('salesperson');
   const [meError, setMeError] = useState('');
   const [view, setView] = useState<View>('compose');
   // The offer tray is shared so the Library can add to the campaign the rep is composing.
@@ -25,6 +27,7 @@ export function App() {
       .then((m) => {
         setEmail(m.email);
         setBase(m.publicBaseUrl.replace(/\/$/, ''));
+        setRole(m.role);
       })
       .catch((e) => setMeError(errMsg(e)));
   }, []);
@@ -50,6 +53,7 @@ export function App() {
           {tab('campaigns', 'Campaigns')}
           {tab('library', 'Library')}
           {tab('register', 'Register')}
+          {role === 'admin' && tab('templates', 'Templates')}
         </nav>
         <span className="app__spacer" />
         <span className="dl-small app__user">{email || (meError ? 'not signed in' : '…')}</span>
@@ -70,6 +74,7 @@ export function App() {
       {view === 'campaigns' && <Campaigns />}
       {view === 'library' && <Library base={base} onAdd={addFromLibrary} />}
       {view === 'register' && <Register />}
+      {view === 'templates' && role === 'admin' && <Templates />}
     </div>
   );
 }

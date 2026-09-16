@@ -2,7 +2,14 @@
  * Thin client for the Worker API (apps/api). Everything is same-origin: Vite proxies /api, /c, /r,
  * /f, /b and /a to the Worker in dev, and in production the Worker serves the built app too.
  */
-import type { Brochure, Campaign, Offer, Sender } from '@offer-mailer/schema';
+import type { Brochure, Campaign, ComplianceBlock, ContractType, Offer, Sender, Template } from '@offer-mailer/schema';
+
+/** The admin-authored parts of a template; identity/version/markupVersion/status are server-owned. */
+export interface TemplateInput {
+  name: string;
+  complianceBlocks: Partial<Record<ContractType, ComplianceBlock>>;
+  footer: { optOutLine: string; companyLine: string };
+}
 
 export interface LeaseOption {
   title: string;
@@ -148,4 +155,11 @@ export const api = {
   listLibrary: () => fetch('/api/offers/library').then((r) => jsonOrThrow<{ offers: Offer[] }>(r)),
   deleteLibraryOffer: (id: string) => fetch(`/api/offers/library/${id}`, { method: 'DELETE' }).then((r) => jsonOrThrow<{ ok: boolean }>(r)),
   register: () => fetch('/api/register').then((r) => jsonOrThrow<RegisterData>(r)),
+  // ---- template admin (master admin only) ----
+  listTemplates: () => fetch('/api/templates').then((r) => jsonOrThrow<{ templates: Template[] }>(r)),
+  createTemplate: (body: TemplateInput) => jsonPost('/api/templates', body).then((r) => jsonOrThrow<{ template: Template }>(r)),
+  updateTemplate: (id: string, body: Partial<TemplateInput>) =>
+    fetch(`/api/templates/${id}`, { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }).then((r) => jsonOrThrow<{ template: Template }>(r)),
+  publishTemplate: (id: string) => jsonPost(`/api/templates/${id}/publish`, {}).then((r) => jsonOrThrow<{ template: Template }>(r)),
+  retireTemplate: (id: string) => jsonPost(`/api/templates/${id}/retire`, {}).then((r) => jsonOrThrow<{ template: Template }>(r)),
 };

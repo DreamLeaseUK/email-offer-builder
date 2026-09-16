@@ -433,3 +433,59 @@ body {
   flex-wrap: wrap;
   gap: 20px;
 }
+
+/* ---- template admin ---- */
+.tmpl__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.tmpl-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+.tmpl {
+  border: 1px solid var(--dl-grey-200, #e1e0e4);
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+.tmpl__row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.tmpl__name {
+  margin: 0 0 4px 0;
+  font-weight: 600;
+}
+.tmpl__meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.tmpl__actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.tmpl__block {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--dl-grey-200, #e1e0e4);
+}
+.tmpl__h {
+  margin: 0 0 8px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--dl-text, #393838);
+}
+.tmpl__formactions {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+}
