@@ -13,8 +13,10 @@
  *  6. fixed-width pills: one-cell tables with the content width on the <td> (126 hero, 100 small)
  *  7. lock-* classes on every coloured cell for the forced-light overrides
  * Sizes come from layout.ts. Four sizes: hero (single), row (stack), half (grid2), compact (grid3).
- * The only additions to the reference are the salary-sacrifice price blocks (from the v4 design) and
- * the red "View this offer" link the brief requires under any non-view_offer button.
+ * The only additions to the reference are the salary-sacrifice price blocks (from the v4 design), the
+ * red "View this offer" link the brief requires under any non-view_offer button, and the optional
+ * secondary contact link row in the signature (sender.secondaryContacts, in render.ts — opt-in, so the
+ * fixture sender leaves it unset and diff-reference stays green).
  *
  * Badge pill counts (Matt, 14 Sept, New Outlook focus): ONE pill on every multi-offer card (stack,
  * grid2, grid3), up to THREE on the single-offer hero. The v5 reference itself caps at hero 2,

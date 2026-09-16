@@ -5,7 +5,8 @@
  * `dreamlease-offer-mailer` v5 (14 Sept 2026); cards are in cards.ts.
  */
 import type { Brochure, Campaign, ComplianceBlock, Rendered, Template, TemplateLayout } from '@offer-mailer/schema';
-import { assertNoCapId } from '@offer-mailer/schema';
+import { assertNoCapId, availableSecondaryContacts, SECONDARY_CONTACT_LABELS } from '@offer-mailer/schema';
+import type { ContactMethod } from '@offer-mailer/schema';
 import { compactCard, ghostGrid, halfCard, heroCard, rowCard } from './cards.js';
 import { C, FF, FONT, LH, esc, mso, paragraphs, table } from './html.js';
 import { EMAIL_WIDTH, GRID2_CELL, GRID3_CELL, GRID_PAD, HEADSHOT, LOGO_H, LOGO_W, SIDE } from './layout.js';
@@ -276,6 +277,37 @@ ${greeting}${paragraphs(campaign.intro, `margin:0 0 14px 0; font-size:16px; line
           </td>
           `
     : '';
+  // Secondary contact links (rep-chosen, §7.1): an optional row under the email in the signature.
+  // Additive to the v5 reference — like the salsac blocks and the view-offer link — and opt-in, so the
+  // fixture sender leaves it unset and diff-reference stays green. Render skips any method missing its field.
+  const secondaryLink = (m: ContactMethod): { id: string; href: string } => {
+    switch (m) {
+      case 'call':
+        return { id: 'sig-call', href: `tel:${(s.phone ?? '').replace(/\s+/g, '')}` };
+      case 'whatsapp':
+        return { id: 'sig-whatsapp', href: `https://wa.me/${(s.whatsapp ?? '').replace(/^\+/, '')}` };
+      case 'email':
+        return { id: 'sig-contact-email', href: `mailto:${s.email}` };
+      case 'book':
+        return { id: 'sig-book', href: s.bookingUrl ?? '' };
+    }
+  };
+  const avail = availableSecondaryContacts(s);
+  const secondaryMethods = (s.secondaryContacts ?? []).filter((m) => avail.includes(m));
+  const secondaryLine = secondaryMethods.length
+    ? '\n            ' +
+      bodyP(
+        secondaryMethods
+          .map((m) => {
+            const { id, href } = secondaryLink(m);
+            return `<a href="${esc(ctx.links.track(id, href))}" style="color:${C.red}; text-decoration:underline;" class="lock-red">${esc(SECONDARY_CONTACT_LABELS[m])}</a>`;
+          })
+          .join(' &nbsp;&middot;&nbsp; '),
+        14,
+        22,
+        '8px 0 0 0',
+      )
+    : '';
   const signature = `  <!-- Signature -->
   <tr>
     <td class="gutter" style="padding:8px ${SIDE}px 28px ${SIDE}px;">
@@ -286,7 +318,7 @@ ${greeting}${paragraphs(campaign.intro, `margin:0 0 14px 0; font-size:16px; line
         <tr>
           ${headshot}<td style="padding:22px 0 0 0; vertical-align:top; ${FF}">
             <p class="lock-ink" style="margin:0 0 2px 0; font-size:16px; line-height:22px; ${LH}; font-weight:bold; color:${C.black};">${esc(s.displayName)}</p>
-            ${s.jobTitle ? bodyP(esc(s.jobTitle), 14, 20, '0 0 8px 0') + '\n            ' : ''}${bodyP(`${s.phone ? `${esc(s.phone)}<br />\n              ` : ''}<a href="${esc(sigEmail)}" style="color:${C.red}; text-decoration:underline;" class="lock-red">${esc(s.email)}</a>`, 14, 22, '0')}
+            ${s.jobTitle ? bodyP(esc(s.jobTitle), 14, 20, '0 0 8px 0') + '\n            ' : ''}${bodyP(`${s.phone ? `${esc(s.phone)}<br />\n              ` : ''}<a href="${esc(sigEmail)}" style="color:${C.red}; text-decoration:underline;" class="lock-red">${esc(s.email)}</a>`, 14, 22, '0')}${secondaryLine}
           </td>
         </tr>
       `,
@@ -358,7 +390,10 @@ function plainText(campaign: Campaign, template: Template, cards: CardVM[], comp
     lines.push(c.smallPrint, '');
   }
   const s = campaign.sender;
-  lines.push(s.displayName, ...(s.jobTitle ? [s.jobTitle] : []), ...(s.phone ? [s.phone] : []), s.email, '');
+  lines.push(s.displayName, ...(s.jobTitle ? [s.jobTitle] : []), ...(s.phone ? [s.phone] : []), s.email);
+  const textSecondary: Record<ContactMethod, string> = { call: s.phone ?? '', whatsapp: s.whatsapp ?? '', email: s.email, book: s.bookingUrl ?? '' };
+  for (const m of (s.secondaryContacts ?? []).filter((x) => availableSecondaryContacts(s).includes(x))) lines.push(`${SECONDARY_CONTACT_LABELS[m]}: ${textSecondary[m]}`);
+  lines.push('');
   lines.push(compliance.title.toUpperCase(), ...compliance.paragraphs, '', template.footer.optOutLine, template.footer.companyLine, 'https://www.dreamlease.co.uk');
   return lines.join('\n');
 }

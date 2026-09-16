@@ -14,6 +14,9 @@ export const OfferSourceKind = z.enum(['manual', 'url', 'feed', 'monday', 'ai'])
 export const StockStatus = z.enum(['in_stock', 'factory_order', 'limited']);
 export const CtaKind = z.enum(['view_offer', 'email', 'call', 'whatsapp', 'book', 'link']);
 export type CtaKind = z.infer<typeof CtaKind>;
+/** Contact methods a rep can surface as secondary links in their signature (§7.1). */
+export const ContactMethod = z.enum(['call', 'whatsapp', 'email', 'book']);
+export type ContactMethod = z.infer<typeof ContactMethod>;
 
 export const CampaignUseCase = z.enum(['follow_up', 'offer_pack', 'renewal']);
 export const CampaignStatus = z.enum(['draft', 'rendered', 'sent', 'archived']);
@@ -57,6 +60,14 @@ export const CTA_DEFAULT_LABELS: Record<Exclude<CtaKind, 'link'>, string> = {
   call: 'Call me on {phone}',
   whatsapp: 'WhatsApp me',
   book: 'Book a time to talk',
+};
+
+/** Fixed labels for the signature's secondary contact links (not rep-renamable; the primary button is). */
+export const SECONDARY_CONTACT_LABELS: Record<ContactMethod, string> = {
+  call: 'Call',
+  whatsapp: 'WhatsApp',
+  email: 'Email',
+  book: 'Book a call',
 };
 
 // ---------- Offer (§5.1) ----------
@@ -215,6 +226,10 @@ export const Sender = z.object({
   whatsapp: e164.optional(),
   /** Microsoft Bookings page. Enables the "Book a call" CTA. */
   bookingUrl: httpsUrl.optional(),
+  /** Which contact methods to show as a secondary row of links in the signature. The rep chooses one
+   *  primary green button per offer and, separately, any of these to surface here. Render skips a
+   *  method whose underlying field is absent. */
+  secondaryContacts: z.array(ContactMethod).optional(),
   /** Square headshot, 112px or larger, on our origin. Absent for department senders (brief §7.1). */
   headshotUrl: httpsUrl.optional(),
   /** Graph mailbox to draft into (user's own, or sales@/renewals@). */
@@ -229,6 +244,16 @@ export function availableCtaKinds(s: Sender): CtaKind[] {
   if (s.whatsapp) kinds.push('whatsapp');
   if (s.bookingUrl) kinds.push('book');
   return kinds;
+}
+
+/** The secondary-contact methods this sender can actually offer (the field each needs is present).
+ *  Email is always available (a sender always has an email); the rest gate on their field. */
+export function availableSecondaryContacts(s: Pick<Sender, 'phone' | 'whatsapp' | 'bookingUrl'>): ContactMethod[] {
+  const out: ContactMethod[] = ['email'];
+  if (s.phone) out.push('call');
+  if (s.whatsapp) out.push('whatsapp');
+  if (s.bookingUrl) out.push('book');
+  return out;
 }
 
 // ---------- Campaign ----------
