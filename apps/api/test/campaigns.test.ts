@@ -72,6 +72,27 @@ describe('POST /api/campaigns', () => {
     expect(row!.links).not.toMatch(/capId|motorleaseplatform/i);
   });
 
+  it('does not persist recipient PII, keeps the name off the hosted page, but still greets in the email', async () => {
+    // the draft carries a recipient (fixture: Priya + email)
+    const res = await post(draft(), authed());
+    const body = (await res.json()) as { campaign: Campaign; html: string; text: string };
+    const id = body.campaign.id;
+
+    // stored snapshot has no recipient object, and none of the recipient's structured PII (e.g. their
+    // email) survives. (The campaign *name* is rep-authored internal metadata, not a recipient field.)
+    const row = await env.DB.prepare('select data from campaigns where id = ?').bind(id).first<{ data: string }>();
+    const stored = JSON.parse(row!.data) as Record<string, unknown>;
+    expect(stored.recipient).toBeUndefined();
+    expect(row!.data).not.toContain('priya@example.com');
+    const readBack = (await (await app.request(`/api/campaigns/${id}`, {}, authed())).json()) as { campaign: Record<string, unknown> };
+    expect(readBack.campaign.recipient).toBeUndefined();
+
+    // the public hosted page carries no customer name, but the rep's email copy still greets them
+    const hosted = await (await app.request(`/c/${body.campaign.hostedPage.slug}`, {}, env)).text();
+    expect(hosted).not.toContain('Hi Priya,');
+    expect(body.html).toContain('Hi Priya,');
+  });
+
   it('returns the rendered html (with working /r links) for Copy-for-Outlook', async () => {
     const res = await post(draft(), authed());
     const body = (await res.json()) as { campaign: Campaign; html: string; text: string };

@@ -241,7 +241,9 @@ function emailBody(campaign: Campaign, template: Template, cards: CardVM[], layo
     </td>
   </tr>`;
 
-  const greeting = campaign.recipient?.firstName ? `<p class="lock-ink" style="margin:0 0 14px 0; font-size:22px; line-height:28px; ${LH}; font-weight:bold; color:${C.black};">Hi ${esc(campaign.recipient.firstName)},</p>\n` : '';
+  // The recipient greeting is personalisation for the rep's own email only — never on the public hosted
+  // page (data minimisation: no customer name on a shareable URL).
+  const greeting = !ctx.forHostedPage && campaign.recipient?.firstName ? `<p class="lock-ink" style="margin:0 0 14px 0; font-size:22px; line-height:28px; ${LH}; font-weight:bold; color:${C.black};">Hi ${esc(campaign.recipient.firstName)},</p>\n` : '';
   const intro = `  <!-- Intro -->
   <tr>
     <td class="gutter" style="padding:28px ${SIDE}px 8px ${SIDE}px; ${FF}">

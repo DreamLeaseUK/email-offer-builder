@@ -85,6 +85,10 @@ function campaignsRepo(env: Env) {
   return {
     async save(campaign: CampaignT, links: Record<string, string>): Promise<void> {
       assertNoCapId({ campaign, links }, 'campaign');
+      // Data minimisation (GDPR): the recipient is personalisation for the render only — it is used to
+      // build the rep's email copy and then never persisted. The stored snapshot (the FCA promotion
+      // record) holds the offer, compliance, sender and metadata, but no customer PII.
+      const { recipient: _recipientPii, ...persisted } = campaign;
       await d
         .insert(campaignsTable)
         .values({
@@ -101,7 +105,7 @@ function campaignsRepo(env: Env) {
           sentAt: campaign.sentAt ?? null,
           sentVia: campaign.sentVia ?? null,
           links,
-          data: campaign,
+          data: persisted,
         })
         .run();
     },

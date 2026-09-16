@@ -250,6 +250,13 @@ describe('render()', () => {
     expect(out.hostedHtml).toContain('noindex');
   });
 
+  it('greets the recipient in the email but never on the public hosted page', () => {
+    const { out } = r(); // the fixture recipient is "Priya"
+    expect(out.html).toContain('Hi Priya,');
+    expect(out.text).toContain('Hi Priya,');
+    expect(out.hostedHtml).not.toContain('Hi Priya,');
+  });
+
   it('is deterministic', () => {
     expect(r().out).toEqual(r().out);
   });
