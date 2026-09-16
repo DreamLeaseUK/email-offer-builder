@@ -609,6 +609,9 @@ export function Compose({ email, base, items, setItems }: { email: string; base:
           <Input placeholder="Paste a dreamlease.co.uk vehicle URL" value={url} onChange={(e) => setUrl(e.target.value)} disabled={items.length >= 6} />
           <Button type="submit" size="sm" disabled={fetching || !url.trim() || items.length >= 6}>{fetching ? 'Fetching…' : 'Add'}</Button>
         </form>
+        {items.length >= 6
+          ? <p className="dl-small app__muted">You’ve reached the maximum of 6 offers per email.</p>
+          : items.length > 0 && <p className="dl-small app__muted">Paste another vehicle URL and press Add to include another offer (up to 6).</p>}
         {audience === 'salary_sacrifice' && <p className="dl-small app__muted">Salary sacrifice: paste the vehicle URL for the make, model and image, then enter the net monthly figures by hand. The price includes finance, maintenance and insurance.</p>}
         {addError && <Alert tone="error">{addError}</Alert>}
         {warnings.map((w, i) => <Alert key={i} tone="warning">{w}</Alert>)}
