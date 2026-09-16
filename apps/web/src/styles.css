@@ -288,6 +288,17 @@ body {
   border-radius: 10px;
   text-align: center;
 }
+.preview__stale {
+  margin: 0 0 8px 0;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: #fff4e5;
+  color: #8a5a00;
+  border: 1px solid #ffd9a6;
+}
+.preview__frame--stale {
+  opacity: 0.55;
+}
 
 .created {
   display: grid;

@@ -283,6 +283,7 @@ export function Compose({ email, base, items, setItems }: { email: string; base:
   const [warnings, setWarnings] = useState<string[]>([]);
 
   const [previewHtml, setPreviewHtml] = useState('');
+  const [previewStale, setPreviewStale] = useState(false);
   const [previewing, setPreviewing] = useState(false);
   const [previewError, setPreviewError] = useState('');
   const [created, setCreated] = useState<CreateResponse | null>(null);
@@ -377,9 +378,17 @@ export function Compose({ email, base, items, setItems }: { email: string; base:
   const ready = items.length > 0 && !!name.trim() && !!subject.trim() && !!intro.trim() && !!email && !salsacNeedsFigures && ctaAvailable(ctaKind);
 
   /** Any change to the offer set invalidates the rendered output; clear it so the preview is never stale. */
+  // Invalidate output when the offers change: drop any created result and mark the preview stale — but
+  // KEEP it on screen (the panel flags it "out of date"), so it never vanishes when you tweak a chip.
   const clearOutput = () => {
     setCreated(null);
+    setPreviewStale(true);
+  };
+  // Full clear — used when the whole offer context is thrown away (e.g. switching audience).
+  const resetPreview = () => {
+    setCreated(null);
     setPreviewHtml('');
+    setPreviewStale(false);
   };
 
   async function addOffer(e: React.FormEvent) {
@@ -437,7 +446,7 @@ export function Compose({ email, base, items, setItems }: { email: string; base:
     setAudience(next);
     setItems([]);
     setAddError('');
-    clearOutput();
+    resetPreview();
     setWarnings(had ? [`Audience set to ${audienceShort(next)} — the offer list was cleared. Add offers from a ${audienceShort(next)} URL.`] : []);
   }
 
@@ -493,6 +502,7 @@ export function Compose({ email, base, items, setItems }: { email: string; base:
     setPreviewError('');
     try {
       setPreviewHtml(displayHtml((await api.preview(draft)).html));
+      setPreviewStale(false);
     } catch (err) {
       setPreviewError(errMsg(err));
     } finally {
@@ -507,6 +517,7 @@ export function Compose({ email, base, items, setItems }: { email: string; base:
       const res = await api.create(draft);
       setCreated(res); // res.html stays absolute — Copy-for-Outlook needs it that way
       setPreviewHtml(displayHtml(res.html));
+      setPreviewStale(false);
     } catch (err) {
       setCreateError(errMsg(err));
     } finally {
@@ -686,8 +697,11 @@ export function Compose({ email, base, items, setItems }: { email: string; base:
         )}
 
         <div className="preview">
-          {previewHtml ? (
-            <iframe title="Email preview" srcDoc={previewHtml} className="preview__frame" />
+          {previewHtml && items.length > 0 ? (
+            <>
+              {previewStale && <p className="preview__stale dl-small">Offer changed — this preview is out of date. Press “Update preview” to refresh it.</p>}
+              <iframe title="Email preview" srcDoc={previewHtml} className={`preview__frame${previewStale ? ' preview__frame--stale' : ''}`} />
+            </>
           ) : (
             <div className="preview__empty">
               <Badge tone="grey">Preview</Badge>
