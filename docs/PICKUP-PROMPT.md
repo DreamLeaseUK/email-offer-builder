@@ -21,8 +21,9 @@ You are resuming the **DreamLease Offer Mailer**: an internal tool where a sales
 2. **This file.**
 3. `docs/status-2026-09-15.md` — current state, build-step table, decisions, findings. (Updated end of session 2.)
 4. **`docs/brochure-finder-brief.md` — the next major task** (brochure discovery redesign, for Fable). See §5 below.
-5. `docs/dreamlease-offer-mailer-brief.md` — the solution design (v1.1); §5 is the shared contract, §8 the build order.
-6. `docs/offer-mailer-implementation-notes.md` — the v5 email markup non-negotiables + acceptance test.
+5. **`docs/architecture.md` — the authoritative Solution Design & System Architecture (current-state).** The technical map: layers, data model & storage, auth & roles, PII/compliance posture, routing, roadmap.
+6. `docs/dreamlease-offer-mailer-brief.md` — the original product brief / requirements (v1.1); §5 is the shared contract, §8 the build order.
+7. `docs/offer-mailer-implementation-notes.md` — the v5 email markup non-negotiables + acceptance test.
 
 ## 2. Repo & live state (verified 15 Sept, end of session 2)
 
