@@ -128,6 +128,22 @@ describe('render()', () => {
     expect(r({ offerCount: 1 }).out.html).not.toMatch(/brochure/i);
   });
 
+  it('shows the same, even number of stat tiles on every card in a multi-offer email', () => {
+    const { campaign, brochures } = fixtureCampaign({ offerCount: 2, layout: 'grid2' });
+    campaign.offers[1]!.vehicle.stats = campaign.offers[1]!.vehicle.stats!.slice(0, 2); // one card exposes only two
+    const out = render(campaign, fixtureTemplate, { publicBaseUrl: BASE, brochures });
+    // both cards drop to two tiles (no lonely tile), so the 3rd/4th stats disappear from BOTH
+    expect(out.html).not.toContain('BATTERY');
+    expect(out.html).not.toContain('WARRANTY');
+    expect(out.html).toContain('RANGE');
+  });
+
+  it('keeps an odd stat count on a single hero (rendered in one row)', () => {
+    const { campaign, brochures } = fixtureCampaign({ offerCount: 1, layout: 'single' });
+    campaign.offers[0]!.vehicle.stats = campaign.offers[0]!.vehicle.stats!.slice(0, 3);
+    expect(render(campaign, fixtureTemplate, { publicBaseUrl: BASE, brochures }).html).toContain('BATTERY');
+  });
+
   it('shows the standard £299.99 processing fee on every PCH card, even when the offer carried none', () => {
     const personal = fixtureCampaign({ offerCount: 1, contractType: 'personal' });
     delete personal.campaign.offers[0]!.pricing.processingFee; // the site returned no fee for this one

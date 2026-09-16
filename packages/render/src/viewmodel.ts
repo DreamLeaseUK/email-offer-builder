@@ -92,6 +92,11 @@ function ctaFor(offer: Offer, sender: Sender, index: number, links: Links, offer
 
 export function buildCards(campaign: Campaign, opts: VmOptions): CardVM[] {
   const { links, publicBaseUrl, brochures } = opts;
+  // Show the same number of stat tiles on every card so a multi-offer email reads as a matched set. A
+  // single card renders stats in one row (any count is fine), but 2+ cards render them in pairs, where an
+  // odd count leaves a lonely tile — so for a multi-offer campaign use the common count, floored to even.
+  const commonStats = Math.min(4, ...campaign.offers.map((o) => (o.vehicle.stats ?? []).length));
+  const statCount = campaign.offers.length > 1 ? commonStats - (commonStats % 2) : commonStats;
   return campaign.offers.map((offer, i): CardVM => {
     const n = i + 1;
     const isSalsac = offer.contractType === 'salary_sacrifice';
@@ -154,7 +159,7 @@ export function buildCards(campaign: Campaign, opts: VmOptions): CardVM[] {
       vatLabel: p.vat === 'ex' ? 'per month ex VAT' : 'per month inc VAT',
       specLine: spec.join(' · '),
       specShort: specShort.join(' · '),
-      stats: (offer.vehicle.stats ?? []).slice(0, 4),
+      stats: (offer.vehicle.stats ?? []).slice(0, statCount),
       imageUrl: offer.image?.url ?? `${publicBaseUrl}/a/vehicle-placeholder.png`,
       cta,
       smallPrint: smallPrintParts.join(' · '),
