@@ -377,6 +377,13 @@ export function Compose({ email, base, items, setItems }: { email: string; base:
   const salsacNeedsFigures = items.some((x) => isSalsac(x.offer) && !salsacReady(x.offer));
   const ready = items.length > 0 && !!name.trim() && !!subject.trim() && !!intro.trim() && !!email && !salsacNeedsFigures && ctaAvailable(ctaKind);
 
+  // Auto-render the preview as soon as the first offer is added, so the rep sees the email straight away.
+  // Subsequent changes keep the preview but flag it stale (the rep presses Update preview to refresh).
+  useEffect(() => {
+    if (items.length === 1 && ready && !previewHtml && !previewing) void doPreview();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items.length, ready]);
+
   /** Any change to the offer set invalidates the rendered output; clear it so the preview is never stale. */
   // Invalidate output when the offers change: drop any created result and mark the preview stale — but
   // KEEP it on screen (the panel flags it "out of date"), so it never vanishes when you tweak a chip.
@@ -393,7 +400,10 @@ export function Compose({ email, base, items, setItems }: { email: string; base:
 
   async function addOffer(e: React.FormEvent) {
     e.preventDefault();
-    if (!url.trim()) return;
+    if (!url.trim()) {
+      document.getElementById('addoffer-url')?.focus(); // guide the rep to paste a URL instead of a dead click
+      return;
+    }
     setFetching(true);
     setAddError('');
     setWarnings([]);
@@ -617,12 +627,10 @@ export function Compose({ email, base, items, setItems }: { email: string; base:
       <section className="panel">
         <h2 className="dl-h4">Offers <span className="dl-small">{items.length}/6</span></h2>
         <form onSubmit={addOffer} className="addoffer">
-          <Input placeholder="Paste a dreamlease.co.uk vehicle URL" value={url} onChange={(e) => setUrl(e.target.value)} disabled={items.length >= 6} />
-          <Button type="submit" size="sm" disabled={fetching || !url.trim() || items.length >= 6}>{fetching ? 'Fetching…' : 'Add'}</Button>
+          <Input id="addoffer-url" placeholder="Paste a dreamlease.co.uk vehicle URL" value={url} onChange={(e) => setUrl(e.target.value)} disabled={items.length >= 6} />
+          <Button type="submit" size="sm" disabled={fetching || items.length >= 6}>{fetching ? 'Fetching…' : items.length ? 'Add another offer' : 'Add offer'}</Button>
         </form>
-        {items.length >= 6
-          ? <p className="dl-small app__muted">You’ve reached the maximum of 6 offers per email.</p>
-          : items.length > 0 && <p className="dl-small app__muted">Paste another vehicle URL and press Add to include another offer (up to 6).</p>}
+        {items.length >= 6 && <p className="dl-small app__muted">You’ve reached the maximum of 6 offers per email.</p>}
         {audience === 'salary_sacrifice' && <p className="dl-small app__muted">Salary sacrifice: paste the vehicle URL for the make, model and image, then enter the net monthly figures by hand. The price includes finance, maintenance and insurance.</p>}
         {addError && <Alert tone="error">{addError}</Alert>}
         {warnings.map((w, i) => <Alert key={i} tone="warning">{w}</Alert>)}
