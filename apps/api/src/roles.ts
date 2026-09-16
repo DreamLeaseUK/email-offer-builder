@@ -9,8 +9,9 @@
  * The approver role is parked: a master admin authors AND approves templates (rule 3's approved-gate
  * still holds — the admin is the one who flips a template to `approved`).
  */
+import type { MiddlewareHandler } from 'hono';
 import adminsConfig from '../../../config/admins.json' with { type: 'json' };
-import type { Env } from './env.js';
+import type { AppEnv, Env } from './env.js';
 
 export type Role = 'salesperson' | 'admin';
 
@@ -32,3 +33,9 @@ export function isAdmin(env: Pick<Env, 'ADMIN_EMAILS'>, email: string): boolean 
 export function roleFor(env: Pick<Env, 'ADMIN_EMAILS'>, email: string): Role {
   return isAdmin(env, email) ? 'admin' : 'salesperson';
 }
+
+/** Gate admin-only routes: 403 unless the signed-in user is a master admin. Runs after requireAccess. */
+export const requireAdmin = (): MiddlewareHandler<AppEnv> => async (c, next) => {
+  if (!isAdmin(c.env, c.get('user').email)) return c.json({ error: 'Admin access required' }, 403);
+  return next();
+};

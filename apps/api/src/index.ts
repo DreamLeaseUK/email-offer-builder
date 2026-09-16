@@ -9,6 +9,7 @@ import { libraryApi } from './library.js';
 import { lookup } from './lookup.js';
 import { requireAccess } from './middleware/access.js';
 import { profileApi } from './profile.js';
+import { templatesApi } from './templates.js';
 
 const app = new Hono<AppEnv>();
 
@@ -42,6 +43,7 @@ api.route('/', lookup);
 api.route('/', brochuresApi);
 api.route('/', campaignsApi);
 api.route('/', libraryApi);
+api.route('/', templatesApi); // /templates — master-admin only (requireAdmin inside)
 api.route('/dev', dev);
 app.route('/api', api);
 
