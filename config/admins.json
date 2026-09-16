@@ -1,0 +1,4 @@
+{
+  "_comment": "Master-admin allowlist (stage one). Emails matched case-insensitively; extend at runtime with the ADMIN_EMAILS env var (comma-separated). A master admin can use the template admin and self-approves templates. Everyone else is a salesperson.",
+  "admins": ["matt.wilson@dreamlease.co.uk"]
+}

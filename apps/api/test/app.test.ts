@@ -47,13 +47,27 @@ describe('Access middleware', () => {
     const dev = { ...baseEnv, DEV_USER_EMAIL: 'matt.wilson@dreamlease.co.uk' };
     const res = await app.request('/api/me', {}, dev);
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ email: 'matt.wilson@dreamlease.co.uk', sub: 'dev', publicBaseUrl: 'https://offers.dreamlease.co.uk', headshotUrl: null, savedSender: null });
+    expect(await res.json()).toEqual({ email: 'matt.wilson@dreamlease.co.uk', sub: 'dev', role: 'admin', publicBaseUrl: 'https://offers.dreamlease.co.uk', headshotUrl: null, savedSender: null });
   });
 
   it('ignores DEV_USER_EMAIL once ACCESS_AUD is set', async () => {
     const prod = { ...baseEnv, ACCESS_TEAM_DOMAIN: 'dreamlease.cloudflareaccess.com', ACCESS_AUD: 'aud', DEV_USER_EMAIL: 'x@dreamlease.co.uk' };
     const res = await app.request('/api/me', {}, prod);
     expect(res.status).toBe(401);
+  });
+});
+
+describe('roles', () => {
+  const roleOf = async (env: Env) => ((await (await app.request('/api/me', {}, env)).json()) as { role: string }).role;
+
+  it('marks a configured admin as admin and everyone else a salesperson', async () => {
+    expect(await roleOf({ ...baseEnv, DEV_USER_EMAIL: 'matt.wilson@dreamlease.co.uk' })).toBe('admin');
+    expect(await roleOf({ ...baseEnv, DEV_USER_EMAIL: 'sam.carter@dreamlease.co.uk' })).toBe('salesperson');
+  });
+
+  it('honours the ADMIN_EMAILS env override, case-insensitively', async () => {
+    const env = { ...baseEnv, DEV_USER_EMAIL: 'Sam.Carter@dreamlease.co.uk', ADMIN_EMAILS: 'other@x.com, sam.carter@dreamlease.co.uk' } as unknown as Env;
+    expect(await roleOf(env)).toBe('admin');
   });
 });
 

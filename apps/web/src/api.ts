@@ -31,6 +31,8 @@ export type UseCase = 'follow_up' | 'offer_pack' | 'renewal';
 export type Audience = 'personal' | 'business' | 'salary_sacrifice';
 /** A contact method the rep can surface as a secondary link in their signature. */
 export type ContactMethod = 'call' | 'whatsapp' | 'email' | 'book';
+/** The signed-in user's role. Master admins get the template admin; everyone else is a salesperson. */
+export type Role = 'salesperson' | 'admin';
 
 /** The rep's saved, editable sender contact details (the photo persists separately). */
 export interface SavedSender {
@@ -113,7 +115,7 @@ async function jsonOrThrow<T>(r: Response): Promise<T> {
 const jsonPost = (url: string, data: unknown) => fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(data) });
 
 export const api = {
-  me: () => fetch('/api/me').then((r) => jsonOrThrow<{ email: string; sub: string; publicBaseUrl: string; headshotUrl: string | null; savedSender: SavedSender | null }>(r)),
+  me: () => fetch('/api/me').then((r) => jsonOrThrow<{ email: string; sub: string; role: Role; publicBaseUrl: string; headshotUrl: string | null; savedSender: SavedSender | null }>(r)),
   /** Save the rep's contact details so they prefill next time. */
   saveSender: (details: SavedSender) => jsonPost('/api/me/sender', details).then((r) => jsonOrThrow<{ ok: boolean; savedSender: SavedSender }>(r)),
   /** Upload the rep's portrait; returns the stored (square) headshot URL. */

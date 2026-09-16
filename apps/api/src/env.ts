@@ -16,6 +16,8 @@ export interface Env {
   DEV_USER_EMAIL?: string;
   /** wrangler secret */
   FIRECRAWL_API_KEY?: string;
+  /** Optional comma-separated master-admin emails, merged with config/admins.json (see roles.ts). */
+  ADMIN_EMAILS?: string;
 }
 
 export interface AccessUser {

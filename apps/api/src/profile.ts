@@ -17,6 +17,7 @@ import { db } from './db/index.js';
 import { senders as sendersTable } from './db/schema.js';
 import type { AppEnv, Env } from './env.js';
 import { storeHeadshot } from './files.js';
+import { roleFor } from './roles.js';
 
 const MAX_PHOTO_BYTES = 10 * 1024 * 1024;
 
@@ -67,6 +68,7 @@ profileApi.get('/me', async (c) => {
   }
   return c.json({
     ...user,
+    role: roleFor(c.env, user.email),
     publicBaseUrl: c.env.PUBLIC_BASE_URL,
     headshotUrl: saved?.headshotUrl ?? null,
     savedSender: saved ? savedSenderView(saved) : null,
