@@ -1,8 +1,9 @@
 import type React from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Badge, Button, Field, Input, OfferCard, Select, Textarea } from 'dreamlease-design-system';
-import type { Brochure, Offer, Sender } from '@offer-mailer/schema';
-import { api, type Audience, type CreateResponse, type Draft, type Item, type LayoutChoice, type LeaseOption, type UseCase } from './api';
+import type { Brochure, CtaKind, Offer, Sender } from '@offer-mailer/schema';
+import { CTA_DEFAULT_LABELS } from '@offer-mailer/schema';
+import { api, type Audience, type ContactMethod, type CreateResponse, type Draft, type Item, type LayoutChoice, type LeaseOption, type UseCase } from './api';
 
 const gbp = (n: number): string => '£' + Math.round(n).toLocaleString('en-GB');
 const errMsg = (e: unknown): string => (e instanceof Error ? e.message : String(e));
@@ -36,6 +37,36 @@ function toSalsac(o: Offer, keep?: Offer): Offer {
   };
 }
 const salsacReady = (o: Offer): boolean => (o.pricing.salsac?.net20 ?? 0) > 0 && (o.pricing.salsac?.net40 ?? 0) > 0;
+
+/** The green-button CTA options (brief §5.9). `need` is the sender field that unlocks the option. */
+const CTA_OPTIONS: { kind: CtaKind; label: string; need?: 'phone' | 'whatsapp' | 'booking'; needText?: string }[] = [
+  { kind: 'view_offer', label: 'View offer — open the offer page' },
+  { kind: 'call', label: 'Call me', need: 'phone', needText: 'a Direct phone' },
+  { kind: 'whatsapp', label: 'WhatsApp me', need: 'whatsapp', needText: 'a WhatsApp number' },
+  { kind: 'email', label: 'Email me' },
+  { kind: 'book', label: 'Book a time to discuss', need: 'booking', needText: 'a Booking link' },
+];
+const ctaDefaultLabel = (kind: CtaKind): string => (CTA_DEFAULT_LABELS as Record<string, string>)[kind] ?? '';
+
+/** The secondary contact links the rep can add to their signature (a separate choice from the primary
+ *  green button). `need` is the sender field that unlocks it; email is always available. */
+const SECONDARY_OPTIONS: { method: ContactMethod; label: string; need?: 'phone' | 'whatsapp' | 'booking'; needText?: string }[] = [
+  { method: 'call', label: 'Call', need: 'phone', needText: 'a Direct phone' },
+  { method: 'whatsapp', label: 'WhatsApp', need: 'whatsapp', needText: 'a WhatsApp number' },
+  { method: 'email', label: 'Email' },
+  { method: 'book', label: 'Book a call', need: 'booking', needText: 'a Booking link' },
+];
+
+/** Apply the campaign's chosen CTA to an offer's green button. A plain view_offer with no custom label
+ *  is the render default (no cta set); any other kind, or a custom label, is stored on the offer. */
+function applyCta(o: Offer, kind: CtaKind, label: string): Offer {
+  const l = label.trim();
+  if (kind === 'view_offer' && !l) {
+    const { cta: _drop, ...rest } = o;
+    return rest;
+  }
+  return { ...o, cta: { kind, ...(l ? { label: l } : {}) } };
+}
 
 function offerTerms(o: Offer): string {
   const p = o.pricing;
@@ -153,6 +184,68 @@ function BrochureControl({ item, onAttach, onToggle, onRemove }: { item: Item; o
   );
 }
 
+/** Upload / manage the rep's portrait. Persists server-side and shows in the signature of every email. */
+function SenderPhoto({ base }: { base: string }) {
+  const sameOrigin = (u: string): string => (base && u.startsWith(base) ? u.slice(base.length) || '/' : u);
+  const [url, setUrl] = useState<string | null>(null);
+  const [loaded, setLoaded] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState('');
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    api
+      .me()
+      .then((m) => setUrl(m.headshotUrl))
+      .catch(() => {})
+      .finally(() => setLoaded(true));
+  }, []);
+
+  async function upload(file: File) {
+    setBusy(true);
+    setErr('');
+    try {
+      setUrl((await api.uploadPhoto(file)).headshotUrl);
+    } catch (e) {
+      setErr(errMsg(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function remove() {
+    setBusy(true);
+    setErr('');
+    try {
+      await api.deletePhoto();
+      setUrl(null);
+    } catch (e) {
+      setErr(errMsg(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="dl-field">
+      <label className="dl-label">Portrait photo</label>
+      <div className="portrait">
+        {url ? <img className="portrait__img" src={sameOrigin(url)} alt="Your portrait" /> : <div className="portrait__empty">No photo</div>}
+        <div className="portrait__side">
+          <div className="portrait__btns">
+            <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp" hidden onChange={(e) => { const f = e.target.files?.[0]; if (f) upload(f); e.target.value = ''; }} />
+            <Button variant="outline" size="sm" onClick={() => fileRef.current?.click()} disabled={busy || !loaded}>{busy ? 'Uploading…' : url ? 'Replace' : 'Upload photo'}</Button>
+            {url && (
+              <Button variant="ghost" size="sm" onClick={remove} disabled={busy}>Remove</Button>
+            )}
+          </div>
+          <span className="dl-small app__muted">Optional. Shows in your email signature on every email, and is saved for next time.</span>
+        </div>
+      </div>
+      {err && <span className="dl-small brochure__err">{err}</span>}
+    </div>
+  );
+}
+
 export function Compose({ email, base, items, setItems }: { email: string; base: string; items: Item[]; setItems: React.Dispatch<React.SetStateAction<Item[]>> }) {
   // Our-origin asset/link URLs are stamped absolute (the email needs that), but they only resolve on
   // the public origin. For in-app display, strip our origin so they become same-origin (served by the
@@ -172,6 +265,14 @@ export function Compose({ email, base, items, setItems }: { email: string; base:
   const [senderName, setSenderName] = useState('');
   const [senderTitle, setSenderTitle] = useState('Account Manager, DreamLease');
   const [senderPhone, setSenderPhone] = useState('');
+  const [senderWhatsapp, setSenderWhatsapp] = useState('');
+  const [senderBooking, setSenderBooking] = useState('');
+  const [secondary, setSecondary] = useState<ContactMethod[]>([]);
+  const [ctaKind, setCtaKind] = useState<CtaKind>('view_offer');
+  const [ctaLabel, setCtaLabel] = useState('');
+  const [savingDetails, setSavingDetails] = useState(false);
+  const [detailsSaved, setDetailsSaved] = useState(false);
+  const [detailsError, setDetailsError] = useState('');
 
   const [url, setUrl] = useState('');
   const [fetching, setFetching] = useState(false);
@@ -195,6 +296,43 @@ export function Compose({ email, base, items, setItems }: { email: string; base:
     setSenderName((n) => n || guess);
   }, [email]);
 
+  // Prefill the rep's saved contact details so they never re-enter them; they stay editable.
+  useEffect(() => {
+    api
+      .me()
+      .then((m) => {
+        const s = m.savedSender;
+        if (!s) return;
+        setSenderName(s.displayName);
+        setSenderTitle(s.jobTitle);
+        setSenderPhone(s.phone);
+        setSenderWhatsapp(s.whatsapp);
+        setSenderBooking(s.bookingUrl);
+        setSecondary(s.secondaryContacts ?? []);
+      })
+      .catch(() => {});
+  }, []);
+
+  /** Is a secondary contact method usable yet — its underlying sender field filled? (Email always is.) */
+  const secondaryReady = (m: ContactMethod): boolean =>
+    m === 'email' ? true : m === 'call' ? !!senderPhone.trim() : m === 'whatsapp' ? !!senderWhatsapp.trim() : !!senderBooking.trim();
+  const toggleSecondary = (m: ContactMethod) => setSecondary((cur) => (cur.includes(m) ? cur.filter((x) => x !== m) : [...cur, m]));
+
+  async function saveDetails() {
+    setSavingDetails(true);
+    setDetailsError('');
+    setDetailsSaved(false);
+    try {
+      await api.saveSender({ displayName: senderName || email, jobTitle: senderTitle, phone: senderPhone, whatsapp: senderWhatsapp, bookingUrl: senderBooking, secondaryContacts: secondary });
+      setDetailsSaved(true);
+      setTimeout(() => setDetailsSaved(false), 2500);
+    } catch (e) {
+      setDetailsError(errMsg(e));
+    } finally {
+      setSavingDetails(false);
+    }
+  }
+
   const sender: Sender = useMemo(
     () => ({
       kind: 'user',
@@ -203,9 +341,22 @@ export function Compose({ email, base, items, setItems }: { email: string; base:
       mailbox: email || 'unknown@dreamlease.co.uk',
       ...(senderTitle ? { jobTitle: senderTitle } : {}),
       ...(senderPhone ? { phone: senderPhone } : {}),
+      ...(senderWhatsapp.trim() ? { whatsapp: senderWhatsapp.trim() } : {}),
+      ...(senderBooking.trim() ? { bookingUrl: senderBooking.trim() } : {}),
+      ...(() => {
+        const ready = secondary.filter((m) => (m === 'email' ? true : m === 'call' ? !!senderPhone.trim() : m === 'whatsapp' ? !!senderWhatsapp.trim() : !!senderBooking.trim()));
+        return ready.length ? { secondaryContacts: ready } : {};
+      })(),
     }),
-    [senderName, senderTitle, senderPhone, email],
+    [senderName, senderTitle, senderPhone, senderWhatsapp, senderBooking, secondary, email],
   );
+
+  /** Is the chosen CTA usable — i.e. the sender field it needs is filled in? */
+  const ctaAvailable = (kind: CtaKind): boolean => {
+    const need = CTA_OPTIONS.find((o) => o.kind === kind)?.need;
+    if (!need) return true;
+    return need === 'phone' ? !!senderPhone.trim() : need === 'whatsapp' ? !!senderWhatsapp.trim() : !!senderBooking.trim();
+  };
 
   const draft: Draft = useMemo(
     () => ({
@@ -215,15 +366,15 @@ export function Compose({ email, base, items, setItems }: { email: string; base:
       ...(preheader ? { preheader } : {}),
       intro,
       layout,
-      offers: items.map((x) => x.offer),
+      offers: items.map((x) => applyCta(x.offer, ctaKind, ctaLabel)),
       sender,
       ...(recipientFirst ? { recipient: { firstName: recipientFirst } } : {}),
     }),
-    [name, useCase, subject, preheader, intro, layout, items, sender, recipientFirst],
+    [name, useCase, subject, preheader, intro, layout, items, sender, recipientFirst, ctaKind, ctaLabel],
   );
 
   const salsacNeedsFigures = items.some((x) => isSalsac(x.offer) && !salsacReady(x.offer));
-  const ready = items.length > 0 && !!name.trim() && !!subject.trim() && !!intro.trim() && !!email && !salsacNeedsFigures;
+  const ready = items.length > 0 && !!name.trim() && !!subject.trim() && !!intro.trim() && !!email && !salsacNeedsFigures && ctaAvailable(ctaKind);
 
   /** Any change to the offer set invalidates the rendered output; clear it so the preview is never stale. */
   const clearOutput = () => {
@@ -412,11 +563,43 @@ export function Compose({ email, base, items, setItems }: { email: string; base:
             <option value="grid3">Three-up grid</option>
           </Select>
         )}</Field>
+        <Field label="Offer button (CTA)" help="What the green button on every offer does.">{(id) => (
+          <Select id={id} value={ctaKind} onChange={(e) => setCtaKind(e.target.value as CtaKind)}>
+            {CTA_OPTIONS.map((o) => (
+              <option key={o.kind} value={o.kind} disabled={!ctaAvailable(o.kind)}>
+                {o.label}
+                {ctaAvailable(o.kind) ? '' : ` — add ${o.needText} in Sender`}
+              </option>
+            ))}
+          </Select>
+        )}</Field>
+        <Field label="Button label" help="Optional — rename the button. Up to 30 characters, so it fits.">{(id) => <Input id={id} value={ctaLabel} onChange={(e) => setCtaLabel(e.target.value)} placeholder={ctaDefaultLabel(ctaKind)} maxLength={30} />}</Field>
 
         <h2 className="dl-h4" style={{ marginTop: 24 }}>Sender</h2>
         <Field label="Name">{(id) => <Input id={id} value={senderName} onChange={(e) => setSenderName(e.target.value)} />}</Field>
         <Field label="Job title">{(id) => <Input id={id} value={senderTitle} onChange={(e) => setSenderTitle(e.target.value)} />}</Field>
-        <Field label="Direct phone" help="Enables the call CTA.">{(id) => <Input id={id} value={senderPhone} onChange={(e) => setSenderPhone(e.target.value)} />}</Field>
+        <Field label="Direct phone" help="Enables the Call CTA.">{(id) => <Input id={id} value={senderPhone} onChange={(e) => setSenderPhone(e.target.value)} />}</Field>
+        <Field label="WhatsApp number" help="E.164 with country code, e.g. +447700900123. Enables the WhatsApp CTA.">{(id) => <Input id={id} value={senderWhatsapp} onChange={(e) => setSenderWhatsapp(e.target.value)} placeholder="+44…" />}</Field>
+        <Field label="Booking link" help="Your Microsoft Bookings page (https). Enables the Book CTA.">{(id) => <Input id={id} value={senderBooking} onChange={(e) => setSenderBooking(e.target.value)} placeholder="https://outlook.office365.com/book/…" />}</Field>
+        <Field label="Secondary contact links" help="Optional — extra ways to reach you, shown as a row under your signature. This is separate from the green offer button.">{() => (
+          <div className="secondary">
+            {SECONDARY_OPTIONS.map((o) => {
+              const ok = secondaryReady(o.method);
+              return (
+                <label key={o.method} className={`secondary__opt${ok ? '' : ' secondary__opt--off'}`}>
+                  <input type="checkbox" checked={secondary.includes(o.method)} disabled={!ok} onChange={() => toggleSecondary(o.method)} />
+                  <span>{o.label}{ok ? '' : ` — add ${o.needText} above`}</span>
+                </label>
+              );
+            })}
+          </div>
+        )}</Field>
+        <div className="dl-field portrait__side">
+          <Button variant="outline" size="sm" onClick={saveDetails} disabled={savingDetails}>{savingDetails ? 'Saving…' : detailsSaved ? 'Saved ✓' : 'Save my details'}</Button>
+          <span className="dl-small app__muted">Saves your name and contact details for next time — edit them anytime. (Your photo saves when you upload it.)</span>
+          {detailsError && <span className="dl-small brochure__err">{detailsError}</span>}
+        </div>
+        <SenderPhoto base={base} />
       </section>
 
       {/* ---- offers ---- */}

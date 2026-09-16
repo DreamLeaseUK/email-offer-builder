@@ -208,6 +208,62 @@ body {
   color: var(--dl-ignition-red, #e30613);
 }
 
+.portrait {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+.portrait__img {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid var(--dl-grey-200, #e1e0e4);
+  flex: none;
+}
+.portrait__empty {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 10px;
+  color: var(--dl-text-muted, #928f99);
+  background: var(--dl-grey-100, #f6f6f7);
+  border: 1px dashed var(--dl-grey-300, #dcdbdf);
+  text-align: center;
+  flex: none;
+}
+.portrait__side {
+  display: grid;
+  gap: 4px;
+}
+.portrait__btns {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.secondary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+}
+.secondary__opt {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  cursor: pointer;
+}
+.secondary__opt input {
+  margin: 0;
+}
+.secondary__opt--off {
+  color: var(--dl-text-muted, #928f99);
+  cursor: not-allowed;
+}
+
 .preview__actions {
   display: flex;
   gap: 8px;

@@ -24,6 +24,7 @@ import { db } from './db/index.js';
 import { campaigns as campaignsTable, clicks as clicksTable, templates as templatesTable } from './db/schema.js';
 import type { AppEnv, Env } from './env.js';
 import { writeHostedPage } from './hosted.js';
+import { sendersRepo } from './profile.js';
 import { logHit } from './tracking.js';
 import type { Brochure } from '@offer-mailer/schema';
 
@@ -230,6 +231,13 @@ class AssembleError extends Error {
 async function assemble(env: Env, input: DraftCampaign, createdBy: string): Promise<{ campaign: CampaignT; rendered: ReturnType<typeof render> }> {
   if (!input.offers.every((o) => o.contractType === input.offers[0]!.contractType)) {
     throw new AssembleError('All offers in one campaign must be the same contract type.', 422);
+  }
+  // The rep's saved portrait is authoritative for a user sender: inject it (and drop any client-supplied
+  // headshot), so it shows on every email and can't be spoofed with someone else's photo.
+  if (input.sender.kind === 'user') {
+    const saved = await sendersRepo(env).get(input.sender.email);
+    const { headshotUrl: _clientHeadshot, ...senderNoHeadshot } = input.sender;
+    input.sender = saved?.headshotUrl ? { ...senderNoHeadshot, headshotUrl: saved.headshotUrl } : senderNoHeadshot;
   }
   const templates = templatesRepo(env);
   const template = input.templateId ? await templates.getById(input.templateId) : await templates.approvedDefault();

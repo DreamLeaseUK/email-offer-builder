@@ -68,6 +68,27 @@ export function brochureStore(env: Env): BrochureStore {
   };
 }
 
+// ---------- rep portrait (headshot) ----------
+
+export const HEADSHOT_PX = 256;
+
+/** Crop an uploaded portrait to a square headshot JPEG and store it under headshots/<sha256>.jpg. */
+export async function storeHeadshot(env: Env, bytes: ArrayBuffer): Promise<{ key: string; url: string } | undefined> {
+  const transform = env.TRANSFORM;
+  if (!transform) return undefined;
+  const out = await transform
+    .input(new Blob([bytes]).stream())
+    .transform({ width: HEADSHOT_PX, height: HEADSHOT_PX, fit: 'cover' })
+    .output({ format: 'image/jpeg', quality: IMAGE_QUALITY });
+  const jpeg = await out.response().arrayBuffer();
+  if (jpeg.byteLength === 0) return undefined;
+  const key = `headshots/${await sha256Hex(jpeg)}.jpg`;
+  if (!(await env.IMAGES.head(key))) {
+    await env.IMAGES.put(key, jpeg, { httpMetadata: { contentType: 'image/jpeg', cacheControl: 'public, max-age=31536000, immutable' } });
+  }
+  return { key, url: fileUrl(env, key) };
+}
+
 /** Direct download by the Worker (no Firecrawl credits), capped at 40 MB. */
 const BROWSER_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36';
 
@@ -115,4 +136,12 @@ files.get('/f/brochures/:file', async (c) => {
   const obj = await c.env.BROCHURES.get(`brochures/${file}`);
   if (!obj) return c.text('Not found', 404);
   return new Response(obj.body, { headers: { 'content-type': 'application/pdf', 'content-disposition': 'inline; filename="brochure.pdf"', 'cache-control': 'public, max-age=31536000, immutable', etag: obj.httpEtag } });
+});
+
+files.get('/f/headshots/:file', async (c) => {
+  const file = c.req.param('file');
+  if (!/^[a-f0-9]{64}\.jpg$/.test(file)) return c.text('Not found', 404);
+  const obj = await c.env.IMAGES.get(`headshots/${file}`);
+  if (!obj) return c.text('Not found', 404);
+  return new Response(obj.body, { headers: { 'content-type': 'image/jpeg', 'cache-control': 'public, max-age=31536000, immutable', etag: obj.httpEtag } });
 });

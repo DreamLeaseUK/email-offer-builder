@@ -29,6 +29,19 @@ export type LayoutChoice = 'auto' | 'single' | 'stack' | 'grid2' | 'grid3';
 export type UseCase = 'follow_up' | 'offer_pack' | 'renewal';
 /** The audience / lease product. Drives the compliance block, terms and (for salsac) the pricing shape. */
 export type Audience = 'personal' | 'business' | 'salary_sacrifice';
+/** A contact method the rep can surface as a secondary link in their signature. */
+export type ContactMethod = 'call' | 'whatsapp' | 'email' | 'book';
+
+/** The rep's saved, editable sender contact details (the photo persists separately). */
+export interface SavedSender {
+  displayName: string;
+  jobTitle: string;
+  phone: string;
+  whatsapp: string;
+  bookingUrl: string;
+  /** Which methods to show as a secondary link row in the signature (a subset of the above + email). */
+  secondaryContacts: ContactMethod[];
+}
 
 /** An offer in the compose tray; options (the chips) are present for freshly-looked-up offers only. */
 export interface Item {
@@ -100,7 +113,16 @@ async function jsonOrThrow<T>(r: Response): Promise<T> {
 const jsonPost = (url: string, data: unknown) => fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(data) });
 
 export const api = {
-  me: () => fetch('/api/me').then((r) => jsonOrThrow<{ email: string; sub: string; publicBaseUrl: string }>(r)),
+  me: () => fetch('/api/me').then((r) => jsonOrThrow<{ email: string; sub: string; publicBaseUrl: string; headshotUrl: string | null; savedSender: SavedSender | null }>(r)),
+  /** Save the rep's contact details so they prefill next time. */
+  saveSender: (details: SavedSender) => jsonPost('/api/me/sender', details).then((r) => jsonOrThrow<{ ok: boolean; savedSender: SavedSender }>(r)),
+  /** Upload the rep's portrait; returns the stored (square) headshot URL. */
+  uploadPhoto: (file: File) => {
+    const fd = new FormData();
+    fd.set('photo', file);
+    return fetch('/api/me/photo', { method: 'POST', body: fd }).then((r) => jsonOrThrow<{ headshotUrl: string }>(r));
+  },
+  deletePhoto: () => fetch('/api/me/photo', { method: 'DELETE' }).then((r) => jsonOrThrow<{ ok: boolean }>(r)),
   lookup: (url: string) => jsonPost('/api/offers/lookup', { url }).then((r) => jsonOrThrow<LookupResponse>(r)),
   preview: (draft: Draft) => jsonPost('/api/campaigns/preview', draft).then((r) => jsonOrThrow<PreviewResponse>(r)),
   create: (draft: Draft) => jsonPost('/api/campaigns', draft).then((r) => jsonOrThrow<CreateResponse>(r)),
