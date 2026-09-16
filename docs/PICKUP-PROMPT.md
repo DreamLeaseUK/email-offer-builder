@@ -27,8 +27,8 @@ You are resuming the **DreamLease Offer Mailer**: an internal tool where a sales
 
 ## 2. Repo & live state (verified 16 Sept, end of session 3)
 
-- **Git:** `main`, clean tree, **pushed to `origin`** = `https://github.com/DreamLeaseUK/email-offer-builder` (private, DreamLeaseUK org). Auth via Git Credential Manager (stored) — `git push` just works. **HEAD `74e28fc`.** Run `git log --oneline db9e1be..HEAD` for the 12 session-3 commits (secondary links, rep profile + CTA, recipient-PII minimisation, role gate, template admin API + UI, suppression register API + UI, retention Cron, docs). **Working tree clean — nothing uncommitted.**
-- **Tests:** `pnpm test` → **154 pass** (schema 18, render 27, adapters 52, api 57). `pnpm typecheck` clean; `apps/web` builds.
+- **Git:** `main`, clean tree, **pushed to `origin`** = `https://github.com/DreamLeaseUK/email-offer-builder` (private, DreamLeaseUK org). Auth via Git Credential Manager (stored) — `git push` just works. **HEAD `7243a19`.** Run `git log --oneline db9e1be..HEAD` for the session-3 commits (secondary links, rep profile + CTA, recipient-PII minimisation, role gate, template admin API + UI, suppression register API + UI, retention Cron, docs, then the UX pass: PCH fee, matched stat tiles, preview keep-and-flag, auto-preview + Add button). **Working tree clean — nothing uncommitted.**
+- **Tests:** `pnpm test` → **157 pass** (schema 18, render 30, adapters 52, api 57). `pnpm typecheck` clean; `apps/web` builds.
 - **Live Worker:** https://offer-mailer.matt-wilson-9b8.workers.dev/health → v0.3.0. **Prod NOT redeployed — behind HEAD.** Every `/api` route returns **503 in production until Cloudflare Access is configured (IT dependency)**, so the tool runs via `wrangler dev` + tests, not live `/api`.
 - **Firecrawl key:** in `apps/api/.dev.vars` as `FIRECRAWL_API_KEY` (local; `wrangler dev` health shows `firecrawl:true`). `.dev.vars` is git-ignored. Prod secret unconfirmed.
 - **Roles for local testing:** `matt.wilson@dreamlease.co.uk` is the configured master admin (`config/admins.json`); with `DEV_USER_EMAIL` set to any other address you're a salesperson (for testing the admin gate).
@@ -54,7 +54,8 @@ All committed & pushed. Highlights:
 - **Rep-facing UI**: signature **secondary contact links**, the offer-button **CTA selector** + editable label, **portrait photo** + saved/editable sender details (persisted per rep).
 - **PII plan completed** (items 1–4): recipient PII **not persisted** (stripped at save) and the greeting kept **off the public hosted page**; a daily **retention Cron** (safe by default — campaigns purged only under `RETENTION_CAMPAIGN_DAYS`); the **suppression register** (plain text, auditable, admin-gated removal, CSV).
 - **Step 7 completed**: **role gate** (`roles.ts` + `config/admins.json` → admin/salesperson); **template admin** (create/edit drafts, publish = self-approve, approved templates **locked**, retire) — API + a **Templates** tab (admins only); the **Suppressions** tab (all staff).
-- **Decisions**: two roles only (approver parked, master admin self-approves); approved templates immutable (new version to edit); suppression list stored **plain text** not hashed ("lowest friction = least perceived risk"); rep contact details are **business data**, not customer PII.
+- **UX pass (later, 16 Sept)**: PCH cards always show the **£299.99 processing fee**; a multi-offer email shows **matched, even stat-tile counts** across cards; the preview is **kept-and-flagged stale** on a chip change instead of blanking; the **first offer auto-renders the preview**; the **Add button** stays enabled and relabels "Add offer" / "Add another offer".
+- **Decisions**: two roles only (approver parked, master admin self-approves); approved templates immutable (new version to edit); suppression list stored **plain text** not hashed ("lowest friction = least perceived risk"); rep contact details are **business data**, not customer PII; PCH processing fee forced (first stage — BCH/salsac TBD).
 - Earlier session-2 work (audience/salsac, brochure UI, Firecrawl `rawBase64`, interim allowlist fixes) is in `docs/status-2026-09-15.md`. The `rawBase64` download is load-bearing — keep it.
 
 ## 5. THE NEXT MAJOR TASK — brochure discovery redesign (for Fable)
@@ -83,4 +84,10 @@ All committed & pushed. Highlights:
 
 ## 8. Start
 
-Confirm in a few lines that you've read the docs above, state the git + test + live state as you find them (`git log`, `pnpm test`, `/health`), and confirm whether Matt wants to (a) wait for Fable on the brochure redesign, (b) do **step 8** stubs / `evolution.md`, (c) prep the **deploy** / custom-domain runbook, or (d) something else. Steps 1–7 and the PII plan are **done**; the tool is feature-complete for a rep's day-to-day pending Emma's wording and IT's Access + subdomain. Propose nothing else until he answers.
+Confirm in a few lines that you've read the docs above, state the git + test + live state as you find them (`git log`, `pnpm test`, `/health`), then confirm which of the **queued items from the 16 Sept UX pass** (see `status-2026-09-16.md` §6 / `architecture.md` §B9) Matt wants:
+- **(a) Badge control** — rep-editable badge/tags on the offer card. **Decide the fork first: fixed approved list vs free text** (recommended: free-text-but-logged, an optional claim-word denylist). This is the most likely next task; it touches rule 3, so surface the decision before building.
+- **(b) Email cross-client validation** — build natively: caniemail CSS check in the tests + mobile/dark preview toggles; Litmus/Email on Acid (paid) is the only real Outlook-desktop option.
+- **(c) Equal-height columns / button alignment** — the hard email-layout diagnostic (Outlook + mobile check).
+- **(d) BCH/salsac processing-fee** handling; **(e) step 8** stubs; **(f) deploy / custom-domain runbook**; or wait for **Fable** on the brochure redesign (Thursday).
+
+Steps 1–7 and the PII plan are **done**; the tool is feature-complete for a rep's day-to-day pending Emma's wording and IT's Access + subdomain. Also mind the **email-template working method** (§0 / CLAUDE.md): don't change the v5 markup off a single screenshot — build a diagnostic `.eml` and have Matt check it in Outlook + on his phone. Propose nothing else until he answers.

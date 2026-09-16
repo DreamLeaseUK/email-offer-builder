@@ -37,7 +37,10 @@ Three audiences / lease products, each with its own compliance wording and terms
    are logged. Stats per campaign. **No IP, no full user-agent.**
 
 ## A3. Feature inventory (built)
-- **Compose**: URL lookup → re-pricing chips → live preview → create → Copy-for-Outlook + hosted link.
+- **Compose**: URL lookup → re-pricing chips → live preview → create → Copy-for-Outlook + hosted link. The
+  first offer **auto-renders the preview**; later edits keep the preview visible but **flag it out-of-date**
+  (the rep presses Update preview) rather than blanking it; the Add button stays enabled and reads "Add
+  offer" / "Add another offer".
 - **Audience selector**: PCH / BCH / Salary sacrifice, driving compliance block, terms and (salsac) pricing.
 - **Offer-button CTA**: one primary green button per campaign — *View offer · Call · WhatsApp · Email · Book a
   time to discuss* — each gated on the sender field it needs, with a rep-renamable label (≤30 chars).
@@ -187,6 +190,12 @@ header. Auto layout: 1 single, 2 grid2, 3 stack, 4+ grid2; grid3 only when chose
 when the markup changes in a way Emma should re-approve; templates pin the version they were approved against
 (campaigns pin `compliance.approvedWordingVersion`).
 
+Two data-side display rules live in the viewmodel (not markup, so the reference is untouched): **PCH
+(personal) cards always show the standard £299.99 processing fee** even when the site returned none (BCH/salsac
+unchanged — first stage); and **every card in a multi-offer campaign shows the same, even number of stat
+tiles** (the common count across the offers, floored to even) so the cards read as a matched set — a single
+hero keeps its natural count.
+
 ## B8. External dependencies
 - **Firecrawl** — the only metered/external service (brochure discovery/fetch; `fetchFile` via `rawBase64`
   past bot protection). Sees the URLs we scrape transiently; brochure PDFs land in our R2. **No customer PII.**
@@ -206,13 +215,32 @@ when the markup changes in a way Emma should re-approve; templates pin the versi
 | 7 Template admin, approval, register, suppression | **Done** (register, template admin + self-approve, suppression list) |
 | 8 Stubs & `evolution.md` | Not started (low value) |
 
-**PII plan: complete** (items 1–4). **Remaining:** step 8 stubs. **Owed by others / parked:** Emma's real
-compliance wording (then publish a real template to replace the placeholder); IT — Access + a Cloudflare-served
-subdomain (parked; `mailer.` occupied) + the Graph Entra app; Matt — Firecrawl secret + Workers Paid plan; the
-prod deploy.
+**PII plan: complete** (items 1–4). Build-order steps 1–7 done.
+
+**Queued / open decisions (from the 16 Sept UX pass — pick up next session):**
+- **Badge control (rep-editable).** Reps want website-level control over the offer-card badge/tags — a
+  Show-badge toggle, an editable badge with two-line `\n`, a tags editor with a ★ "hot" tag. **One decision
+  first (touches rule 3): fixed approved list vs free text.** Recommended: **free text but recorded verbatim
+  in the promotions register** (like intro/subject already are), with an optional claim-word denylist. Not
+  built. Today badges are auto-derived from the vehicle page only (no rep control), which is why a car the
+  site didn't flag (e.g. the Golf) shows no pill.
+- **Email cross-client validation.** Assessed mailpeek (Vue — no) and Mailpit (SMTP capture — we don't send).
+  Recommended building natively: (1) a **caniemail-based CSS compatibility check** in the test suite; (2)
+  **mobile + dark preview toggles** in Compose; (3) **Litmus / Email on Acid** (paid) for real Outlook-desktop
+  sign-off. None built.
+- **Equal-height card columns / button alignment** — the hard email-layout item (no flexbox in Outlook); per
+  the working method, build a diagnostic `.eml` and check in Outlook + mobile before touching the reference.
+  The stat + fee fixes already removed most raggedness.
+- **BCH / salary-sacrifice processing fee** — the £299.99 fee is forced on **PCH only** (first stage); decide
+  BCH/salsac handling.
+
+**Remaining build-order:** step 8 stubs + `evolution.md` (low value). **Owed by others / parked:** Emma —
+approved compliance wording (then publish a real template to replace the placeholder) + the retention period;
+IT — Access + a Cloudflare-served subdomain (parked; `mailer.` occupied) + the Graph Entra app; Matt — Firecrawl
+secret + Workers Paid plan; the prod deploy; Tawk webchat (parked, renewals-only stage one).
 
 ## B10. Testing & verification
-- `pnpm test` — **154 tests**: schema 18, render 27, adapters 52, api 57. `apps/api` runs inside workerd with
+- `pnpm test` — **157 tests**: schema 18, render 30, adapters 52, api 57. `apps/api` runs inside workerd with
   real local D1/R2/Images; adapter tests use the wasm HTMLRewriter.
 - `pnpm typecheck` clean (incl. `apps/web`); `apps/web` builds. `scripts/diff-reference.ts` guards markup
   fidelity. CI greps for CAP-ID leaks. `.dev.vars` is git-ignored and must never be committed.
