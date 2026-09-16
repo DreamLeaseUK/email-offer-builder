@@ -128,6 +128,17 @@ describe('render()', () => {
     expect(r({ offerCount: 1 }).out.html).not.toMatch(/brochure/i);
   });
 
+  it('shows the standard £299.99 processing fee on every PCH card, even when the offer carried none', () => {
+    const personal = fixtureCampaign({ offerCount: 1, contractType: 'personal' });
+    delete personal.campaign.offers[0]!.pricing.processingFee; // the site returned no fee for this one
+    expect(render(personal.campaign, fixtureTemplate, { publicBaseUrl: BASE, brochures: personal.brochures }).html).toMatch(/Processing fee £299\.99 inc VAT/);
+
+    // BCH keeps whatever its pricing carried (here: none) — the PCH rule does not force it (first stage)
+    const business = fixtureCampaign({ offerCount: 1, contractType: 'business' });
+    delete business.campaign.offers[0]!.pricing.processingFee;
+    expect(render(business.campaign, fixtureTemplate, { publicBaseUrl: BASE, brochures: business.brochures }).html).not.toMatch(/Processing fee/);
+  });
+
   it('locks the compliance block and footer lines into every variant', () => {
     for (const contractType of ['personal', 'business', 'salary_sacrifice'] as const) {
       const { out } = r({ contractType });

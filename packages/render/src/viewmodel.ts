@@ -54,6 +54,9 @@ export interface VmOptions {
   links: Links;
 }
 
+/** DreamLease's standard PCH processing fee (£, inc VAT). Must match the compliance block wording. */
+const PCH_PROCESSING_FEE = 299.99;
+
 function ctaFor(offer: Offer, sender: Sender, index: number, links: Links, offerUrlWithUtm: string): CardVM['cta'] {
   const cta = offer.cta ?? { kind: 'view_offer' as const };
   if (!availableCtaKinds(sender).includes(cta.kind)) {
@@ -131,7 +134,11 @@ export function buildCards(campaign: Campaign, opts: VmOptions): CardVM[] {
     }
 
     const smallPrintParts = [];
-    if (p.processingFee !== undefined) smallPrintParts.push(`Processing fee ${gbpPence(p.processingFee)} inc VAT`);
+    // PCH (personal) orders always carry the standard processing fee — the compliance block states it is
+    // "payable on all orders" — so show it on every personal card even when the site returned none. BCH /
+    // salary sacrifice keep whatever their pricing carried (first stage; those audiences revisited later).
+    const processingFee = offer.contractType === 'personal' ? PCH_PROCESSING_FEE : p.processingFee;
+    if (processingFee !== undefined) smallPrintParts.push(`Processing fee ${gbpPence(processingFee)} inc VAT`);
     smallPrintParts.push(`Offer valid until ${longDate(offer.validUntil)}`);
     if (brochure) smallPrintParts.push("Brochure figures are the manufacturer's and may differ from this offer.");
 
