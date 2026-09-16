@@ -63,7 +63,10 @@ function templatesAdminRepo(env: Env) {
 }
 
 export const templatesApi = new Hono<AppEnv>();
-templatesApi.use('*', requireAdmin());
+// Scope the admin guard to the template paths only. A bare use('*') would also gate any routes mounted
+// after this sub-app on the same base (they share the parent middleware chain).
+templatesApi.use('/templates', requireAdmin());
+templatesApi.use('/templates/*', requireAdmin());
 
 templatesApi.get('/templates', async (c) => c.json({ templates: await templatesAdminRepo(c.env).list() }));
 
