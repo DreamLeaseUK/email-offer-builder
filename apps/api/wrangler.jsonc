@@ -5,6 +5,9 @@
   "compatibility_date": "2026-09-01",
   "compatibility_flags": ["nodejs_compat"],
   "observability": { "enabled": true },
+  // Daily retention/housekeeping (src/retention.ts): purges the 24h lookup cache, and campaign records
+  // only if RETENTION_CAMPAIGN_DAYS is set. 03:00 UTC.
+  "triggers": { "crons": ["0 3 * * *"] },
   // Static files served before the Worker runs: /a/* email assets now, the web app build later.
   "assets": { "directory": "./public", "binding": "ASSETS" },
   "vars": {

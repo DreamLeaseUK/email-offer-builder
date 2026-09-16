@@ -18,6 +18,8 @@ export interface Env {
   FIRECRAWL_API_KEY?: string;
   /** Optional comma-separated master-admin emails, merged with config/admins.json (see roles.ts). */
   ADMIN_EMAILS?: string;
+  /** Optional retention policy: purge campaign records older than N days (unset/0 = keep — see retention.ts). */
+  RETENTION_CAMPAIGN_DAYS?: string;
 }
 
 export interface AccessUser {

@@ -2,7 +2,8 @@ import { Hono } from 'hono';
 import { brochureLink, brochuresApi } from './brochures.js';
 import { campaignsApi, redirect } from './campaigns.js';
 import { dev } from './dev.js';
-import type { AppEnv } from './env.js';
+import type { AppEnv, Env } from './env.js';
+import { runRetention } from './retention.js';
 import { files } from './files.js';
 import { hosted } from './hosted.js';
 import { libraryApi } from './library.js';
@@ -57,4 +58,17 @@ app.onError((err, c) => {
   return c.json({ error: 'Internal error' }, 500);
 });
 
-export default app;
+// The default export stays the Hono app (so `.fetch` serves requests and tests can use `.request`); we
+// attach `scheduled` to it for the daily retention/housekeeping Cron (see wrangler.jsonc).
+const handler = app as typeof app & {
+  scheduled: (controller: ScheduledController, env: Env, ctx: ExecutionContext) => void;
+};
+handler.scheduled = (_controller, env, ctx) => {
+  ctx.waitUntil(
+    runRetention(env, new Date())
+      .then((r) => console.log('retention:', JSON.stringify(r)))
+      .catch((e) => console.error('retention failed:', e instanceof Error ? e.message : String(e))),
+  );
+};
+
+export default handler;
