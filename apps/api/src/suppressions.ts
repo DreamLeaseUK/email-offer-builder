@@ -59,6 +59,16 @@ suppressionsApi.post('/suppressions', async (c) => {
 
 suppressionsApi.get('/suppressions', async (c) => c.json({ suppressions: await suppressionsRepo(c.env).list() }));
 
+const csvCell = (v: string): string => (/[",\n\r]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v);
+suppressionsApi.get('/suppressions.csv', async (c) => {
+  const rows = await suppressionsRepo(c.env).list();
+  const header = ['Email', 'Added by', 'Added at', 'Note'].map(csvCell).join(',');
+  const body = rows.map((r) => [r.email, r.addedBy, r.addedAt, r.note ?? ''].map(csvCell).join(',')).join('\r\n');
+  return new Response([header, body].filter(Boolean).join('\r\n') + '\r\n', {
+    headers: { 'content-type': 'text/csv; charset=utf-8', 'content-disposition': 'attachment; filename="dreamlease-suppression-list.csv"' },
+  });
+});
+
 suppressionsApi.post('/suppressions/check', async (c) => {
   const body = z.object({ email: z.string() }).safeParse(await c.req.json().catch(() => ({})));
   if (!body.success || !body.data.email.trim()) return c.json({ suppressed: false });

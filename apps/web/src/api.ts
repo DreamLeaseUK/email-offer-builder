@@ -162,4 +162,16 @@ export const api = {
     fetch(`/api/templates/${id}`, { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }).then((r) => jsonOrThrow<{ template: Template }>(r)),
   publishTemplate: (id: string) => jsonPost(`/api/templates/${id}/publish`, {}).then((r) => jsonOrThrow<{ template: Template }>(r)),
   retireTemplate: (id: string) => jsonPost(`/api/templates/${id}/retire`, {}).then((r) => jsonOrThrow<{ template: Template }>(r)),
+  // ---- suppression register (opt-out list) ----
+  listSuppressions: () => fetch('/api/suppressions').then((r) => jsonOrThrow<{ suppressions: Suppression[] }>(r)),
+  addSuppression: (email: string, note?: string) => jsonPost('/api/suppressions', { email, note }).then((r) => jsonOrThrow<{ ok: boolean }>(r)),
+  checkSuppression: (email: string) => jsonPost('/api/suppressions/check', { email }).then((r) => jsonOrThrow<{ suppressed: boolean }>(r)),
+  removeSuppression: (email: string) => jsonPost('/api/suppressions/remove', { email }).then((r) => jsonOrThrow<{ ok: boolean }>(r)),
 };
+
+export interface Suppression {
+  email: string;
+  addedBy: string;
+  addedAt: string;
+  note: string | null;
+}

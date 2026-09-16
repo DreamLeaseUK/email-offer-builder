@@ -6,11 +6,12 @@ import { Campaigns } from './Campaigns';
 import { Compose } from './Compose';
 import { Library } from './Library';
 import { Register } from './Register';
+import { Suppressions } from './Suppressions';
 import { Templates } from './Templates';
 
 const errMsg = (e: unknown): string => (e instanceof Error ? e.message : String(e));
 
-type View = 'compose' | 'campaigns' | 'library' | 'register' | 'templates';
+type View = 'compose' | 'campaigns' | 'library' | 'register' | 'suppressions' | 'templates';
 
 export function App() {
   const [email, setEmail] = useState('');
@@ -53,6 +54,7 @@ export function App() {
           {tab('campaigns', 'Campaigns')}
           {tab('library', 'Library')}
           {tab('register', 'Register')}
+          {tab('suppressions', 'Suppressions')}
           {role === 'admin' && tab('templates', 'Templates')}
         </nav>
         <span className="app__spacer" />
@@ -74,6 +76,7 @@ export function App() {
       {view === 'campaigns' && <Campaigns />}
       {view === 'library' && <Library base={base} onAdd={addFromLibrary} />}
       {view === 'register' && <Register />}
+      {view === 'suppressions' && <Suppressions role={role} />}
       {view === 'templates' && role === 'admin' && <Templates />}
     </div>
   );

@@ -489,3 +489,32 @@ body {
   gap: 8px;
   margin-top: 16px;
 }
+
+/* ---- suppression list ---- */
+.supp__add,
+.supp__check {
+  display: grid;
+  gap: 8px;
+}
+.supp-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+}
+.supp {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  border: 1px solid var(--dl-grey-200, #e1e0e4);
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+.supp__email {
+  margin: 0 0 2px 0;
+  font-weight: 600;
+  word-break: break-all;
+}
+.supp__actions {
+  flex: none;
+}
