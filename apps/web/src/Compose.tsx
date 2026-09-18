@@ -260,7 +260,8 @@ function BrochureControl({ item, onAttach, onToggle, onRemove }: { item: Item; o
           {attached.editionDate ? ` · edition ${attached.editionDate}` : ''}
           {attached.source === 'manual' ? ` · added by ${attached.createdBy}` : attached.ukVerified.by === 'user' ? ` · accepted by ${attached.createdBy}` : ' · checked automatically'}
           {' · '}
-          <a href={attached.kind === 'pdf' && attached.file ? attached.file.url : attached.sourceUrl} target="_blank" rel="noreferrer">Open it to check</a>
+          {/* our copy is opened same-origin (/b/:id): file.url carries PUBLIC_BASE_URL, which in local dev is the production host that does not hold this file */}
+          <a href={attached.kind === 'pdf' ? `/b/${attached.id}` : attached.sourceUrl} target="_blank" rel="noreferrer">Open it to check</a>
         </span>
         {manual ? manualForm : (
           <div className="brochure__btns">
