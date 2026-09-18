@@ -1,0 +1,54 @@
+{
+ "path": "/search",
+ "body": {
+  "query": "site:kia.com EV2 brochure",
+  "limit": 5,
+  "country": "GB",
+  "location": "United Kingdom",
+  "sources": [
+   {
+    "type": "web"
+   }
+  ],
+  "ignoreInvalidURLs": true
+ },
+ "response": {
+  "success": true,
+  "data": {
+   "web": [
+    {
+     "url": "https://www.kia.com/content/dam/kwcms/kme/uk/en/assets/vehicles/ev2/ev2-specifications.pdf",
+     "title": "[PDF] The Kia EV2 - Specifications",
+     "description": "## Specification\n| Exterior Features&Lighting | 'Air' | 'First Edition' | 'GT-Line' | 'GT-Line S' |\n|-|-|-|-|-|\n| LED Headlights with Adaptive Driving Beam | - | √ | √ | √ |\n| LED High Mounted Brake Lights | √ | √ | √ | √ |\n| Open full table in browser： [[https://digital-brochures.kia.com/story/the-kia-ev2-specifications/page/2/1](https://digital-brochures.kia.com/story/the-kia-ev2-specifications/page/2/1)](https://digital-brochures.kia.com/story/the-kia-ev2-specifications/page/2/1) |  |  |  |  |\n\n| Exterior Features & Lighting | 'Air' | 'First Edition' | 'GT-Line' | 'GT-Line S' |\n|-|-|-|-|-|\n| Automatic Flush Door Handles | - | √ | √ | √ |\n| Body Coloured Bumpers | √ | √ | √ | √ |\n| Black Wheel Arches | √ | √ | √ | √ |\n| Open full table in browser： [[https://digital-brochures.kia.com/story/the-kia-ev2-specifications/page/2/2](https://digital-brochures.kia.com/story/the-kia-ev2-specifications/page/2/2)](https://digital-brochures.kia.com/story/the-kia-ev2-specifications/page/2/2) |  |  |  |  |\n| Rear Wiper | √ | √ | √ | √ |\n| Rear Spoiler | √ |  | √ | √ |\n\n[[https://www.kia.com/uk/new-cars/ev2/](https://www.kia.com/uk/new-cars/ev2/)](https://www.kia.com/uk/new-cars/ev2/) Discover More [[https://www.kia.com/uk/new-cars/ev2/](https://www.kia.com/uk/new-cars/ev2/)](https://www.kia.com/uk/new-cars/ev2/)\n\n[[https://www.kia.com/uk/new-cars/ev2/](https://www.kia.com/uk/new-cars/ev2/)](https://www.kia.com/uk/new-cars/ev2/) Discover More [[https://www.kia.com/uk/new-cars/ev2/](https://www.kia.com/uk/new-cars/ev2/)](https://www.kia.com/uk/new-cars/ev2/)\n\n[[https://www.kia.com/uk/utility/build-your-kia.carcode.ev2\\_2026/#/trim](https://www.kia.com/uk/utility/build-your-kia.carcode.ev2\\_2026/#/trim)](https://www.kia.com/uk/utility/build-your-kia.carcode.ev2_2026/#/trim) Build the EV2 [[https://www.kia.com/uk/utility/build-your-kia.carcode.ev2\\_2026/#/trim](https://www.kia.com/uk/utility/build-your-kia.carcode.ev2\\_2026/#/trim)](https://www.kia.com/uk/utility/build-your-kia.carcode.ev2_2026/#/trim)\n\n[[https://www.kia.com/uk/utility/build-your-kia.carcode.ev2\\_2026/#/trim](https://www.kia.com/uk/utility/build-your-kia.carcode.ev2\\_2026/#/trim)](https://www.kia.com/uk/utility/build-your-kia.carcode.ev2_2026/#/trim) Build the EV2 [[https://www.kia.com/uk/utility/build-your-kia.carcode.ev2\\_2026/#/trim](https://www.kia.com/uk/utility/build-your-kia.carcode.ev2\\_2026/#/trim)](https://www.kia.com/uk/utility/build-your-kia.carcode.ev2_2026/#/trim)\n\n[[https://www.kia.com/uk/utility/build-your-kia.carcode.ev2\\_2026/#/trim](https://www.kia.com/uk/utility/build-your-kia.carcode.ev2\\_2026/#/trim)](https://www.kia.com/uk/utility/build-your-kia.carcode.ev2_2026/#/trim) Build the EV2 [[https://www.kia.com/uk/utility/build-your-kia.carcode.ev2\\_2026/#/trim](https://www.kia.com/uk/utility/build-your-kia.carcode.ev2\\_2026/#/trim)](https://www.kia.com/uk/utility/build-your-kia.carcode.ev2_2026/#/trim)",
+     "position": 1
+    },
+    {
+     "url": "https://www.kia.com/content/dam/kwcms/kme/uk/en/assets/static/utility/brochure/ev2-brochure.pdf",
+     "title": "[PDF] The Kia EV2",
+     "description": "With SCC 2.0 technology, the EV2 adjusts speed to traffic and road conditions, including reducing speed on curves to keep everyone secure.",
+     "position": 2
+    },
+    {
+     "url": "https://www.kia.com/uk/new-cars/ev2/specification/",
+     "title": "Specification - The Kia EV2",
+     "description": "## [![ev2](https://www.kia.com/)](https://www.kia.com/uk/new-cars/ev2/specification/#)\n[Specification](https://www.kia.com/uk/new-cars/ev2/specification/)\n\n- [The Kia EV2](https://www.kia.com/uk/new-cars/ev2/)\n- [Specification](https://www.kia.com/uk/new-cars/ev2/specification/)\n- [Pricing](https://www.kia.com/uk/new-cars/ev2/pricing/)\n\n![Image Teaser](https://www.kia.com/content/dam/kwcms/kme/uk/en/assets/images/new-cars/ev2/2026/EV2_Header_1920x748.png)\n\n## Specification\n### STORAGE, VERSATILITY & INTERIOR LIGHTING    collapsedcollapsed\n|  |  |  |  |  |\n|-|-|-|-|-|\n| Type 2 Charging Cable | ✓ | ✓ | ✓ | ✓ |\n\n### AUDIO, COMMUNICATION & INFORMATION    collapsedcollapsed\n|  |  |  |  |  |\n|-|-|-|-|-|\n| Rear Passenger USB-C Charging Ports x2 | ✓ | ✓ | ✓ | ✓ |\n\n### WLTP PURE ELECTRIC ENERGY CONSUMPTION & RANGE    collapsedcollapsed\n|  |  |  |  |\n|-|-|-|-|\n| **16\" Wheel Air** |  | **FWD**<br>**(42.2 kWh)** | **FWD**<br>**(61.0 kWh)** |\n| Acceleration 0-62 mph (seconds) | - | 9.5 |\n| Carbon Dioxide (CO2) Emissions (g/km) | - | 0 |\n| **18\" Wheel**<br>**First Edition** |\n| Carbon Dioxide (CO2) Emissions (g/km) | 0 | - |\n| **19\" Wheel**<br>**GT-Line** |\n| Acceleration 0-62 mph (seconds) | - | 9.7 |\n| Carbon Dioxide (CO2) Emissions (g/km) | - | 0 |\n| **19\" Wheel**<br>**GT-Line S** |\n| Acceleration 0-62 mph (seconds) | - | 9.7 |\n| Carbon Dioxide (CO2) Emissions (g/km) | - | 0 |\n\n### DIMENSIONS    collapsedcollapsed\n|  |  |  |  |\n|-|-|-|-|\n| **'First Edition'** |  | **FWD**<br>**(58.3 kWh)** | **FWD**<br>**(81.4kWh)** |",
+     "position": 3
+    },
+    {
+     "url": "https://www.kia.com/uk/new-cars/ev2/",
+     "title": "The Kia EV2 | Kia UK",
+     "description": "The all-electric EV2 offers a fully connected EV experience that lets you drive, charge and explore with confidence. In ways that fit seamlessly with your ...",
+     "position": 4
+    },
+    {
+     "url": "https://www.kia.com/eu/new-cars/ev2/1w23/",
+     "title": "1w23 - EV2 | Kia Motors Europe",
+     "description": "Download the new Kia EV2 mobile brochure. Discover more about the all-electric Kia EV2. Download the mobile-friendly ...",
+     "position": 5
+    }
+   ]
+  },
+  "creditsUsed": 2,
+  "id": "01a0b017-9b22-77bd-97d3-f5f9174f81cc"
+ }
+}

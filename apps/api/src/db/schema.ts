@@ -82,6 +82,19 @@ export const brochures = sqliteTable(
   (t) => [index('brochures_vehicle_key_status').on(t.vehicleKey, t.status)],
 );
 
+/**
+ * The latest completed brochure search per vehicle: what was checked and why something did or did not
+ * attach. It lets a "nothing found" answer be remembered for a few days and shown to the rep. A search that
+ * failed to run is never written here.
+ */
+export const brochureSearches = sqliteTable('brochure_searches', {
+  vehicleKey: text('vehicle_key').primaryKey(),
+  status: text('status').notNull(),
+  searchedAt: text('searched_at').notNull(),
+  /** BrochureSearch JSON */
+  data: text('data', { mode: 'json' }).notNull(),
+});
+
 export const senders = sqliteTable('senders', {
   /** user email for kind=user, mailbox address for kind=shared */
   id: text('id').primaryKey(),

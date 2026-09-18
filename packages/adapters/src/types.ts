@@ -8,16 +8,22 @@
  * The hosted page is not an output adapter; every render writes it (§5.4).
  * Stubs with typed interfaces (no logic): feed, monday, ai, mautic (build step 8).
  */
-import type { Brochure, Campaign, Offer, Rendered, Sender, Vehicle } from '@offer-mailer/schema';
+import type { Brochure, BrochureSearch, Campaign, Offer, Rendered, Sender, Vehicle } from '@offer-mailer/schema';
 
 export interface OfferSource<Input = unknown> {
   readonly kind: 'manual' | 'url' | 'feed' | 'monday' | 'ai';
   lookup(input: Input): Promise<Offer>;
 }
 
+/** What a search produced: a brochure when something verified, and always the record of what was checked. */
+export interface BrochureFindOutcome {
+  brochure?: Brochure;
+  search: BrochureSearch;
+}
+
 export interface BrochureSource {
   readonly kind: 'firecrawl' | 'manual';
-  harvest(vehicle: Pick<Vehicle, 'make' | 'model'>): Promise<Brochure>;
+  find(vehicle: Pick<Vehicle, 'make' | 'model'>): Promise<BrochureFindOutcome>;
 }
 
 export interface DeliveryResult {

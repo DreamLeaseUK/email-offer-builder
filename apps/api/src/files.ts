@@ -90,7 +90,7 @@ export async function storeHeadshot(env: Env, bytes: ArrayBuffer): Promise<{ key
 }
 
 /** Direct download by the Worker (no Firecrawl credits), capped at 40 MB. */
-const BROWSER_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36';
+export const BROWSER_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36';
 
 export async function downloadFile(url: string): Promise<Downloaded> {
   // Manufacturer CDNs (Akamai) 403 a bot-identifying UA; send a browser-like header set for these

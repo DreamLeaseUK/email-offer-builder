@@ -1,0 +1,84 @@
+{
+ "path": "/search",
+ "body": {
+  "query": "\"Leapmotor C10\" UK official brochure PDF",
+  "limit": 10,
+  "country": "GB",
+  "location": "United Kingdom",
+  "sources": [
+   {
+    "type": "web"
+   }
+  ],
+  "ignoreInvalidURLs": true
+ },
+ "response": {
+  "success": true,
+  "data": {
+   "web": [
+    {
+     "url": "https://www.leapmotor.net/uk/c10",
+     "title": "Leapmotor C10 | Comfortable Electric SUV",
+     "description": "Discover the Leapmotor C10: an award-winning electric SUV providing top-tier comfort, maximum safety, and intuitive smart controls. Embrace innovation.",
+     "position": 1
+    },
+    {
+     "url": "https://autocatalogarchive.com/wp-content/uploads/2024/10/Leapmotor-C10-2024-NP.pdf",
+     "title": "[PDF] Leapmotor-C10-2024-NP.pdf - Auto Catalog Archive",
+     "description": "Max. power combined (kW). 160. Max. torque combined (N.m). 320. Ba ery type. LFP. CLTC / WLTP electric range (km). 530 / 420. Ba ery capacity (kWh).",
+     "position": 2
+    },
+    {
+     "url": "https://www.leapmotor.net/uk/price-guides",
+     "title": "Price & Spec Guides - Leapmotor",
+     "description": "Leapmotor C10 review – a well-equipped electric SUV... The Leapmotor C10 offers a decent range and lots of standard equipment in an affordable SUV package.",
+     "position": 3
+    },
+    {
+     "url": "https://www.stellantisandyou.co.uk/leapmotor/new/leapmotor-c10",
+     "title": "New Leapmotor C10 for Sale | Price, Specs, Range & Finance",
+     "description": "Discover Leapmotor C10, a sleek SUV, blending cutting-edge technology, spacious comfort, and dynamic performance for a modern, electric driving experience.",
+     "position": 4
+    },
+    {
+     "url": "https://www.media.stellantis.com/uk-en/leapmotor/press/leapmotor-c10",
+     "title": "Leapmotor C10 - Media Stellantis",
+     "description": "24 Sept 2024 · The LEAPMOTOR C10's infotainment and connectivity system has been designed to offer an advanced and immersive experience, improving vehicle use ...",
+     "position": 5
+    },
+    {
+     "url": "https://www.leapmotor.net/uk",
+     "title": "SUVs & Electric Vehicles | Leapmotor UK Official Site",
+     "description": "Leapmotor C10 review – a well-equipped electric SUV... The Leapmotor C10 offers a decent range and lots of standard equipment in an affordable SUV package.",
+     "position": 6
+    },
+    {
+     "url": "https://autocatalogarchive.com/wp-content/uploads/2024/10/Leapmotor-C10-2024-MY.pdf",
+     "title": "[PDF] Leap into the - Auto Catalog Archive",
+     "description": "LEAPMOTOR C10 BEV. Note: All images shown are for illustration purposes only. Colours and specifications shown may vary from the actual vehicles. Specifications ...",
+     "position": 7
+    },
+    {
+     "url": "https://www.leapmotor.net/au/assistance",
+     "title": "Leapmotor C10 Owner's Manual",
+     "description": "Download the owner's manual for the newly introduced Leapmotor C10 SUV here.",
+     "position": 8
+    },
+    {
+     "url": "https://www.scribd.com/document/877934134/Leapmotor-Brochure",
+     "title": "Leapmotor C10 Brochure Overview | PDF | Headlamp ... - Scribd",
+     "description": "The Leapmotor C10 is an award-winning electric mid-size SUV featuring a driving range of 477 km and a 5-star E-NCAP safety rating.",
+     "position": 9
+    },
+    {
+     "url": "https://www.frfmotors.com/leapmotor/new-cars/c10/",
+     "title": "New C10 | FRF Motors - Leapmotor",
+     "description": "Leapmotor C10. Available In Fully Electric & Hybrid. From. £32,750*. View offers Book a test drive Finance enquiry.",
+     "position": 10
+    }
+   ]
+  },
+  "creditsUsed": 2,
+  "id": "01a0b018-064d-7439-b744-8e82d4fa08cb"
+ }
+}

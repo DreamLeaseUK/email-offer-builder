@@ -1,0 +1,54 @@
+{
+ "path": "/search",
+ "body": {
+  "query": "site:citroen.co.uk e-C3 brochure",
+  "limit": 5,
+  "country": "GB",
+  "location": "United Kingdom",
+  "sources": [
+   {
+    "type": "web"
+   }
+  ],
+  "ignoreInvalidURLs": true
+ },
+ "response": {
+  "success": true,
+  "data": {
+   "web": [
+    {
+     "url": "https://www.citroen.co.uk/content/dam/citroen/uk/b2c/tools/brochure/pdf/car-range/New-C3-price-and-specification-guide.pdf",
+     "title": "[PDF] Prices & Specifications - Citroen",
+     "description": "With an electric range of up to 198 miles (WLTP) and rapid charging from 20% to 80% in 26 minutes, New e-C3 is the ideal vehicle for your daily journeys.",
+     "position": 1
+    },
+    {
+     "url": "https://www.citroen.co.uk/models/e-c3.html",
+     "title": "Citroën ë-C3 | The iconic electric city car - Citroen",
+     "description": "# ë-C3\n## **FAQ**\n### **SPOTICAR -  Citroën Approved Used Car Brand**\n- [t](https://twitter.com/home?status=http://live.storystream.it/citroen/6717c3fc4d075291b53884b7/items/69f9e672f9ad9e2bc960104b/citroen-e-c3-urban-r/?rel=on-page-gallery~ZTgzY2Q1NDhhZWI1NjQ0YTRh)\n- [o](https://www.facebook.com/sharer/sharer.php?u=http://live.storystream.it/citroen/6717c3fc4d075291b53884b7/items/69f9e672f9ad9e2bc960104b/citroen-e-c3-urban-r/?rel=on-page-gallery~ZTgzY2Q1NDhhZWI1NjQ0YTRh)\n- [p](https://pinterest.com/pin/create/button/?url=http://live.storystream.it/citroen/6717c3fc4d075291b53884b7/items/69f9e672f9ad9e2bc960104b/citroen-e-c3-urban-r/?rel=on-page-gallery~ZTgzY2Q1NDhhZWI1NjQ0YTRh&media=https://du66ttpehq3tn.cloudfront.net/h_227,w_284,c_fill,g_auto:car/https://d1sdeqoxcfgxl0.cloudfront.net/images/original/879c5a174b51a2198f0ced5be4a812a9c7f3b6494f386fb5efb04635.jpg&description=)\n\n- [t](https://twitter.com/home?status=http://live.storystream.it/citroen/6717c3fc4d075291b53884b7/items/69f9e672f9ad9e2bc960104a/citroen-e-c3-282026/?rel=on-page-gallery~ZTgzY2Q1NDhhZWI1NjQ0YTRh)\n- [o](https://www.facebook.com/sharer/sharer.php?u=http://live.storystream.it/citroen/6717c3fc4d075291b53884b7/items/69f9e672f9ad9e2bc960104a/citroen-e-c3-282026/?rel=on-page-gallery~ZTgzY2Q1NDhhZWI1NjQ0YTRh)\n- [p](https://pinterest.com/pin/create/button/?url=http://live.storystream.it/citroen/6717c3fc4d075291b53884b7/items/69f9e672f9ad9e2bc960104a/citroen-e-c3-282026/?rel=on-page-gallery~ZTgzY2Q1NDhhZWI1NjQ0YTRh&media=https://du66ttpehq3tn.cloudfront.net/h_227,w_284,c_fill,g_auto:car/https://d1sdeqoxcfgxl0.cloudfront.net/images/original/ca8cada6f9de98f044b0add0cd0ca8d39d8a93ddcf1d6b1b2bb1f9d9.jpeg&description=)\n- [e](mailto:?&body=http://live.storystream.it/citroen/6717c3fc4d075291b53884b7/items/69f9e672f9ad9e2bc960104a/citroen-e-c3-282026/?rel=on-page-gallery~ZTgzY2Q1NDhhZWI1NjQ0YTRh)\n\n- [t](https://twitter.com/home?status=http://live.storystream.it/citroen/6717c3fc4d075291b53884b7/items/69f9e672f9ad9e2bc9601049/new-citroen-e-c3-urb/?rel=on-page-gallery~ZTgzY2Q1NDhhZWI1NjQ0YTRh)\n- [o](https://www.facebook.com/sharer/sharer.php?u=http://live.storystream.it/citroen/6717c3fc4d075291b53884b7/items/69f9e672f9ad9e2bc9601049/new-citroen-e-c3-urb/?rel=on-page-gallery~ZTgzY2Q1NDhhZWI1NjQ0YTRh)\n- [p](https://pinterest.com/pin/create/button/?url=http://live.storystream.it/citroen/6717c3fc4d075291b53884b7/items/69f9e672f9ad9e2bc9601049/new-citroen-e-c3-urb/?rel=on-page-gallery~ZTgzY2Q1NDhhZWI1NjQ0YTRh&media=https://du66ttpehq3tn.cloudfront.net/h_227,w_284,c_fill,g_auto:car/https://d1sdeqoxcfgxl0.cloudfront.net/images/original/94548b0b82077016d520e1afbb7f4c3ca53b8bebcd6980f8d7e11825.jpeg&description=)\n\n- [t](https://twitter.com/home?status=http://live.storystream.it/citroen/6717c3fc4d075291b53884b7/items/698b2c44f9ad9e0befa68572/why-is-the-citroen-e/?rel=on-page-gallery~ZTgzY2Q1NDhhZWI1NjQ0YTRh)\n- [o](https://www.facebook.com/sharer/sharer.php?u=http://live.storystream.it/citroen/6717c3fc4d075291b53884b7/items/698b2c44f9ad9e0befa68572/why-is-the-citroen-e/?rel=on-page-gallery~ZTgzY2Q1NDhhZWI1NjQ0YTRh)\n- [p](https://pinterest.com/pin/create/button/?url=http://live.storystream.it/citroen/6717c3fc4d075291b53884b7/items/698b2c44f9ad9e0befa68572/why-is-the-citroen-e/?rel=on-page-gallery~ZTgzY2Q1NDhhZWI1NjQ0YTRh&media=https://du66ttpehq3tn.cloudfront.net/h_227,w_284,c_fill,g_auto:car/https://d1sdeqoxcfgxl0.cloudfront.net/images/original/176b768f098ac5456d5603df84df88bbf97d7a4390d66e1e3527f2c6.jpeg&description=)\n\n- [t](https://twitter.com/home?status=http://live.storystream.it/citroen/6717c3fc4d075291b53884b7/items/68c2c69712a5b81a7762b543/citroen-e-c3-review/?rel=on-page-gallery~ZTgzY2Q1NDhhZWI1NjQ0YTRh)\n- [o](https://www.facebook.com/sharer/sharer.php?u=http://live.storystream.it/citroen/6717c3fc4d075291b53884b7/items/68c2c69712a5b81a7762b543/citroen-e-c3-review/?rel=on-page-gallery~ZTgzY2Q1NDhhZWI1NjQ0YTRh)\n- [p](https://pinterest.com/pin/create/button/?url=http://live.storystream.it/citroen/6717c3fc4d075291b53884b7/items/68c2c69712a5b81a7762b543/citroen-e-c3-review/?rel=on-page-gallery~ZTgzY2Q1NDhhZWI1NjQ0YTRh&media=https://du66ttpehq3tn.cloudfront.net/h_227,w_284,c_fill,g_auto:car/https://d1sdeqoxcfgxl0.cloudfront.net/images/original/297ad820c63db5204dd9d6cd210436657fb5b136764f4ebe567f5df4.jpeg&description=)\n- [e](mailto:?&body=http://live.storystream.it/citroen/6717c3fc4d075291b53884b7/items/68c2c69712a5b81a7762b543/citroen-e-c3-review/?rel=on-page-gallery~ZTgzY2Q1NDhhZWI1NjQ0YTRh)\n\n- [t](https://twitter.com/home?status=http://live.storystream.it/citroen/6717c3fc4d075291b53884b7/items/68a4544ee262c76903538eb6/citroen-e-c3-review/?rel=on-page-gallery~ZTgzY2Q1NDhhZWI1NjQ0YTRh)\n- [o](https://www.facebook.com/sharer/sharer.php?u=http://live.storystream.it/citroen/6717c3fc4d075291b53884b7/items/68a4544ee262c76903538eb6/citroen-e-c3-review/?rel=on-page-gallery~ZTgzY2Q1NDhhZWI1NjQ0YTRh)\n- [p](https://pinterest.com/pin/create/button/?url=http://live.storystream.it/citroen/6717c3fc4d075291b53884b7/items/68a4544ee262c76903538eb6/citroen-e-c3-review/?rel=on-page-gallery~ZTgzY2Q1NDhhZWI1NjQ0YTRh&media=https://du66ttpehq3tn.cloudfront.net/h_227,w_284,c_fill,g_auto:car/https://d1sdeqoxcfgxl0.cloudfront.net/images/original/99185ed0affa3e02ace4a61c215593b884b485d1652f72a021997517.png&description=)\n- [e](mailto:?&body=http://live.storystream.it/citroen/6717c3fc4d075291b53884b7/items/68a4544ee262c76903538eb6/citroen-e-c3-review/?rel=on-page-gallery~ZTgzY2Q1NDhhZWI1NjQ0YTRh)\n\n- [t](https://twitter.com/home?status=http://live.storystream.it/citroen/6717c3fc4d075291b53884b7/items/6819e7d512a5b81bd498acc6/citroen-e-c3-review/?rel=on-page-gallery~ZTgzY2Q1NDhhZWI1NjQ0YTRh)\n- [o](https://www.facebook.com/sharer/sharer.php?u=http://live.storystream.it/citroen/6717c3fc4d075291b53884b7/items/6819e7d512a5b81bd498acc6/citroen-e-c3-review/?rel=on-page-gallery~ZTgzY2Q1NDhhZWI1NjQ0YTRh)\n- [p](https://pinterest.com/pin/create/button/?url=http://live.storystream.it/citroen/6717c3fc4d075291b53884b7/items/6819e7d512a5b81bd498acc6/citroen-e-c3-review/?rel=on-page-gallery~ZTgzY2Q1NDhhZWI1NjQ0YTRh&media=https://du66ttpehq3tn.cloudfront.net/h_227,w_284,c_fill,g_auto:car/https://d1sdeqoxcfgxl0.cloudfront.net/images/original/e1e83382943611230c001341e85bc98e99d3e4388c63be01a78f5160.jpg&description=)\n\n- [t](https://twitter.com/home?status=http://live.storystream.it/citroen/6717c3fc4d075291b53884b7/items/6819e7d512a5b81bd498acc4/citroen-e-c3-review/?rel=on-page-gallery~ZTgzY2Q1NDhhZWI1NjQ0YTRh)\n- [o](https://www.facebook.com/sharer/sharer.php?u=http://live.storystream.it/citroen/6717c3fc4d075291b53884b7/items/6819e7d512a5b81bd498acc4/citroen-e-c3-review/?rel=on-page-gallery~ZTgzY2Q1NDhhZWI1NjQ0YTRh)\n- [p](https://pinterest.com/pin/create/button/?url=http://live.storystream.it/citroen/6717c3fc4d075291b53884b7/items/6819e7d512a5b81bd498acc4/citroen-e-c3-review/?rel=on-page-gallery~ZTgzY2Q1NDhhZWI1NjQ0YTRh&media=https://du66ttpehq3tn.cloudfront.net/h_227,w_284,c_fill,g_auto:car/https://d1sdeqoxcfgxl0.cloudfront.net/images/original/3c92bde9b7e18f71e914234004490a4d3df40d83685240937047add5.jpeg&description=)",
+     "position": 2
+    },
+    {
+     "url": "https://www.citroen.co.uk/content/dam/citroen/uk/b2c/tools/brochure/pdf/brochures/new-brochures/cars/new-e-c3/New-e-C3-price-and-specification-guide.pdf",
+     "title": "[PDF] Prices & Specifications - Citroen",
+     "description": "# The revolution has begun\n### All Electric.\n#### Turbo Petrol power.\n##### ORDER ONLINE ENHANCED ONLINE PRICES & SPECS\n| ë-C3 specific features |  |  |  |\n|-|-|-|-|\n| On Board Charger 7.4kW | ● | ● | ● |\n| Cabin temperature pre-conditioning via MyCitroen app or touchscreen |  |  | ● |",
+     "position": 3
+    },
+    {
+     "url": "https://www.citroen.co.uk/content/dam/citroen/uk/b2c/tools/brochure/pdf/brochures/new-brochures/cars/c3-aircross/C3-Aircross-price-and-specification-guide.pdf",
+     "title": "[PDF] C3-Aircross-price-and-specification ... - Citroen",
+     "description": "# SUV outside. Lounge inside.\n### Aircross offers a choice of Petrol or Hybrid powertrains.\n#### ORDER ONLINE ENHANCED ONLINE PRICES & SPECS\n| ë-C3 Aircross specific features |  |  |\n|-|-|-|\n| On Board Charger 7.4kW | ● | ● |\n\n• Citroën Battery Electric Vehicles: ë-C3, ë-C3",
+     "position": 4
+    },
+    {
+     "url": "https://www.citroen.co.uk/models/e-c3-aircross.html",
+     "title": "Citroën e-C3 Aircross Family SUV: Electric Car - Citroen",
+     "description": "Discover the Citroën e-C3 Aircross, a compact SUV with cutting-edge technology, zero tailpipe emissions, impressive range, and best-in-class comfort.",
+     "position": 5
+    }
+   ]
+  },
+  "creditsUsed": 2,
+  "id": "01a0b01a-144e-734d-88ab-aa27d6358a44"
+ }
+}

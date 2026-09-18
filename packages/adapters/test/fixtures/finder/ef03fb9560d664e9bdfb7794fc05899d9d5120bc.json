@@ -1,0 +1,84 @@
+{
+ "path": "/search",
+ "body": {
+  "query": "\"Denza Z9 GT\" UK official brochure PDF",
+  "limit": 10,
+  "country": "GB",
+  "location": "United Kingdom",
+  "sources": [
+   {
+    "type": "web"
+   }
+  ],
+  "ignoreInvalidURLs": true
+ },
+ "response": {
+  "success": true,
+  "data": {
+   "web": [
+    {
+     "url": "https://www.jurnileasing.co.uk/blog/denza-z9-gt-byds-luxury-electric-car-brand-arrives-in-europe",
+     "title": "Denza Z9 GT: BYD's Luxury Electric Car Brand Arrives in Europe | Jurni",
+     "description": "28 Apr 2025 · How fast is the Denza Z9 GT? The Denza Z9 GT will offer both plug-in hybrid (PHEV) and fully electric powertrains, each delivering impressive ...",
+     "position": 1
+    },
+    {
+     "url": "https://brochureshub.com/2025-denza-z9-gt/",
+     "title": "2025 Denza Z9 GT - Brochureshub",
+     "description": "19 Apr 2024 · The Denza Z9 GT is 5,180 mm long, 1,990 mm wide and 1,500 mm high, with a wheelbase of 3,125 mm. This means that it is about 130 mm longer than ...",
+     "position": 2
+    },
+    {
+     "url": "https://www.scribd.com/document/856883874/Denza-Z9-GT-English-Blog-2",
+     "title": "Denza Z9 GT vs. Porsche Panamera GTS | PDF | Engines | Plug In Hybrid",
+     "description": "3 May 2025 · The Denza Z9 GT, a new competitor in the luxury car market, is compared to the Porsche Panamera GTS, highlighting its impressive performance ...",
+     "position": 3
+    },
+    {
+     "url": "https://www.carsales.com.au/editorial/details/denza-z9-gt-2025-review-147661/",
+     "title": "Denza Z9 GT 2025 Review - carsales.com.au",
+     "description": "Rating 76% · Review by Toby Hagon16 Oct 2024 · The Denza Z9 GT should arrive in 2025 to launch BYD's new luxury sub-brand with its supercar power and three electric motors.",
+     "position": 4
+    },
+    {
+     "url": "https://www.denza.com/es/model-page/z9gt",
+     "title": "Denza Z9 GT: Gran turismo inteligente",
+     "description": "Z9GT\n\nZ9GTZ9GT\n\nZ9GT\n\nZ9GT\n\nDENZA Z9GT",
+     "position": 5
+    },
+    {
+     "url": "https://www.youtube.com/watch?v=IWH0l4JYIlk",
+     "title": "DENZA Z9 GT: Luxury, 1156 HP & Charging in Under 10 Minutes?",
+     "description": "2 Aug 2026 · Der DENZA Z9 GT kommt nach Europa und bringt Technik mit, die man auf dem deutschen Markt so kaum kennt. ⚡ In unserer Review schauen wir ...",
+     "position": 6
+    },
+    {
+     "url": "https://www.linkedin.com/posts/electric-drives_electricvehicles-evs-emobility-activity-7431306636155052032-7iCR",
+     "title": "Denza Europe's Z9 EV Challenges Premium Segment with 1,068 km ...",
+     "description": "... PDF Guide Download Free PDF Brochure ... UK hosted by Lorraine Fellowes ... Denza Z9 GT — a sleek electric shooting brake ...",
+     "position": 7
+    },
+    {
+     "url": "https://en.manuals.cz/man_model.php?id=151&model=4",
+     "title": "Denza Z9 / Z9 GT manuals",
+     "description": "User's manuals (1) Add. Chinese 1. 2025 denza z9 gt user manual cn.pdf. Chinese 358 pages. Repair manuals Add. Data sheets and catalogues Add. Other Add · Denza ...",
+     "position": 8
+    },
+    {
+     "url": "https://www.facebook.com/groups/electromobili/posts/2480650489018812/",
+     "title": "Denza D9 2026 is a luxury electric minivan built in China ... - Facebook",
+     "description": "26 Feb 2026 · Its top speed is 230 km/h. BYD Denza Z9 GT electric station wagon parked in a dimly lit urban area. Teal BYD ...",
+     "position": 9
+    },
+    {
+     "url": "https://www.facebook.com/61550696146423/posts/built-to-inspire-byd-atto-3available-at-our-gasanzammit-motors-showroom-in-mrieh/122306502776023204/",
+     "title": "Built to inspire…. BYD ATTO 3. Available at our GasanZammit ...",
+     "description": "27 Jul 2026 · Denza Z9 GT launched in Malaysia! RM359k, tri-motor setup with 1,156 ... On the BYD website, you can download a PDF brochure for the Atto 3 EVO.",
+     "position": 10
+    }
+   ]
+  },
+  "creditsUsed": 2,
+  "id": "01a0b017-ce98-72cb-a8c1-9ebb586f1bf9"
+ }
+}

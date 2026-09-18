@@ -1,0 +1,83 @@
+{
+ "path": "/search",
+ "body": {
+  "query": "Volvo EX30 brochure",
+  "limit": 8,
+  "country": "GB",
+  "location": "United Kingdom",
+  "sources": [
+   {
+    "type": "web"
+   }
+  ],
+  "ignoreInvalidURLs": true,
+  "categories": [
+   "pdf"
+  ]
+ },
+ "response": {
+  "success": true,
+  "data": {
+   "web": [
+    {
+     "url": "https://azure-eu-assets.contentstack.com/v3/assets/blt84e01a6904dbd2e8/bltb8528c8e2b4c4142/699d5e824147a59fd88037da/EX30.pdf",
+     "title": "[PDF] MY25 EX30 Brochures R3 - Contentstack",
+     "description": "MY25 EX30 Brochures R3 Page 1 Page 2 Page 3 Page 4 Page 5 Page 6 Page 7 Page 8 Page 9 Page 10 Page 11 Page 12 Page 13 Page 14 Page 15 Page 16 Page 17 Page 18 ...",
+     "position": 1,
+     "category": "pdf"
+    },
+    {
+     "url": "https://www.volvocars.com/files/cs/v3/assets/blt84e01a6904dbd2e8/blt7fd457bdd75c4d0c/6943822463469b89f8cb5902/R2_Volvo_EX30_brochure_20251218.pdf?branch=prod_alias",
+     "title": "[PDF] R2_Volvo_EX30_brochure_202...",
+     "description": "18 Dec 2025 · VOLVO EX30 TECHNICAL SPECIFICATIONS. ระดับของสเปค / Specification Level. Ultra. Single Motor Extended Range. ประเภทของรถ TYPE OF VEHICLE.",
+     "position": 2,
+     "category": "pdf"
+    },
+    {
+     "url": "https://www.jpmg.ie/site/uploads/New%20Cars/Volvo/EX30/2023/EX30-MY24.5.pdf",
+     "title": "[PDF] VOLVO EX30",
+     "description": "7 Jun 2023 · STANDARD FEATURES CLIMATE + 2-Zone Electronic Climate Control with Air Purifier PM2.5 + Heated Front Seats + Heated Steering Wheel DRIVER ...",
+     "position": 3,
+     "category": "pdf"
+    },
+    {
+     "url": "https://azure-eu-assets.contentstack.com/v3/assets/blt84e01a6904dbd2e8/blt9179e2057a50fb38/69611d964baa310964c22a69/Volvo_EX30_and_EX30_Cross_Country_MY26_Edition_5_Price_List.pdf",
+     "title": "[PDF] VOLVO EX30 AND EX30 CROSS COUNTRY - Contentstack",
+     "description": "Our comprehensive cover offers high levels of protection including a courtesy car, uninsured driver cover and much more included as standard. Visit.",
+     "position": 4,
+     "category": "pdf"
+    },
+    {
+     "url": "https://www.volvocars.com/files/cs/v3/assets/blt84e01a6904dbd2e8/blt1091d616bd9f1769/68b18e64d174086b9d1a6665/Volvo_EX30_with_accessories_brochure_2025_08_27_Web.pdf?branch=prod_alias",
+     "title": "[PDF] table of contents - Volvo",
+     "description": "27 Aug 2025 · Product Brochure. Accessory Brochure. Page 3. VOLVO EX30. Page 4. EX30 CORE SINGLE MOTOR EXTENDED RANGE. Cloud Blue. Textile & Nordico – Indigo.",
+     "position": 5,
+     "category": "pdf"
+    },
+    {
+     "url": "https://xr793.com/wp-content/uploads/2026/08/2025-Volvo-EX30.pdf",
+     "title": "[PDF] Volvo EX30",
+     "description": "We are proud to introduce the EX30: our new, small fully electric SUV which takes Volvo Cars' unique approach to electric mobility to a new audience.",
+     "position": 6,
+     "category": "pdf"
+    },
+    {
+     "url": "https://www.volvocars.com/files/cs/v3/assets/blt84e01a6904dbd2e8/bltbb2ef3672b9283c4/66ccd0c127beb527f00e89e6/ex30-ultra-e-range-vapour-grey-2024.pdf?branch=prod_alias",
+     "title": "[PDF] Volvo EX30",
+     "description": "Page 1. •. •. •. •. •. •. •. •. •. •. •. •. •. •. •. •. •. •. •. •. •. •. •. •. •. •. •. •. •. •. •. •. •. •. •. •. •. •. •. •. •. •. •. •. •. •. •",
+     "position": 7,
+     "category": "pdf"
+    },
+    {
+     "url": "https://forms.volvocarmalaysia.com/ex30-driving-exp-booklet.pdf",
+     "title": "[PDF] volvo ex30",
+     "description": "The Volvo EX30 is our latest electric SUV made for every moment in life. It's packed with technology, featuring a new automatic parking feature,.",
+     "position": 8,
+     "category": "pdf"
+    }
+   ]
+  },
+  "creditsUsed": 2,
+  "id": "01a0b368-34dc-72ec-8c21-dfd1c57c5474"
+ }
+}

@@ -1,0 +1,84 @@
+{
+ "path": "/search",
+ "body": {
+  "query": "\"Hyundai Ioniq 5\" UK official brochure PDF",
+  "limit": 10,
+  "country": "GB",
+  "location": "United Kingdom",
+  "sources": [
+   {
+    "type": "web"
+   }
+  ],
+  "ignoreInvalidURLs": true
+ },
+ "response": {
+  "success": true,
+  "data": {
+   "web": [
+    {
+     "url": "https://www.hyundai.com/uk/en/models/ioniq5/downloads.html",
+     "title": "IONIQ 5 | Downloads - Hyundai Motor Company",
+     "description": "# Downloads.\n- [IONIQ 5 brochure. \\\n\\\nPDF  9.36 MB \\\n\\\ndownload_new](https://dmassets.hyundai.com/is/content/hyundaiautoever/IONIQ_5_Brochurepdf)",
+     "position": 1
+    },
+    {
+     "url": "https://www.hyundai.com/content/dam/hyundai/in/en/data/brochure/ioniq-5.pdf",
+     "title": "[PDF] IONIQ 5 Digital Brochure-1080x1332 - Hyundai Motor Company",
+     "description": "# Timeless perfection.\n## Peace of mind.\n| IONIQ 5 |  |\n|-|-|\n| Bose premium sound system(8 Speakers) |  |\n| Active sound design |  |\n| Safety |  |\n| 6 Airbags(Driver, passenger,side&curtain) |  |\n| Electronic stability control(ESC)&Vehicle stability management(VSM) |  |\n| Hill-start assist control(HAC) |  |\n| Multi collision-avoidance brake(MCB) |  |\n| Electric parking brake(EPB) |  |\n| Electro chromic mirror(ECM) |  |\n| Tyre pressure monitoring system(TPMS)highline |  |\n| Virtual engine sound system(VESS) |  |\n| Child seat anchor(ISOFIX) |  |\n| Parking assist | Rear parking sensor |\n| Parking assist | Front parking sensor |\n| Parking assist | Side parking sensor |\n| Hyundai SmartSense(Advanced Driver Assistance System) | Forward Collision Warning(FCW) |\n| Hyundai SmartSense(Advanced Driver Assistance System) | Forward Collision-Avoidance Assist-Car(FCA-Car) |\n| Hyundai SmartSense(Advanced Driver Assistance System) | Forward Collision-Avoidance Assist-Pedestrian(FCA-Ped) |\n| Hyundai SmartSense(Advanced Driver Assistance System) | Forward Collision-Avoidance Assist-Cycle(FCA-Cyl) |\n| Hyundai SmartSense(Advanced Driver Assistance System) | Forward Collision-Avoidance Assist-Junction Turning(FCA-JT) |\n| Hyundai SmartSense(Advanced Driver Assistance System) | Forward Collision-Avoidance Assist-Direct Oncoming(FCA-DO) |\n| Hyundai SmartSense(Advanced Driver Assistance System) | Blind-Spot Collision Warning(BCW) |\n| Hyundai SmartSense(Advanced Driver Assistance System) | Blind-Spot Collision-Avoidance Assist(BCA) |\n| Hyundai SmartSense(Advanced Driver Assistance System) | Lane Departure Warning(LDW) |\n| Hyundai SmartSense(Advanced Driver Assistance System) | Lane Keeping Assist(LKA) |\n| Hyundai SmartSense(Advanced Driver Assistance System) | Driver Attention Warning(DAW) |\n| Hyundai SmartSense(Advanced Driver Assistance System) | Safe Exit Warning(SEW) |\n| Hyundai SmartSense(Advanced Driver Assistance System) | Safe Exit Assist(SEA) |\n| Hyundai SmartSense(Advanced Driver Assistance System) | Smart Cruise Control with Stop&Go(SCC with S&G) |\n| Hyundai SmartSense(Advanced Driver Assistance System) | Lane Following Assist(LFA) |\n| Hyundai SmartSense(Advanced Driver Assistance System) | High Beam Assist(HBA) |\n| Hyundai SmartSense(Advanced Driver Assistance System) | Leading Vehicle Departure Alert(LVDA) |\n| Hyundai SmartSense(Advanced Driver Assistance System) | Rear Cross-Traffic Collision Warning(RCCW) |\n| Hyundai SmartSense(Advanced Driver Assistance System) | Rear Cross-Traffic Collision-Avoidance Assist(RCCA) |\n| Hyundai SmartSense(Advanced Driver Assistance System) | Parking Collision Avoidance Assist-Rear(PCA-R) |\n| Blind-Spot View Monitor(BVM) |  |\n| Surround View Monitor(SVM) |  |\n| Charger |  |\n| Portable charging cable |  |\n| 11kW wallbox charger |  |\n\n| Items | IONIQ 5 |\n|-|-|\n| Dimensions |  |\n| Overall length(mm) | 4655 |\n| Overall width(mm) | 1890 |\n| Overall height(mm) | 1625*** |\n| Wheelbase(mm) | 3000 |\n| Electric motor |  |\n| Electric motor type | Permanent magnet synchronous motor(PMSM) |\n| Configuration | Rear wheel drive(RWD) |\n| Max power(kW(ps)) | 168(228.5) |\n| High voltage battery&charging |  |\n| Battery type | Liquid cooled lithium-ion with battery heating system |\n| Capacity(kWh) | 84 |\n| Estimated AC fast charging time** (SOC10% to100%) from11kWAC fast charger | 7h35min |\n| Estimated DC fast charging time** (SOC10% to80%) usingDC fast charger* | 18min |\n| Transmission |  |\n| Type | Single speed reduction gear |\n| Suspension |  |\n| Front | McPherson strut |\n| Rear | Multi-link |\n| Brakes |  |\n| Front | Disc |\n| Rear | Disc |\n| Wheel&tyre |  |\n| Size | 255/45R20(D=512.8mm)Aero alloy wheel |\n| Spare tyre | Tyre Mobility Kit(TMK) |",
+     "position": 2
+    },
+    {
+     "url": "https://www.hyundai.com/uk/en/models/ioniq5-n/downloads.html",
+     "title": "Hyundai IONIQ 5 N | Downloads",
+     "description": "# Downloads.\n- [IONIQ 5 N brochure \\\n\\\nPDF  24.29 MB \\\n\\\ndownload_new](https://dmassets.hyundai.com/is/content/hyundaiautoever/IONIQ+5+N+Brochurepdf)",
+     "position": 3
+    },
+    {
+     "url": "https://www.hyundai.com/uk/en/brochure/brochure-download.html",
+     "title": "Hyundai Brochure Download",
+     "description": "The Hyundai IONIQ 5 parked with skyline in the background. Hyundai Brochure Download. Test drive · Brochures · Configurator · Book a service · Find a retailer.",
+     "position": 4
+    },
+    {
+     "url": "https://www.scribd.com/document/622345898/Brochure-Ioniq5",
+     "title": "Brochure Ioniq5 | PDF | Transportation Engineering | Land Vehicles - Scribd",
+     "description": "that gives you access to the widest network of public charging points in the UK. ... Hyundai IONIQ 5 Brochure. 44 pages. Hyundai Ioniq: Hybrid, Plug-in, Electric.",
+     "position": 5
+    },
+    {
+     "url": "https://autocatalogarchive.com/wp-content/uploads/2025/03/Hyundai-Ioniq-5-N-2024-UK.pdf",
+     "title": "[PDF] IONIQ 5 N - Auto Catalog Archive",
+     "description": "The vehicles shown in this brochure may be equipped with additional equipment at extra cost, and not all model versions are included in this brochure. Hyundai ...",
+     "position": 6
+    },
+    {
+     "url": "https://secure.viewer.zmags.com/publication/18b309e3",
+     "title": "2026 Hyundai Ioniq 5 Brochure",
+     "description": "",
+     "position": 7
+    },
+    {
+     "url": "https://www.slideshare.net/slideshow/hyundai-ioniq-5-electric-car-brochure-pdf/272768260",
+     "title": "Hyundai Ioniq 5 Brochure | PDF - Slideshare",
+     "description": "The Hyundai Ioniq 5 is an all-electric SUV that features an electric global modular platform (e-GMP) for improved handling, increased interior space, ...",
+     "position": 8
+    },
+    {
+     "url": "https://www.hyundai.com/uk/en/models/ioniq5.html",
+     "title": "IONIQ 5 | New Cars | Hyundai Motor UK",
+     "description": "# IONIQ 5\n### 0% APR Available and £3,000 towards your deposit*\n![IONIQ 5](https://www.hyundai.com/eu/fapi/3de/image?country=UK&fsc=GIW5ZHZ7ZDD0MG&camera=C082&extcolor=R2P&intcolor=NNB&format=png&quality=85&width=960&height=540)\n\nIONIQ 5 Advance 63 kWh RWD\n\n[Personalise offer](https://www.hyundai.com/uk/en/models/ioniq5/configurator.html#/share-code/FSC!GIW5ZHZ7ZDD0MG+MID!GI|W5||PE+EXTID!R2P-0+INTID!NNB|0+CID!uk+LID!en+HWFID!finance+HWPRID!KNC|pcp+HWMLG!10000+HWMTHS!37+HWLOANDOWNP!5000+HO!true)\n\n### 4.9% APR Representative and £3,000 towards your deposit^\n[Personalise offer](https://www.hyundai.com/uk/en/models/ioniq5/configurator.html#/share-code/FSC!GIW5ZHZ7ZDD0MG+MID!GI|W5||PE+EXTID!R2P-0+INTID!NNB|0+CID!uk+LID!en+HWFID!finance+HWPRID!KNC|pcp+HWMLG!10000+HWMTHS!49+HWLOANDOWNP!5000+HO!true)\n\n### From £496.80 per month\n[Personalise offer](https://www.hyundai.com/uk/en/models/ioniq5/configurator.html#/share-code/FSC!GIW5ZHZ7ZGG2CG+MID!GI|W5||PE+EXTID!R2P-0+INTID!NNB|1+CID!uk+LID!en+HWFID!finance+HWPRID!HCUK|PRN+HWMLG!8000+HWPYPL!6+HWMTHS!36+HO!true)",
+     "position": 9
+    },
+    {
+     "url": "https://www.netcarshow.com/hyundai/2022-ioniq_5_uk-version/",
+     "title": "Hyundai Ioniq 5 [UK] (2022) - NetCarShow.com",
+     "description": "Hyundai Ioniq 5 [UK]. IONIQ 5's design explores a new design freedom offered by a dedicated BEV platform and mirrors the design of the 45 concept first seen at ...",
+     "position": 10
+    }
+   ]
+  },
+  "creditsUsed": 2,
+  "id": "01a0b018-3847-7197-ad98-6b7087812a30"
+ }
+}

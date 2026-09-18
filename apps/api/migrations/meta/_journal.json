@@ -15,6 +15,13 @@
       "when": 1789457080966,
       "tag": "0001_harsh_shocker",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1789720647063,
+      "tag": "0002_dizzy_fantastic_four",
+      "breakpoints": true
     }
   ]
 }

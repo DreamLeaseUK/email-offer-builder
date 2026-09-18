@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { brochureLink, brochuresApi } from './brochures.js';
+import { brochureLink, brochuresApi, recheckLinkedBrochures } from './brochures.js';
 import { campaignsApi, redirect } from './campaigns.js';
 import { dev } from './dev.js';
 import type { AppEnv, Env } from './env.js';
@@ -68,6 +68,12 @@ handler.scheduled = (_controller, env, ctx) => {
     runRetention(env, new Date())
       .then((r) => console.log('retention:', JSON.stringify(r)))
       .catch((e) => console.error('retention failed:', e instanceof Error ? e.message : String(e))),
+  );
+  // web brochures and request forms are links to someone else's page: drop any that have gone dead
+  ctx.waitUntil(
+    recheckLinkedBrochures(env)
+      .then((r) => console.log('brochure links:', JSON.stringify(r)))
+      .catch((e) => console.error('brochure link re-check failed:', e instanceof Error ? e.message : String(e))),
   );
 };
 

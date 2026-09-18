@@ -11,11 +11,11 @@ export interface FirecrawlSearchHit {
 }
 
 export interface FirecrawlClient {
-  search(query: string, opts?: { limit?: number; country?: string; location?: string }): Promise<{ results: FirecrawlSearchHit[]; creditsUsed: number }>;
+  search(query: string, opts?: { limit?: number; country?: string; location?: string; categories?: ('pdf' | 'github' | 'research')[] }): Promise<{ results: FirecrawlSearchHit[]; creditsUsed: number }>;
   scrape(
     url: string,
-    opts?: { formats?: ('markdown' | 'html' | 'rawHtml' | 'links')[]; onlyMainContent?: boolean; pdfMaxPages?: number },
-  ): Promise<{ markdown?: string; html?: string; rawHtml?: string; links?: string[]; creditsUsed: number }>;
+    opts?: { formats?: ('markdown' | 'html' | 'rawHtml' | 'links')[]; onlyMainContent?: boolean; pdfMaxPages?: number; waitFor?: number },
+  ): Promise<{ markdown?: string; html?: string; rawHtml?: string; links?: string[]; statusCode?: number; totalPages?: number; creditsUsed: number }>;
   map(url: string, opts?: { search?: string; limit?: number }): Promise<{ links: string[]; creditsUsed: number }>;
   /**
    * Fetch a URL's original response body (the `rawBase64` format) and decode it to bytes. Used when a
@@ -44,7 +44,7 @@ interface SearchBody {
 interface ScrapeBody {
   success?: boolean;
   creditsUsed?: number;
-  data?: { markdown?: string; html?: string; rawHtml?: string; links?: string[]; metadata?: { creditsUsed?: number } };
+  data?: { markdown?: string; html?: string; rawHtml?: string; links?: string[]; metadata?: { creditsUsed?: number; statusCode?: number; totalPages?: number } };
   error?: string;
 }
 interface MapBody {
@@ -89,6 +89,7 @@ export function createFirecrawlClient(apiKey: string, fetchFn: typeof fetch = fe
         location: opts.location ?? 'United Kingdom',
         sources: [{ type: 'web' }],
         ignoreInvalidURLs: true,
+        ...(opts.categories ? { categories: opts.categories } : {}),
       });
       const results: FirecrawlSearchHit[] = [];
       for (const r of body.data?.web ?? []) {
@@ -104,9 +105,12 @@ export function createFirecrawlClient(apiKey: string, fetchFn: typeof fetch = fe
     async scrape(url, opts = {}) {
       const req: Record<string, unknown> = { url, formats: opts.formats ?? ['markdown'], onlyMainContent: opts.onlyMainContent ?? false };
       if (opts.pdfMaxPages) req['parsers'] = [{ type: 'pdf', mode: 'fast', maxPages: opts.pdfMaxPages }];
+      if (opts.waitFor) req['waitFor'] = opts.waitFor;
       const body = await post<ScrapeBody>('/scrape', req);
       const d = body.data ?? {};
-      const out: { markdown?: string; html?: string; rawHtml?: string; links?: string[]; creditsUsed: number } = { creditsUsed: body.creditsUsed ?? d.metadata?.creditsUsed ?? 1 };
+      const out: { markdown?: string; html?: string; rawHtml?: string; links?: string[]; statusCode?: number; totalPages?: number; creditsUsed: number } = { creditsUsed: body.creditsUsed ?? d.metadata?.creditsUsed ?? 1 };
+      if (d.metadata?.statusCode !== undefined) out.statusCode = d.metadata.statusCode;
+      if (d.metadata?.totalPages !== undefined) out.totalPages = d.metadata.totalPages;
       if (d.markdown !== undefined) out.markdown = d.markdown;
       if (d.html !== undefined) out.html = d.html;
       if (d.rawHtml !== undefined) out.rawHtml = d.rawHtml;

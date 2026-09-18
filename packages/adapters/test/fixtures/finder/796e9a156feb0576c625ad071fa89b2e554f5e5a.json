@@ -1,0 +1,83 @@
+{
+ "path": "/search",
+ "body": {
+  "query": "Jaecoo 7 brochure",
+  "limit": 8,
+  "country": "GB",
+  "location": "United Kingdom",
+  "sources": [
+   {
+    "type": "web"
+   }
+  ],
+  "ignoreInvalidURLs": true,
+  "categories": [
+   "pdf"
+  ]
+ },
+ "response": {
+  "success": true,
+  "data": {
+   "web": [
+    {
+     "url": "https://autocatalogarchive.com/wp-content/uploads/2024/06/Jaecoo-J7-2024-ZA.pdf",
+     "title": "[PDF] Jaecoo-J7-2024-ZA.pdf - Auto Catalog Archive",
+     "description": "Take a look inside the JAECOO J7, where sophistication meets technology. Wireless Charging. 14.8\" Touchscreen Multiple Drive Modes. AWD for Smartphones.",
+     "position": 1,
+     "category": "pdf"
+    },
+    {
+     "url": "https://www.omodajaecoo.com.my/themes/demo/assets/brochure/Jaecoo-J7-Brouchure.pdf",
+     "title": "[PDF] Brochure (website) - JAECOO Malaysia",
+     "description": "7 Speed Dual Clutch Transmission. All Wheel Drive. 194hp / 145kW. 290Nm. 9.9 ... 7 Driving Modes (Eco/Normal/Sports/Sand/Mud/Snowfield/Off-road). Auto Heads ...",
+     "position": 2,
+     "category": "pdf"
+    },
+    {
+     "url": "https://www.jaecoo.co.za/brochure/jaecoo-j7-brochure.pdf",
+     "title": "[PDF] jaecoo-j7-brochure.pdf",
+     "description": "The JAECOO J7 combines sophistication and practicality with its 360° HD panoramic camera, offering seamless navigation and a refined driving experience.",
+     "position": 3,
+     "category": "pdf"
+    },
+    {
+     "url": "https://www.omodajaecoo.com.au/sites/default/files/2025-09/153_24_Jaecoo_J7_Spec_Sheet_AU_ICE_v100.pdf",
+     "title": "[PDF] SPECIFICATION SHEET - Omoda Jaecoo",
+     "description": "# FOR THIS WILD LIFE\n| GENERAL | CORE | TRACK | RIDGE |\n|-|-|-|-|\n| Seatbelt Pretensioners(1st Row,2nd Row Outboard) | ● | ● | ● |\n| Parking Sensors | Rear only | Front&Rear | Front&Rear |",
+     "position": 4,
+     "category": "pdf"
+    },
+    {
+     "url": "https://automotivegroup.be/images/JAECOO%207%20SHS%20-Brochure_EN.pdf",
+     "title": "[PDF] JAECOO 7 SHS - Automotive Group Roeselare",
+     "description": "Experience the perfect blend of luxury and adventure with the JAECOO 7. With top-tier safety features and cutting-edge technology, with 50W mobile phone ...",
+     "position": 5,
+     "category": "pdf"
+    },
+    {
+     "url": "https://www.gentmotors.be/omoda-jaecoo/files/JAECOO7-Brochure_EN.pdf",
+     "title": "[PDF] jaecoo 7 - Gent Motors",
+     "description": "With up to 7 driving modes, the JAECOO 7 adapts to various ... *All information provided in this brochure applies to the current version of JAECOO 7.",
+     "position": 6,
+     "category": "pdf"
+    },
+    {
+     "url": "https://www.omodajaecooitalia.com/wp-content/uploads/Listino-Jaecoo-7-ICE-Marzo-2026.pdf",
+     "title": "[PDF] JAECOO 7 - Omoda",
+     "description": "1 Mar 2026 · La Jaecoo 7 ridefinisce il concetto di crossover, unendo un'anima robusta e avventurosa a un'eleganza inconfondibile.",
+     "position": 7,
+     "category": "pdf"
+    },
+    {
+     "url": "https://autocatalogarchive.com/wp-content/uploads/2025/10/Jaecoo-J7-2025-UAE.pdf",
+     "title": "[PDF] J7-4page-Brochure-final version-screen - Auto Catalog Archive",
+     "description": "J7-4page-Brochure-final. SPECIFICATIONS Comfort Luxury Flagship Trim Engine & Transmission Engine / Transmission Type Max Power. Steering, Brakes & Suspension ...",
+     "position": 8,
+     "category": "pdf"
+    }
+   ]
+  },
+  "creditsUsed": 2,
+  "id": "01a0b018-1e5d-7414-bc20-2469761402b2"
+ }
+}

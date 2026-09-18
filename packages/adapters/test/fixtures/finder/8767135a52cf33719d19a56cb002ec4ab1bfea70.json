@@ -1,0 +1,36 @@
+{
+ "path": "/scrape",
+ "body": {
+  "url": "https://leapmotor-website-prod.s3.eu-central-1.amazonaws.com/public/en-cms/1782890463953C10_Q3.pdf",
+  "formats": [
+   "markdown"
+  ],
+  "parsers": [
+   {
+    "type": "pdf",
+    "mode": "fast",
+    "maxPages": 4
+   }
+  ]
+ },
+ "response": {
+  "success": true,
+  "data": {
+   "markdown": "`AccessDenied`Access DeniedM25EN9ZSN8P45Z36f1Un/nP77/sVAczqA9PAEt1HrGcyVXvrQpSFhN7iOk60j/fNsnOtAvZdYwhHFCs0s1kUxhPRP4gj7X6Qm1FYLdS6zm+O+tEw\n\n<Error>\n\n<Code>AccessDenied</Code>\n\n<Message>Access Denied</Message>\n\n<RequestId>M25EN9ZSN8P45Z36</RequestId>\n\n<HostId>f1Un/nP77/sVAczqA9PAEt1HrGcyVXvrQpSFhN7iOk60j/fNsnOtAvZdYwhHFCs0s1kUxhPRP4gj7X6Qm1FYLdS6zm+O+tEw</HostId>\n\n...\n\n</Error>",
+   "metadata": {
+    "scrapeId": "01a0b018-1646-77d8-9a53-d38d81e61555",
+    "sourceURL": "https://leapmotor-website-prod.s3.eu-central-1.amazonaws.com/public/en-cms/1782890463953C10_Q3.pdf",
+    "url": "https://leapmotor-website-prod.s3.eu-central-1.amazonaws.com/public/en-cms/1782890463953C10_Q3.pdf",
+    "statusCode": 403,
+    "error": "Forbidden",
+    "contentType": "application/xml",
+    "timezone": "America/New_York",
+    "proxyUsed": "stealth",
+    "cacheState": "miss",
+    "creditsUsed": 1,
+    "concurrencyLimited": false
+   },
+   "warning": "The engine used does not support the following features: pdf -- your scrape may be partial."
+  }
+ }
+}

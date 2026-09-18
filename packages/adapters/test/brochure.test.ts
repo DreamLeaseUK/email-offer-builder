@@ -1,211 +1,283 @@
+import { readFileSync, readdirSync } from 'node:fs';
 import { describe, expect, it, vi } from 'vitest';
-import { Brochure } from '@offer-mailer/schema';
-import type { Brochure as BrochureT } from '@offer-mailer/schema';
+import { Brochure, BrochureSearch } from '@offer-mailer/schema';
+import type { Brochure as BrochureT, BrochureSearch as BrochureSearchT } from '@offer-mailer/schema';
 import {
-  BrochureNotFoundError,
   FirecrawlBrochureSource,
   ManualBrochureError,
+  acceptSearchOutcome,
   brochureExpiresAt,
+  docType,
+  editionDate,
   ensureBrochure,
-  entryUrl,
+  findBrochure,
   isBrochureExpired,
+  isEditionTooOld,
+  isOfficialHost,
+  labelledLinks,
   manualBrochure,
-  manufacturerEntry,
-  matchAllowlist,
-  ukContentCheck,
+  modelMatcher,
+  modelVariants,
+  ukMarker,
+  ukPathOnOfficial,
 } from '../src/index.js';
-import type { BrochureRepo, BrochureStore, Downloaded, FirecrawlClient } from '../src/index.js';
-import { ALLOWLIST, BY, NOW, pdfBytes } from './helpers.js';
+import type { BrochureRepo, BrochureStore, Downloaded, FinderHttp, FirecrawlClient } from '../src/index.js';
+import { BY, NOW, pdfBytes } from './helpers.js';
 
-// ---------- allowlist ----------
+// ---------- the finder's rules ----------
 
-describe('allowlist', () => {
-  it('matches hosts, subdomains and path prefixes, and rejects everything else', () => {
-    expect(matchAllowlist('https://www.kia.co.uk/brochures/ev3.pdf', ALLOWLIST)?.entry).toBe('kia.co.uk');
-    expect(matchAllowlist('https://cdn.kia.co.uk/x.pdf', ALLOWLIST)?.entry).toBe('kia.co.uk');
-    expect(matchAllowlist('https://www.kia.de/brochures/ev3.pdf', ALLOWLIST)).toBeNull();
-    expect(matchAllowlist('https://www.volvocars.com/uk/brochures/', ALLOWLIST)?.entry).toBe('volvocars.com/uk');
-    expect(matchAllowlist('https://www.volvocars.com/de/brochures/', ALLOWLIST)).toBeNull();
-    // Global domain (kia.com): UK content matches by a /uk path segment; other regions do not.
-    expect(matchAllowlist('https://www.kia.com/content/dam/kwcms/kme/uk/en/ev2-brochure.pdf', ALLOWLIST)?.entry).toBe('kia.com');
-    expect(matchAllowlist('https://www.kia.com/eu/new-cars/ev2/', ALLOWLIST)).toBeNull();
-    expect(matchAllowlist('https://www.kia.com/us/vehicles/', ALLOWLIST)).toBeNull();
-    expect(matchAllowlist('https://notkia.co.uk/x.pdf', ALLOWLIST)).toBeNull();
-    expect(matchAllowlist('ftp://www.kia.co.uk/x.pdf', ALLOWLIST)).toBeNull();
-    expect(matchAllowlist('garbage', ALLOWLIST)).toBeNull();
+describe('finder rules', () => {
+  it('recognises the official site from the brand in the host, and refuses dealers, press and vans sites', () => {
+    for (const [url, make] of [
+      ['https://www.kia.com/uk/new-cars/ev2/', 'Kia'], ['https://xpengcars.co.uk/models/g6/', 'XPENG'], ['https://omodaauto.co.uk/downloads/', 'Omoda'],
+      ['https://www.cupraofficial.co.uk/cars/born', 'Cupra'], ['https://www.mercedes-benz.co.uk/passengercars/', 'Mercedes-Benz'], ['https://media-assets.mazda.eu/raw/upload/mazdauk/x.pdf', 'Mazda'],
+      ['https://cdn.group.renault.com/ren/gb/brochures/r5.pdf', 'Renault'], ['https://www.volkswagen.co.uk/en/new/id4.html', 'Volkswagen'],
+    ] as const) expect(isOfficialHost(url, make), url).toBe(true);
+    for (const [url, make] of [
+      ['https://www.berrycroydonbmw.co.uk/cars/i4/', 'BMW'], ['https://www.kiapressoffice.com/models/ev2', 'Kia'], ['https://www.volkswagen-vans.co.uk/en/download-a-brochure.html', 'Volkswagen'],
+      ['https://uat.bmw-birdautomotive.in/x.pdf', 'BMW'], ['http://www.bmw-brochure-downloads.co.uk/BMW_i4_Pricing.pdf', 'BMW'], ['https://autocatalogarchive.com/Kia-EV2.pdf', 'Kia'],
+    ] as const) expect(isOfficialHost(url, make), url).toBe(false);
   });
 
-  it('finds the manufacturer entry for a make, including aliases', () => {
-    expect(manufacturerEntry('Kia', ALLOWLIST)).toBe('kia.co.uk');
-    expect(manufacturerEntry('Cupra', ALLOWLIST)).toBe('cupraofficial.co.uk');
-    expect(manufacturerEntry('Land Rover', ALLOWLIST)).toBe('landrover.co.uk');
-    expect(manufacturerEntry('Mercedes-Benz', ALLOWLIST)).toBe('mercedes-benz.co.uk');
-    expect(manufacturerEntry('Volvo', ALLOWLIST)).toBe('volvocars.com/uk');
-    expect(manufacturerEntry('Wuling', ALLOWLIST)).toBeUndefined();
-    expect(entryUrl('volvocars.com/uk')).toBe('https://www.volvocars.com/uk/');
-    expect(entryUrl('kia.co.uk')).toBe('https://www.kia.co.uk/');
+  it('counts a loose UK path marker only on the official host', () => {
+    expect(ukMarker('https://www.kia.com/content/dam/kwcms/kme/uk/en/ev2.pdf')).toBe(true);
+    expect(ukMarker('https://www.kia.com/eu/new-cars/ev2/')).toBe(false);
+    expect(ukPathOnOfficial('https://www.byd.com/material/byd-site/byd-uk/specifications/SEAL.pdf', 'BYD')).toBe(true);
+    expect(ukPathOnOfficial('https://random-dealer.com/byd-uk/SEAL.pdf', 'BYD')).toBe(false);
+  });
+
+  it('types a document from its own words, and drops anything that is not sales literature', () => {
+    expect(docType('Download brochure')).toBe('brochure');
+    expect(docType('IONIQ_5_Tech_and_Spec_Guidepdf')).toBe('spec');
+    expect(docType('New e-C3 price and specification guide')).toBe('price-guide');
+    expect(docType('View pricelist')).toBe('price-guide');
+    for (const t of ['View Manual', 'ORA Service Warranty 2025', 'Getting started leaflet', 'Qashqai accessories brochure', 'MG ZS Hybrid Press Pack', 'Modern Slavery Statement']) expect(docType(t), t).toBe('manual');
+    expect(docType('Build and price')).toBe('unknown');
+  });
+
+  it('takes the newest of the text date and the URL date', () => {
+    const now = new Date('2026-09-18T00:00:00Z');
+    // MG: a January 2026 file that quotes June 2025 in a footnote
+    expect(editionDate('WLTP figures correct as of June 2025', 'https://www.mg.co.uk/sites/default/files/2026-01/MG_ZS_Range_Brochure_Jan_2026.pdf', now)?.date.toISOString().slice(0, 7)).toBe('2026-01');
+    // Ford: a stale file name on a reissued document
+    expect(editionDate('Effective from 4 August 2026', 'https://www.ford.co.uk/price-list/PL-en_gb-puma-october-2025.pdf', now)?.date.toISOString().slice(0, 10)).toBe('2026-08-04');
+    expect(editionDate('no dates here', 'https://example.com/a.pdf', now)).toBeUndefined();
+  });
+
+  it("keeps a link's own text apart from its neighbours", () => {
+    const md = '- [Brochure](https://dmassets.hyundai.com/IONIQ_5_Brochurepdf)\n- [Tech and Spec Guide](https://dmassets.hyundai.com/IONIQ_5_Tech_and_Spec_Guidepdf)';
+    const links = labelledLinks(md, 'https://www.hyundai.com/uk/en/models/ioniq5/downloads.html');
+    expect(links.map((l) => l.own)).toEqual(['Brochure', 'Tech and Spec Guide']);
+    expect(docType(links[1]?.own ?? '')).toBe('spec');
+  });
+
+  it('does not let a short or numeric model name match everything', () => {
+    expect(modelMatcher('Renault', '5')('Renault-5-eBrochure.pdf')).toBe(true);
+    expect(modelMatcher('Renault', '5')('Clio 5 door brochure')).toBe(false);
+    expect(modelMatcher('MG', 'ZS')('MG_ZS_Range_Brochure')).toBe(true);
+    expect(modelMatcher('MG', 'ZS')('mg-hs-plug-in')).toBe(false);
+    expect(modelVariants('E-3008')).toEqual(['E-3008', '3008']);
+    expect(modelVariants('Q4 e-tron')).toEqual(['Q4 e-tron', 'Q4']);
+    expect(modelVariants('Frontera')).toEqual(['Frontera']);
   });
 });
 
-// ---------- harvest ----------
+// ---------- replayed searches ----------
+// Real Firecrawl responses recorded on 17–18 Sept 2026 while the finder was proven against hand-checked
+// manufacturer sites. Zero credits: the client below answers from test/fixtures/finder.
 
-interface Calls {
-  search: string[];
-  scrape: string[];
-  map: string[];
-  downloads: string[];
-  fetchFile: string[];
+interface Recorded {
+  path: string;
+  body: { query?: string; url?: string; categories?: string[]; parsers?: unknown[] };
+  response: { data?: { web?: { url: string; title?: string; description?: string }[]; markdown?: string; metadata?: { statusCode?: number; totalPages?: number } } };
 }
+const FIXTURE_DIR = new URL('./fixtures/finder/', import.meta.url);
+const recorded: Recorded[] = readdirSync(FIXTURE_DIR).map((f) => JSON.parse(readFileSync(new URL(f, FIXTURE_DIR), 'utf8')) as Recorded);
 
-function mockFirecrawl(
-  plan: { search?: { url: string }[]; links?: Record<string, string[]>; map?: string[]; pdfText?: string; searchCredits?: number; filePdf?: boolean; fileOk?: boolean },
-  calls: Calls,
-): FirecrawlClient {
+function replayClient(): FirecrawlClient {
   return {
-    async search(q) {
-      calls.search.push(q);
-      return { results: plan.search ?? [], creditsUsed: plan.searchCredits ?? 2 };
+    async search(q, opts) {
+      const hit = recorded.find((r) => r.path === '/search' && r.body.query === q && !!r.body.categories === !!opts?.categories);
+      if (!hit) throw new Error(`no recorded search for: ${q}`);      return { results: (hit.response.data?.web ?? []).map((w) => ({ url: w.url, ...(w.title ? { title: w.title } : {}) })), creditsUsed: 2 };
     },
     async scrape(url, opts) {
-      calls.scrape.push(url);
-      if (opts?.pdfMaxPages) return { markdown: plan.pdfText ?? 'Prices from £29,995 OTR', creditsUsed: 2 };
-      return { links: plan.links?.[url] ?? [], creditsUsed: 1 };
+      const hit = recorded.find((r) => r.path === '/scrape' && r.body.url === url && !!r.body.parsers === !!opts?.pdfMaxPages);
+      if (!hit) throw new Error(`no recorded scrape for: ${url}`);      const d = hit.response.data ?? {};
+      return { ...(d.markdown !== undefined ? { markdown: d.markdown } : {}), ...(d.metadata?.statusCode ? { statusCode: d.metadata.statusCode } : {}), ...(d.metadata?.totalPages ? { totalPages: d.metadata.totalPages } : {}), creditsUsed: opts?.pdfMaxPages ? 4 : 1 };
     },
-    async map(url) {
-      calls.map.push(url);
-      return { links: plan.map ?? [], creditsUsed: 1 };
+    async map() {
+      return { links: [], creditsUsed: 1 };
     },
-    async fetchFile(url) {
-      calls.fetchFile.push(url);
-      const bytes = plan.filePdf ? pdfBytes() : (new TextEncoder().encode('<html>blocked</html>').buffer as ArrayBuffer);
-      return { bytes, contentType: plan.filePdf ? 'application/pdf' : 'text/html', ok: plan.fileOk ?? true, creditsUsed: 2 };
+    async fetchFile() {
+      return { bytes: new ArrayBuffer(0), contentType: null, ok: false, creditsUsed: 2 };
     },
   };
 }
 
+const noHttp: FinderHttp = async () => undefined;
+const REPLAY_NOW = new Date('2026-09-18T09:00:00.000Z');
+const replay = (make: string, model: string, http: FinderHttp = noHttp) => findBrochure({ make, model }, { firecrawl: replayClient(), http, now: () => REPLAY_NOW });
+
+describe('findBrochure (replayed against recorded manufacturer sites)', () => {
+  it('Kia EV2: takes the official UK brochure PDF from a global domain', async () => {
+    const r = await replay('Kia', 'EV2');
+    expect(r).toMatchObject({ status: 'verified_pdf', documentType: 'brochure', officialSite: 'kia.com' });
+    expect(r.url).toContain('/uk/en/');
+    expect(r.url).toContain('ev2-brochure.pdf');
+    expect(r.editionDate).toMatch(/^2026-/);
+  });
+
+  it('XPENG G6: prefers the newest edition', async () => {
+    expect((await replay('XPENG', 'G6')).url).toContain('August-2026');
+  });
+
+  it('Hyundai Ioniq 5: picks the brochure, not the spec guide next to it', async () => {
+    const r = await replay('Hyundai', 'Ioniq 5');
+    expect(r).toMatchObject({ status: 'verified_pdf', documentType: 'brochure' });
+    expect(r.url).toContain('IONIQ_5_Brochure');
+  });
+
+  it('MG ZS: a January 2026 brochure is not rejected for quoting June 2025', async () => {
+    const r = await replay('MG', 'ZS');
+    expect(r.status).toBe('verified_pdf');
+    expect(r.url).toContain('MG_ZS_Range_Brochure_Jan_2026.pdf');
+  });
+
+  it('Citroën ë-C3: the full model name wins over the C3 guide, and a price guide is typed as one', async () => {
+    const r = await replay('Citroen', 'e-C3');
+    expect(r).toMatchObject({ status: 'verified_pdf', documentType: 'price_spec_guide' });
+    expect(r.url).toContain('New-e-C3-price-and-specification-guide.pdf');
+  });
+
+  it('BYD Seal: finds the UK leaflet on the model page; "/byd-uk/" counts as UK on the official host', async () => {
+    const r = await replay('BYD', 'Seal');
+    expect(r).toMatchObject({ status: 'verified_pdf', documentType: 'price_spec_guide' });
+    expect(r.url).toContain('byd-uk');
+    expect(r.candidates.filter((c) => c.status === 'rejected').some((c) => /another market/.test(c.reasons.join()))).toBe(true);
+  });
+
+  it('Jaecoo 7: attaches the web brochure its downloads page links, never the owner manuals beside it', async () => {
+    const r = await replay('Jaecoo', '7');
+    expect(r).toMatchObject({ status: 'verified_web_brochure', documentType: 'brochure', url: 'https://omoda.foleon.com/brochure/omodajaecoo-7/' });
+    expect(r.candidates.every((c) => !/cworigin/.test(c.url) || c.status !== 'accepted')).toBe(true);
+  });
+
+  it('VW ID.4: rejects the 2021 used-car guide on the official UK domain, and "Request an appointment" is not a brochure request', async () => {
+    const r = await replay('Volkswagen', 'ID.4');
+    expect(r.status).toBe('not_verified');
+    expect(r.url).toBeUndefined();
+    const old = r.candidates.find((c) => c.url.includes('id4-brochure-pricelist-april-21.pdf'));
+    expect(old?.status).toBe('rejected');
+    expect(old?.reasons.join()).toMatch(/archived or used-car/);
+  });
+
+  it('Audi Q4 e-tron: a configurator or a call-back form is never a document', async () => {
+    const r = await replay('Audi', 'Q4 e-tron');
+    expect(r.status).toBe('not_verified');
+  });
+
+  it('Denza Z9 GT: no official UK document means nothing is attached, aggregator copies included', async () => {
+    const r = await replay('Denza', 'Z9 GT');
+    expect(r.status).toBe('not_verified');
+    expect(r.candidates.find((c) => c.url.includes('autocatalogarchive'))?.reasons.join()).toMatch(/aggregator/);
+  });
+
+  it('Volvo EX30: a pricelists hub page is never attached by itself', async () => {
+    const r = await replay('Volvo', 'EX30');
+    expect(['official_page_only', 'not_verified']).toContain(r.status);
+    expect(r.status).not.toBe('verified_web_brochure');
+  });
+
+  it('Leapmotor C10: a document whose storage refuses everyone is official_page_only, not a download', async () => {
+    const wrapped = 'https://leapmotor-website-prod.s3.eu-central-1.amazonaws.com/public/en-cms/1782890463953C10_Q3.pdf';
+    const http: FinderHttp = async (url) => ({ status: 200, contentType: 'text/html;charset=utf-8', finalUrl: url, text: async () => `<script>{"url":"${wrapped}"}</script>` });
+    const r = await replay('Leapmotor', 'C10', http);
+    expect(r).toMatchObject({ status: 'official_page_only', documentType: 'price_spec_guide', assetRetrievable: false, url: 'https://www.leapmotor.net/uk/price-guides' });
+  });
+
+  it('reports a failed search as search_failed, never as "not found"', async () => {
+    const broken: FirecrawlClient = { ...replayClient(), search: async () => { throw new Error('Firecrawl /search answered HTTP 502'); } };
+    const r = await findBrochure({ make: 'Kia', model: 'EV2' }, { firecrawl: broken, http: noHttp, now: () => REPLAY_NOW });
+    expect(r.status).toBe('search_failed');
+    expect(r.reason).toMatch(/could not be completed/);
+  });
+});
+
+// ---------- the Firecrawl source: retrieval and records ----------
+
 const store: BrochureStore = {
   async putPdf(bytes) {
-    return { key: `brochures/${'c'.repeat(64)}.pdf`, url: `https://offers.dreamlease.co.uk/b/${'c'.repeat(64)}`, sizeBytes: bytes.byteLength, sha256: 'c'.repeat(64) };
+    return { key: `brochures/${'c'.repeat(64)}.pdf`, url: `https://offers.dreamlease.co.uk/f/brochures/${'c'.repeat(64)}.pdf`, sizeBytes: bytes.byteLength, sha256: 'c'.repeat(64) };
   },
 };
 
-/** mode: 'ok' → a PDF; 'html' → non-PDF content; 'blocked' → no bytes (a 403/failed fetch). */
-const download = (calls: Calls, mode: 'ok' | 'html' | 'blocked' = 'ok') => async (url: string): Promise<Downloaded> => {
-  calls.downloads.push(url);
-  if (mode === 'blocked') return { bytes: new ArrayBuffer(0), contentType: null };
-  if (mode === 'html') return { bytes: new TextEncoder().encode('<html>').buffer as ArrayBuffer, contentType: 'text/html' };
-  return { bytes: pdfBytes(), contentType: 'application/pdf' };
-};
+const PDF_URL = 'https://www.kia.com/content/dam/kwcms/kme/uk/en/assets/ev3-brochure-june-2026.pdf';
+const PDF_TEXT = `The Kia EV3. ${'Specification and equipment. '.repeat(10)} Prices from £32,995 OTR. UK specification shown. Kia UK Limited. June 2026.`;
 
-const harvester = (plan: Parameters<typeof mockFirecrawl>[0], calls: Calls, extra: { creditCap?: number; downloadOk?: boolean; blocked?: boolean } = {}) =>
-  new FirecrawlBrochureSource({
-    firecrawl: mockFirecrawl(plan, calls),
-    allowlist: ALLOWLIST,
-    download: download(calls, extra.blocked ? 'blocked' : extra.downloadOk === false ? 'html' : 'ok'),
-    store,
-    createdBy: BY,
-    now: () => NOW,
-    newId: () => 'b0000000-0000-4000-8000-000000000009',
-    ...(extra.creditCap ? { creditCap: extra.creditCap } : {}),
-  });
+function scriptedClient(o: { fileOk?: boolean } = {}): FirecrawlClient & { fetched: string[] } {
+  const fetched: string[] = [];
+  return {
+    fetched,
+    async search(_q, opts) {
+      return { results: opts?.categories ? [{ url: PDF_URL, title: '[PDF] The Kia EV3 brochure' }] : [{ url: 'https://www.kia.com/uk/new-cars/ev3/', title: 'Kia EV3 | Kia UK' }], creditsUsed: 2 };
+    },
+    async scrape(url, opts) {
+      return opts?.pdfMaxPages ? { markdown: PDF_TEXT, totalPages: 28, creditsUsed: 4 } : { markdown: `# ${url}`, statusCode: 200, creditsUsed: 1 };
+    },
+    async map() {
+      return { links: [], creditsUsed: 1 };
+    },
+    async fetchFile(url) {
+      fetched.push(url);
+      return { bytes: o.fileOk ? pdfBytes() : new ArrayBuffer(0), contentType: o.fileOk ? 'application/pdf' : null, ok: !!o.fileOk, creditsUsed: 2 };
+    },
+  };
+}
 
-const newCalls = (): Calls => ({ search: [], scrape: [], map: [], downloads: [], fetchFile: [] });
+const source = (firecrawl: FirecrawlClient, download: (url: string) => Promise<Downloaded>) =>
+  new FirecrawlBrochureSource({ firecrawl, http: noHttp, download, store, createdBy: BY, now: () => NOW, newId: () => 'b0000000-0000-4000-8000-000000000009' });
+const directOk = async (): Promise<Downloaded> => ({ bytes: pdfBytes(), contentType: 'application/pdf' });
+const directBlocked = async (): Promise<Downloaded> => ({ bytes: new ArrayBuffer(0), contentType: null });
 
 describe('FirecrawlBrochureSource', () => {
-  it('takes a direct PDF from an allowlisted UK host and ignores a German one', async () => {
-    const calls = newCalls();
-    const b = await harvester({ search: [{ url: 'https://www.kia.de/brochures/ev3.pdf' }, { url: 'https://www.kia.co.uk/content/dam/ev3-brochure.pdf' }] }, calls).harvest({ make: 'Kia', model: 'EV3' });
-    expect(Brochure.parse(b)).toEqual(b);
-    expect(b.kind).toBe('pdf');
-    expect(b.sourceUrl).toBe('https://www.kia.co.uk/content/dam/ev3-brochure.pdf');
-    expect(b.file?.key).toMatch(/^brochures\/[a-f0-9]{64}\.pdf$/);
-    expect(b.ukVerified).toEqual({ by: 'content', note: 'kia.co.uk, £ pricing on the first pages' });
-    expect(b.vehicleKey).toBe('kia/ev3');
-    expect(b.status).toBe('current');
-    expect(b.expiresAt).toBe('2026-12-13T09:00:00.000Z');
-    expect(calls.downloads).toEqual(['https://www.kia.co.uk/content/dam/ev3-brochure.pdf']);
+  it('stores a verified PDF and records what it is, where it came from and which finder chose it', async () => {
+    const fc = scriptedClient();
+    const { brochure: b, search } = await source(fc, directOk).find({ make: 'Kia', model: 'EV3' });
+    expect(b && Brochure.parse(b)).toEqual(b);
+    expect(b).toMatchObject({ kind: 'pdf', source: 'harvest', documentType: 'brochure', sourceUrl: PDF_URL, editionDate: '2026-06-01', vehicleKey: 'kia/ev3', title: 'Kia EV3 brochure (UK)', finder: { status: 'verified_pdf' }, ukVerified: { by: 'content' } });
+    expect(b?.file?.key).toMatch(/^brochures\/[a-f0-9]{64}\.pdf$/);
+    expect(fc.fetched).toEqual([]); // the direct download worked: no Firecrawl credit spent on the file
+    expect(BrochureSearch.parse(search)).toEqual(search);
+    expect(search).toMatchObject({ status: 'verified_pdf', assetRetrievable: true, searchedBy: BY });
   });
 
-  it('scrapes a brochure page for its first PDF link and records the domain check only when the content check fails', async () => {
-    const calls = newCalls();
-    const page = 'https://www.hyundai.co.uk/brochures';
-    const b = await harvester({ search: [{ url: page }], links: { [page]: ['https://www.hyundai.co.uk/terms', 'https://assets.hyundai.co.uk/kona-brochure.pdf'] }, pdfText: 'Preise ab €30.000' }, calls).harvest({ make: 'Hyundai', model: 'Kona Electric' });
-    expect(b.kind).toBe('pdf');
-    expect(b.sourceUrl).toBe('https://assets.hyundai.co.uk/kona-brochure.pdf');
-    expect(b.ukVerified.by).toBe('domain');
-    expect(calls.scrape[0]).toBe(page);
+  it('falls back to Firecrawl when the manufacturer CDN blocks the direct download', async () => {
+    const fc = scriptedClient({ fileOk: true });
+    const { brochure } = await source(fc, directBlocked).find({ make: 'Kia', model: 'EV3' });
+    expect(brochure?.kind).toBe('pdf');
+    expect(fc.fetched).toEqual([PDF_URL]);
   });
 
-  it('records a UK request page with no PDF as gated', async () => {
-    const calls = newCalls();
-    const page = 'https://www.byd.com/uk/brochure-request';
-    const b = await harvester({ search: [{ url: page }], links: { [page]: ['https://www.byd.com/uk/privacy'] } }, calls).harvest({ make: 'BYD', model: 'Seal' });
-    expect(b.kind).toBe('gated');
-    expect(b.file).toBeUndefined();
-    expect(b.sourceUrl).toBe(page);
-    expect(b.ukVerified.by).toBe('domain');
-    expect(Brochure.parse(b)).toEqual(b);
+  it('downgrades to official_page_only when the file cannot be retrieved at all, and attaches nothing', async () => {
+    const { brochure, search } = await source(scriptedClient({ fileOk: false }), directBlocked).find({ make: 'Kia', model: 'EV3' });
+    expect(brochure).toBeUndefined();
+    expect(search).toMatchObject({ status: 'official_page_only', assetRetrievable: false, assetUrl: PDF_URL });
   });
 
-  it('stores a gated page found over http as https (schema is https-only; would 500 on load otherwise)', async () => {
-    const calls = newCalls();
-    const page = 'http://www.kia.co.uk/request-a-brochure';
-    const b = await harvester({ search: [{ url: page }], links: { [page]: ['http://www.kia.co.uk/privacy'] } }, calls).harvest({ make: 'Kia', model: 'EV2' });
-    expect(b.kind).toBe('gated');
-    expect(b.sourceUrl).toBe('https://www.kia.co.uk/request-a-brochure');
-    expect(Brochure.parse(b)).toEqual(b); // https passes the httpsUrl schema
-  });
-
-  it('maps the manufacturer site when search finds nothing useful', async () => {
-    const calls = newCalls();
-    const b = await harvester({ search: [{ url: 'https://www.carwow.co.uk/kia-ev3-brochure.pdf' }], map: ['https://www.kia.co.uk/about', 'https://www.kia.co.uk/brochures/ev3.pdf'] }, calls).harvest({ make: 'Kia', model: 'EV3' });
-    expect(b.kind).toBe('pdf');
-    expect(calls.map).toEqual(['https://www.kia.co.uk/']);
-    expect(calls.downloads).toEqual(['https://www.kia.co.uk/brochures/ev3.pdf']);
-  });
-
-  it('gives up cleanly when nothing allowlisted turns up, reporting the credits spent', async () => {
-    const calls = newCalls();
-    await expect(harvester({ search: [{ url: 'https://www.parkers.co.uk/x.pdf' }] }, calls).harvest({ make: 'Wuling', model: 'Bingo' })).rejects.toThrow(BrochureNotFoundError);
-  });
-
-  it('skips a link that does not download as a PDF', async () => {
-    const calls = newCalls();
-    await expect(harvester({ search: [{ url: 'https://www.kia.co.uk/not-really.pdf' }] }, calls, { downloadOk: false }).harvest({ make: 'Kia', model: 'EV3' })).rejects.toThrow(BrochureNotFoundError);
-    expect(calls.fetchFile).toEqual([]); // non-PDF content (not a block) does not trigger the Firecrawl fetch
-  });
-
-  it('falls back to a Firecrawl rawBase64 fetch when the direct download is blocked (a CDN 403)', async () => {
-    const calls = newCalls();
-    const pdf = 'https://www.kia.co.uk/content/dam/ev3-brochure.pdf';
-    const b = await harvester({ search: [{ url: pdf }], filePdf: true }, calls, { blocked: true }).harvest({ make: 'Kia', model: 'EV3' });
-    expect(b.kind).toBe('pdf');
-    expect(b.sourceUrl).toBe(pdf);
-    expect(b.file?.sizeBytes).toBeGreaterThan(0);
-    expect(calls.downloads).toEqual([pdf]); // direct is tried first
-    expect(calls.fetchFile).toEqual([pdf]); // then Firecrawl fetches the bytes
-  });
-
-  it('does not spend a Firecrawl credit when the direct download succeeds', async () => {
-    const calls = newCalls();
-    await harvester({ search: [{ url: 'https://www.kia.co.uk/ev3.pdf' }], filePdf: true }, calls).harvest({ make: 'Kia', model: 'EV3' });
-    expect(calls.fetchFile).toEqual([]);
-  });
-
-  it('stops spending once the credit cap is reached', async () => {
-    const calls = newCalls();
-    const page = 'https://www.kia.co.uk/brochures';
-    await expect(harvester({ search: [{ url: page }], searchCredits: 15, links: { [page]: ['https://www.kia.co.uk/ev3.pdf'] } }, calls, { creditCap: 15 }).harvest({ make: 'Kia', model: 'EV3' })).rejects.toThrow(BrochureNotFoundError);
-    expect(calls.scrape).toEqual([]);
-    expect(calls.map).toEqual([]);
+  it('lets the rep accept an official page or a request form, taking the URL from the stored search', async () => {
+    const { search } = await source(scriptedClient({ fileOk: false }), directBlocked).find({ make: 'Kia', model: 'EV3' });
+    const accepted = acceptSearchOutcome(search, { vehicle: { make: 'Kia', model: 'EV3' }, createdBy: BY, now: () => NOW });
+    expect(accepted && Brochure.parse(accepted)).toMatchObject({ kind: 'web', documentType: 'brochure', ukVerified: { by: 'user' }, finder: { status: 'official_page_only' } });
+    const form: BrochureSearchT = { ...search, status: 'brochure_request', documentType: 'brochure_request_form', url: 'https://www.bmw.co.uk/en/topics/discover/forms/download-brochure/bmw_4_series_i4_rfi.html' };
+    expect(acceptSearchOutcome(form, { vehicle: { make: 'BMW', model: 'i4' }, createdBy: BY })?.kind).toBe('gated');
+    expect(acceptSearchOutcome({ ...search, status: 'not_verified' }, { vehicle: { make: 'Kia', model: 'EV3' }, createdBy: BY })).toBeUndefined();
   });
 });
 
 // ---------- manual ----------
 
 describe('manualBrochure', () => {
-  const calls = newCalls();
-  const base = { vehicle: { make: 'Kia', model: 'EV3' }, createdBy: BY, download: download(calls), store, now: () => NOW, newId: () => 'b0000000-0000-4000-8000-000000000010' };
+  const base = { vehicle: { make: 'Kia', model: 'EV3' }, createdBy: BY, download: directOk, store, now: () => NOW, newId: () => 'b0000000-0000-4000-8000-000000000010' };
 
   it('stores a PDF link as pdf and a page link as gated', async () => {
     const pdf = await manualBrochure({ ...base, url: 'https://www.kia.co.uk/ev3.pdf' });
@@ -223,14 +295,23 @@ describe('manualBrochure', () => {
     await expect(manualBrochure({ ...base, url: 'http://www.kia.co.uk/ev3.pdf' })).rejects.toThrow(ManualBrochureError);
     await expect(manualBrochure({ ...base })).rejects.toThrow(ManualBrochureError);
   });
+
+  it('fetches a pasted PDF link through Firecrawl when the manufacturer blocks the direct download', async () => {
+    const fetchFile = vi.fn(directOk);
+    const b = await manualBrochure({ ...base, download: directBlocked, fetchFile, url: 'https://www.kia.com/uk/ev3.pdf' });
+    expect(b.kind).toBe('pdf');
+    expect(fetchFile).toHaveBeenCalledOnce();
+    await expect(manualBrochure({ ...base, download: directBlocked, url: 'https://www.kia.com/uk/ev3.pdf' })).rejects.toThrow('That link did not return a PDF.');
+  });
 });
 
-// ---------- ensure (expiry, stale, superseded) ----------
+// ---------- ensure (stored, fresh, stale, none, remembered negatives) ----------
 
-function memoryRepo(seed: BrochureT[] = []): BrochureRepo & { rows: BrochureT[] } {
+function memoryRepo(seed: BrochureT[] = [], searches: BrochureSearchT[] = []): BrochureRepo & { rows: BrochureT[]; searches: BrochureSearchT[] } {
   const rows = [...seed];
   return {
     rows,
+    searches,
     findCurrent: async (key) => rows.find((b) => b.vehicleKey === key && b.status === 'current'),
     save: async (b) => {
       rows.push(b);
@@ -239,10 +320,14 @@ function memoryRepo(seed: BrochureT[] = []): BrochureRepo & { rows: BrochureT[] 
       const b = rows.find((r) => r.id === id);
       if (b) b.status = 'superseded';
     },
+    findSearch: async (key) => searches.filter((s) => s.vehicleKey === key).at(-1),
+    saveSearch: async (s) => {
+      searches.push(s);
+    },
   };
 }
 
-const stored = (fetchedAt: string, id = 'b0000000-0000-4000-8000-000000000001'): BrochureT => ({
+const stored = (fetchedAt: string, id = 'b0000000-0000-4000-8000-000000000001', extra: Partial<BrochureT> = {}): BrochureT => ({
   id,
   vehicleKey: 'kia/ev3',
   title: 'Kia EV3 brochure (UK)',
@@ -255,75 +340,70 @@ const stored = (fetchedAt: string, id = 'b0000000-0000-4000-8000-000000000001'):
   expiresAt: brochureExpiresAt(new Date(fetchedAt)),
   status: 'current',
   createdBy: BY,
+  ...extra,
 });
+
+const searchRecord = (status: BrochureSearchT['status'], searchedAt = NOW.toISOString()): BrochureSearchT => ({
+  vehicleKey: 'kia/ev3', vehicle: 'Kia EV3', status, flags: [], queries: ['q'], pagesOpened: [], candidates: [], credits: 4, durationMs: 900, finderVersion: 'finder-1.0', searchedAt, searchedBy: BY, reason: 'nothing passed',
+});
+
+const EV3 = { make: 'Kia', model: 'EV3' };
 
 describe('ensureBrochure', () => {
   it('uses a stored, unexpired copy and spends nothing', async () => {
-    const repo = memoryRepo([stored('2026-09-01T00:00:00.000Z')]);
-    const harvest = vi.fn();
-    const r = await ensureBrochure({ make: 'Kia', model: 'EV3' }, { repo, harvester: { kind: 'firecrawl', harvest }, now: () => NOW });
-    expect(r?.state).toBe('stored');
-    expect(harvest).not.toHaveBeenCalled();
+    const find = vi.fn();
+    const r = await ensureBrochure(EV3, { repo: memoryRepo([stored('2026-09-01T00:00:00.000Z')]), harvester: { kind: 'firecrawl', find }, now: () => NOW });
+    expect(r.state).toBe('stored');
+    expect(find).not.toHaveBeenCalled();
   });
 
-  it('re-harvests after 90 days and supersedes the old copy only once the new one is saved', async () => {
+  it('searches again after 90 days and supersedes the old copy only once the new one is saved', async () => {
     const old = stored('2026-06-01T00:00:00.000Z');
     expect(isBrochureExpired(old, NOW)).toBe(true);
     const repo = memoryRepo([old]);
     const fresh = stored(NOW.toISOString(), 'b0000000-0000-4000-8000-000000000002');
-    const r = await ensureBrochure({ make: 'Kia', model: 'EV3' }, { repo, harvester: { kind: 'firecrawl', harvest: async () => fresh }, now: () => NOW });
-    expect(r?.state).toBe('fresh');
-    expect(r?.brochure.id).toBe(fresh.id);
+    const r = await ensureBrochure(EV3, { repo, harvester: { kind: 'firecrawl', find: async () => ({ brochure: fresh, search: searchRecord('verified_pdf') }) }, now: () => NOW });
+    expect(r.state).toBe('fresh');
+    expect(r.brochure?.id).toBe(fresh.id);
     expect(repo.rows.find((b) => b.id === old.id)?.status).toBe('superseded');
-    expect(repo.rows.find((b) => b.id === fresh.id)?.status).toBe('current');
+    expect(repo.searches).toHaveLength(1);
   });
 
-  it('keeps the old copy, flagged stale, when the re-harvest fails', async () => {
+  it('keeps an expired copy, flagged stale, when the new search finds nothing', async () => {
     const old = stored('2026-06-01T00:00:00.000Z');
     const repo = memoryRepo([old]);
-    const r = await ensureBrochure(
-      { make: 'Kia', model: 'EV3' },
-      {
-        repo,
-        harvester: {
-          kind: 'firecrawl',
-          harvest: async () => {
-            throw new BrochureNotFoundError('nothing', 15);
-          },
-        },
-        now: () => NOW,
-      },
-    );
-    expect(r?.state).toBe('stale');
-    expect(r?.brochure.id).toBe(old.id);
-    expect(r?.error).toBe('nothing');
+    const r = await ensureBrochure(EV3, { repo, harvester: { kind: 'firecrawl', find: async () => ({ search: searchRecord('not_verified') }) }, now: () => NOW });
+    expect(r).toMatchObject({ state: 'stale', error: 'nothing passed' });
+    expect(r.brochure?.id).toBe(old.id);
     expect(repo.rows[0]?.status).toBe('current');
   });
 
-  it('returns nothing when there is no copy and the harvest finds nothing', async () => {
-    const r = await ensureBrochure(
-      { make: 'Kia', model: 'EV3' },
-      {
-        repo: memoryRepo(),
-        harvester: {
-          kind: 'firecrawl',
-          harvest: async () => {
-            throw new BrochureNotFoundError('nothing', 3);
-          },
-        },
-        now: () => NOW,
-      },
-    );
-    expect(r).toBeUndefined();
+  it('does not send a document whose edition has aged past the limit since it was found', async () => {
+    const aged = stored('2026-08-20T00:00:00.000Z', undefined, { documentType: 'price_spec_guide', editionDate: '2026-02-01' });
+    expect(isEditionTooOld(aged, NOW)).toBe(true);
+    expect(isEditionTooOld({ ...aged, documentType: 'brochure' }, NOW)).toBe(false);
+    const r = await ensureBrochure(EV3, { repo: memoryRepo([aged]), harvester: { kind: 'firecrawl', find: async () => ({ search: searchRecord('not_verified') }) }, now: () => NOW });
+    expect(r.state).toBe('none');
+    expect(r.brochure).toBeUndefined();
   });
-});
 
-describe('ukContentCheck', () => {
-  it('wants sterling or OTR and no euro sign', () => {
-    expect(ukContentCheck('From £29,995')).toBe(true);
-    expect(ukContentCheck('OTR price list')).toBe(true);
-    expect(ukContentCheck('ab €30.000')).toBe(false);
-    expect(ukContentCheck('£30,000 or €35,000')).toBe(false);
-    expect(ukContentCheck('no prices here')).toBe(false);
+  it('remembers "nothing found" for 7 days, never remembers a failed search, and searches again when forced', async () => {
+    const find = vi.fn(async () => ({ search: searchRecord('not_verified') }));
+    const repo = memoryRepo();
+    expect(await ensureBrochure(EV3, { repo, harvester: { kind: 'firecrawl', find }, now: () => NOW })).toMatchObject({ state: 'none', search: { status: 'not_verified' } });
+    expect(await ensureBrochure(EV3, { repo, harvester: { kind: 'firecrawl', find }, now: () => NOW })).toMatchObject({ state: 'none', remembered: true });
+    expect(find).toHaveBeenCalledTimes(1);
+    await ensureBrochure(EV3, { repo, harvester: { kind: 'firecrawl', find }, now: () => NOW, force: true });
+    expect(find).toHaveBeenCalledTimes(2);
+    const later = new Date(NOW.getTime() + 8 * 864e5);
+    await ensureBrochure(EV3, { repo, harvester: { kind: 'firecrawl', find }, now: () => later });
+    expect(find).toHaveBeenCalledTimes(3);
+
+    const failing = vi.fn(async () => ({ search: searchRecord('search_failed') }));
+    const repo2 = memoryRepo();
+    await ensureBrochure(EV3, { repo: repo2, harvester: { kind: 'firecrawl', find: failing }, now: () => NOW });
+    await ensureBrochure(EV3, { repo: repo2, harvester: { kind: 'firecrawl', find: failing }, now: () => NOW });
+    expect(failing).toHaveBeenCalledTimes(2);
+    expect(repo2.searches).toHaveLength(0);
   });
 });

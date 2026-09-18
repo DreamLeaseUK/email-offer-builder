@@ -26,7 +26,14 @@ export const TemplateLayout = z.enum(['single', 'stack', 'grid2', 'grid3']);
 export type TemplateLayout = z.infer<typeof TemplateLayout>;
 export const TemplateStatus = z.enum(['draft', 'approved', 'retired']);
 
-export const BrochureKind = z.enum(['pdf', 'gated']);
+/** pdf: our hosted copy. web: the manufacturer's own UK web brochure / price guide page. gated: a request-a-brochure form. */
+export const BrochureKind = z.enum(['pdf', 'gated', 'web']);
+/** What the document is, kept apart from how it is delivered (kind) so a price guide is never labelled a brochure. */
+export const BrochureDocumentType = z.enum(['brochure', 'price_spec_guide']);
+export type BrochureDocumentType = z.infer<typeof BrochureDocumentType>;
+/** Outcome of an automatic brochure search. Only verified_pdf and verified_web_brochure attach by themselves. */
+export const BrochureFinderStatus = z.enum(['verified_pdf', 'verified_web_brochure', 'official_page_only', 'brochure_request', 'not_verified', 'search_failed']);
+export type BrochureFinderStatus = z.infer<typeof BrochureFinderStatus>;
 export const BrochureSourceKind = z.enum(['harvest', 'manual']);
 export const BrochureStatus = z.enum(['current', 'superseded']);
 export const UkVerifiedBy = z.enum(['domain', 'content', 'user']);
@@ -182,6 +189,12 @@ export const Brochure = z
     sourceUrl: httpsUrl,
     source: BrochureSourceKind,
     ukVerified: z.object({ by: UkVerifiedBy, note: z.string().optional() }),
+    /** Absent on records made before the finder: treated as a brochure. */
+    documentType: BrochureDocumentType.optional(),
+    /** The edition date the finder read from the document (YYYY-MM-DD); re-checked against the age limit on every attach. */
+    editionDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+    /** Set when the finder chose this record: which version, what it concluded, and any flags (e.g. lead_capture_present). */
+    finder: z.object({ version: z.string().min(1), status: BrochureFinderStatus, flags: z.array(z.string()).optional() }).optional(),
     fetchedAt: isoDateTime,
     /** fetchedAt + 90 days */
     expiresAt: isoDateTime,
@@ -192,6 +205,49 @@ export const Brochure = z
 export type Brochure = z.infer<typeof Brochure>;
 
 export const BROCHURE_TTL_DAYS = 90;
+/** A search that found nothing is re-run sooner than a found brochure is refreshed. */
+export const BROCHURE_NEGATIVE_TTL_DAYS = 7;
+/** Oldest acceptable edition, in months: price/spec guides carry prices and go stale faster than brochures. */
+export const BROCHURE_MAX_AGE_MONTHS: Record<BrochureDocumentType, number> = { brochure: 12, price_spec_guide: 6 };
+
+// ---------- Brochure search trace ----------
+
+/** One document or page the finder considered, with why it was kept or dropped. Shown to the rep as "what we checked". */
+export const BrochureCandidateTrace = z.object({
+  url: z.string(),
+  via: z.enum(['search', 'site-search', 'official-page', 'model-page']),
+  linkText: z.string().optional(),
+  fromPage: z.string().optional(),
+  docType: z.string(),
+  score: z.number(),
+  status: z.enum(['accepted', 'rejected', 'fetch_failed', 'is_web_page', 'not_checked']),
+  reasons: z.array(z.string()),
+  evidence: z.record(z.string(), z.union([z.string(), z.number(), z.boolean()])).optional(),
+});
+export type BrochureCandidateTrace = z.infer<typeof BrochureCandidateTrace>;
+
+export const BrochureSearch = z.object({
+  vehicleKey: z.string().regex(/^[a-z0-9-]+\/[a-z0-9-]+$/),
+  vehicle: z.string().min(1),
+  status: BrochureFinderStatus,
+  documentType: BrochureDocumentType.or(z.literal('brochure_request_form')).optional(),
+  /** The page or document the outcome points at (absent for not_verified / search_failed). */
+  url: z.string().optional(),
+  assetUrl: z.string().optional(),
+  assetRetrievable: z.boolean().optional(),
+  reason: z.string().optional(),
+  flags: z.array(z.string()),
+  officialSite: z.string().optional(),
+  queries: z.array(z.string()),
+  pagesOpened: z.array(z.string()),
+  candidates: z.array(BrochureCandidateTrace),
+  credits: z.number(),
+  durationMs: z.number(),
+  finderVersion: z.string().min(1),
+  searchedAt: isoDateTime,
+  searchedBy: email,
+});
+export type BrochureSearch = z.infer<typeof BrochureSearch>;
 
 // ---------- Recipient, Sender ----------
 

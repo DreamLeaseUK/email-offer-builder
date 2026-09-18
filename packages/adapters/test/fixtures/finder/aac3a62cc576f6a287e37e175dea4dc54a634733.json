@@ -1,0 +1,83 @@
+{
+ "path": "/search",
+ "body": {
+  "query": "Leapmotor C10 brochure",
+  "limit": 8,
+  "country": "GB",
+  "location": "United Kingdom",
+  "sources": [
+   {
+    "type": "web"
+   }
+  ],
+  "ignoreInvalidURLs": true,
+  "categories": [
+   "pdf"
+  ]
+ },
+ "response": {
+  "success": true,
+  "data": {
+   "web": [
+    {
+     "url": "https://www.leapmotor-international.com.my/res/PDF/Leapmotor%20Brochure.pdf",
+     "title": "[PDF] Leapmotor Brochure.pdf",
+     "description": "Discover the award-winning Leapmotor C10 electric mid-size SUV with 477km NEDC driving range INTELLIGENCE COMFORT SPACE E-NCAP 5-STAR SAFETY STANDARD",
+     "position": 1,
+     "category": "pdf"
+    },
+    {
+     "url": "https://autocatalogarchive.com/wp-content/uploads/2024/10/Leapmotor-C10-2024-NP.pdf",
+     "title": "[PDF] Leapmotor-C10-2024-NP.pdf - Auto Catalog Archive",
+     "description": "Leapmotor OS 4.0 Intelligent Cockpit. 14.6-inch HD large screen + online music & naviga on + 12 high quality speakers + music rhythm ambient lights.",
+     "position": 2,
+     "category": "pdf"
+    },
+    {
+     "url": "https://www.leapmotor-international.com.my/res/PDF/C10/Leapmotor%20C10%20Plus%20Brochure.pdf",
+     "title": "[PDF] Leapmotor C10 Plus Brochure.pdf",
+     "description": "Discover the award-winning Leapmotor C10 electric mid-size SUV with up to 510KM WLTP driving range. 18 smart storage compartments and 8 cup holders. Up to 1, ...",
+     "position": 3,
+     "category": "pdf"
+    },
+    {
+     "url": "https://cms-assets.cyclecarriage.com/media/251106/14ppnn/leapmotor-c10-brochure-nov-2025.pdf?model=C10",
+     "title": "[PDF] Leapmotor Brochure - Singapore - Cycle & Carriage",
+     "description": "Leapmotor C10 offers. 16 safety features for a more confident driving experience. Page 3. Experience serenity thanks to 100 Noise, Vibration, Harshness (NVH).",
+     "position": 4,
+     "category": "pdf"
+    },
+    {
+     "url": "https://www.media.stellantis.com/uploads/gr/attachment//leapmotor_brochure_c10_eng-6721645db25ab.pdf",
+     "title": "[PDF] Smart, your choice - Media Stellantis",
+     "description": "Double five-spoke wheel 18-inch wheels, lightweight and efficient Trident sporty wheel 20-inch wheels for ultimate sportiness",
+     "position": 5,
+     "category": "pdf"
+    },
+    {
+     "url": "https://nd-mediagallery2-public-production.s3.amazonaws.com/c2519b9b704a55d386ccfe39fc01fb0d/1768581243214c10_price_specification_guide_january_2026.pdf",
+     "title": "[PDF] LEAPMOTOR C10 - AWS",
+     "description": "18” Alloy Wheels. • LED Auto Headlights. • Heated Exterior Mirrors. • Fixed Panoramic Glass Roof with Electric Sunshade. • Concealed Door Handles.",
+     "position": 6,
+     "category": "pdf"
+    },
+    {
+     "url": "https://emilfreydigital.ch/wp-content/uploads/2025/06/C10_Broschure_IT.pdf",
+     "title": "[PDF] Leapmotor C10 - Emil Frey Digital",
+     "description": "La Leapmotor C10 stabilisce nuovi standard per i SUV moderni. Il suo design progressivo tra- smette estetica allo stato puro e un carattere irresistibile.",
+     "position": 7,
+     "category": "pdf"
+    },
+    {
+     "url": "https://autocatalogarchive.com/wp-content/uploads/2025/03/Leapmotor-C10-2024-AU.pdf",
+     "title": "[PDF] C10 BUYERS GUIDE - Auto Catalog Archive",
+     "description": "Features • 18” Alloy Wheels • LED Auto Headlights • Heated Exterior Mirrors • 14.6” Central High Resolution Touch Screen • Satellite Navigation • Qualcomm ...",
+     "position": 8,
+     "category": "pdf"
+    }
+   ]
+  },
+  "creditsUsed": 2,
+  "id": "01a0b018-065a-73fb-b7af-239f1338b6a6"
+ }
+}

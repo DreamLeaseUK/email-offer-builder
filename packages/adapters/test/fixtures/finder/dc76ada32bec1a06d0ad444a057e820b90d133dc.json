@@ -1,0 +1,84 @@
+{
+ "path": "/search",
+ "body": {
+  "query": "\"Citroen e-C3\" UK official brochure PDF",
+  "limit": 10,
+  "country": "GB",
+  "location": "United Kingdom",
+  "sources": [
+   {
+    "type": "web"
+   }
+  ],
+  "ignoreInvalidURLs": true
+ },
+ "response": {
+  "success": true,
+  "data": {
+   "web": [
+    {
+     "url": "https://www.citroen.co.uk/models/e-c3.html",
+     "title": "Citroën ë-C3 | The iconic electric city car - Citroen",
+     "description": "The Citroën ë-C3 blends bold SUV-inspired design with plenty of personality, creating a distinctive urban look that's as reassuring as it is eye-catching.",
+     "position": 1
+    },
+    {
+     "url": "https://www.bassettsgroup.co.uk/images/citroen/new-cars/brochures/2023-Citroen-e-C3-brochure.pdf",
+     "title": "[PDF] THE NEW Ë-C3 - Bassetts Motor Group",
+     "description": "1st mass-market car with front wheel drive - Citroën globally offers a wide range of models, Conventional fuel, Electric & Plug-in hybrid.",
+     "position": 2
+    },
+    {
+     "url": "https://www.citroen.co.uk/models/new-c3.html",
+     "title": "Citroën C3 City Car | Petrol, Hybrid & Electric Power - Citroen",
+     "description": "The Citroen e-C3 is a charming, cute and comfortable little electric car that's also one of the best value EVs on the market....",
+     "position": 3
+    },
+    {
+     "url": "https://www.scribd.com/document/655883157/New-E-C3-All-Electric-Brochure-3-1",
+     "title": "New Ë-C3 All Electric Brochure | PDF | Battery Charger - Scribd",
+     "description": "New Citroen e c3 Electric Brochure. 13 pages. EC3X. PDF. No ratings yet. EC3X. 19 ... Citroen C1 C2 C3 Pluriel Code Edition 2008 UK. 6 pages. Citroën Berlingo ...",
+     "position": 4
+    },
+    {
+     "url": "https://www.citroen.in/models/new-e-c3.html",
+     "title": "Citroën New-ë-C3X Electric SUV Price in India 2026",
+     "description": "Citroën ë-C3 FEEL. EXTERIOR. Halogen Headlamps; Front Fog lamp with Touch Around Chrome; Body Side Sill Panel; 'TESSERA' Full Wheel Cover; Sporty Wheel Arch ...",
+     "position": 5
+    },
+    {
+     "url": "https://www.facebook.com/groups/1046592186358924/posts/1257481705269970/",
+     "title": "Citroen e-C3 review: a comfortable and nippy urban car - Facebook",
+     "description": "13 Oct 2024 · Quick charge & more miles – the Citroën ë-C3 is all about making your life easier. Charge from 10% to 80% in just 57 minutes and hit the road ...",
+     "position": 6
+    },
+    {
+     "url": "https://northwestvehicleinspections.co.uk/ev-battery-health-check/citroen/e-c3-aircross/horwich",
+     "title": "Citroen e-C3 Aircross Battery Health Check Horwich",
+     "description": "11 hours ago · A Citroen e-C3 Aircross battery health check in Horwich, carried out where the car is parked. You get a State of Health figure for this fully ...",
+     "position": 7
+    },
+    {
+     "url": "https://www.motaclarity.co.uk/citroen-motability-cars",
+     "title": "Citroen Motability Cars | Citroen Mobility Price List 2026 - MotaClarity",
+     "description": "Citroen's e-C3 aims to redefine what a small EV can be. And makes most other compact electric hatches look needlessly expensive. The brand's smallest hatch ...",
+     "position": 8
+    },
+    {
+     "url": "https://octopusev.com/cars",
+     "title": "Cars - Octopus Electric Vehicles",
+     "description": "# Intelligent EV\n## Choose your car\n#### Free charging for Octopus Energy customers\n[**Citroen e-C3 Aircross**\\\n\\\nFree charger\\\n\\\nEV Grant\\\n\\\n![Front left view of Citroen e-C3 Aircross](https://cdn.sanity.io/images/767s1cf5/production/345e0a8f4c74bc666a5267bb67fa6651e24b5dff-2000x1428.png?w=3840&q=100&fit=clip&auto=format)\\\n\\\nEst. range\\\n\\\n180mi\\\n\\\nBody\\\n\\\nSUV\\\n\\\nSeats\\\n\\\n5\\\n\\\n**from £269/mo(incl. VAT)** \\\n\\\nIncludes servicing, maintenance, charger & repairs. *](https://octopusev.com/cars/quote/citroen-e-c3-aircross)\n\n### What's included\n#### Plus, choose either\n[**Citroen e-C3**\\\n\\\nFree charger\\\n\\\nEV Grant\\\n\\\n![Front left view of Citroen e-C3](https://cdn.sanity.io/images/767s1cf5/production/29a430ae7ce97575e3ccdc8db1586d975c03df9a-2000x1429.png?w=3840&q=100&fit=clip&auto=format)\\\n\\\nEst. range\\\n\\\n160mi\\\n\\\nBody\\\n\\\nHatchback\\\n\\\nSeats\\\n\\\n5\\\n\\\n**from £279/mo(incl. VAT)** \\\n\\\nIncludes servicing, maintenance, charger & repairs. *](https://octopusev.com/cars/quote/citroen-e-c3)",
+     "position": 9
+    },
+    {
+     "url": "https://www.scribd.com/document/655508059/Citroen-C3-Product-E-Brochure-1",
+     "title": "Citroen C3-Product-E-Brochure - 1 | PDF - Scribd",
+     "description": "New Citroen e c3 Electric Brochure. 13 pages. Citroën Aircross X Brochure ... Car UK - May 2018 PDF. 164 pages. GL1200 Gold Wing Shop Manual. PDF. 100% (4).",
+     "position": 10
+    }
+   ]
+  },
+  "creditsUsed": 2,
+  "id": "01a0b01a-110c-717a-ab45-2ded932b4d58"
+ }
+}

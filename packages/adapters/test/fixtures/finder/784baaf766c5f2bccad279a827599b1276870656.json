@@ -1,0 +1,84 @@
+{
+ "path": "/search",
+ "body": {
+  "query": "\"MG ZS\" UK official brochure PDF",
+  "limit": 10,
+  "country": "GB",
+  "location": "United Kingdom",
+  "sources": [
+   {
+    "type": "web"
+   }
+  ],
+  "ignoreInvalidURLs": true
+ },
+ "response": {
+  "success": true,
+  "data": {
+   "web": [
+    {
+     "url": "https://www.mg.co.uk/sites/default/files/2026-01/MG_ZS_Range_Brochure_Jan_2026.pdf",
+     "title": "[PDF] MG ZS",
+     "description": "The new MG ZS gives you plenty of room to breathe. With a stylish and contemporary cabin, and up to 1,457 litres of boot space, it has more room for your ...",
+     "position": 1
+    },
+    {
+     "url": "https://www.mg.co.uk/sites/default/files/2024-10/MG%20ZS%20Hybrid%20Press%20Pack.pdf",
+     "title": "[PDF] mg zs hybrid+",
+     "description": "The All New MG ZS Hybrid+ is available in two trim levels,. SE and Trophy, with the SE starting from only £21,995 and the range-leading Trophy priced from £ ...",
+     "position": 2
+    },
+    {
+     "url": "https://autocatalogarchive.com/wp-content/uploads/2020/11/MG-ZS-2020-UK.pdf",
+     "title": "[PDF] MG-ZS-2020-UK.pdf - Auto Catalog Archive",
+     "description": "The striking exterior of New MG ZS makes the model more dynamic than ever before. It's the perfect family-ready compact. SUV. From the swept back signature ...",
+     "position": 3
+    },
+    {
+     "url": "https://www.mg.co.uk/sites/default/files/2025-04/MG-ZS-Owner-Manual.pdf",
+     "title": "[PDF] MG ZS/MG ZS Hybrid+",
+     "description": "Page 1. MG ZS/MG ZS Hybrid+. Version 1.1. 1. Page 2. CONTENTS. MG ZS/MG ZS Hybrid+ ...........................................................",
+     "position": 4
+    },
+    {
+     "url": "https://www.mgmotor.co.za/ufile/att/cf170cdd-9093-47e9-82a9-26cbfa16614a/ZS-brochure.pdf",
+     "title": "[PDF] ZS-brochure.pdf - MG Motor South Africa",
+     "description": "Tuned for three steering modes (Urban, Normal, Dynamic) to meet your various needs, offering flexible and effortless steering. MD. MG ZS. Page 8. HISTORY. In ...",
+     "position": 5
+    },
+    {
+     "url": "https://www.mg.co.uk/brochure",
+     "title": "Car Products Entity | MG MOTOR UK",
+     "description": "Download a brochure. 1. Choose a model; 2. Enter your details. MG ... MG ZS · MG ZS Hybrid+ · MGS5 EV · MGS6 EV · MG HS · MG HS Hybrid+ · MG HS Plug-in Hybrid ...",
+     "position": 6
+    },
+    {
+     "url": "https://www.ericstead.co.uk/mg-brochures/",
+     "title": "MG Brochures | Download Information About The MG Range",
+     "description": "Download the latest brochures and vehicle information for the MG3, MG ZS, MG HS, MG5 EV Long Range, MG HS Plug-In Hybrid, New MG ZS EV or the MG4 EV.",
+     "position": 7
+    },
+    {
+     "url": "https://www.mg.co.uk/sites/default/files/2024-11/MG_ZS_Hybrid_Quick_Guide.pdf",
+     "title": "[PDF] Quick Guide MG ZS Hybrid+",
+     "description": "MG ZS Hybrid+. Page 2. Page 3. Contacts and Details. Before starting the journey, it is recommended to read the Owner's Manual on the MG Motor website or iSMART ...",
+     "position": 8
+    },
+    {
+     "url": "https://www.mgmotor.eu/model/zs",
+     "title": "Discover MG ZS - MG Motor Europe",
+     "description": "Manual. 5 speed. Power. 115 PS. 1,5L motor. iSMART. 10.25''. Infotainment screen. Safety. MG Pilot. Assistance. DESIGN. A design for Life. The MG ZS presents a ...",
+     "position": 9
+    },
+    {
+     "url": "https://www.mg.co.uk/new-cars/mg-zs-hybrid",
+     "title": "MG ZS Hybrid+ | MG Motor UK",
+     "description": "Welcome to the MG ZS Hybrid+. With bold design, fuel-efficient hybrid technology and advanced in-car features, this hybrid SUV is ready for anything.",
+     "position": 10
+    }
+   ]
+  },
+  "creditsUsed": 2,
+  "id": "01a0b019-c42b-709a-b267-6053f0666903"
+ }
+}

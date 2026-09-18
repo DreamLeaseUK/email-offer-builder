@@ -1,25 +1,27 @@
 /**
- * Brochures — brief §5.8.
- *   POST /api/brochures/ensure { make, model }        stored copy, or harvest (Firecrawl), or 404 → upload/paste
+ * Brochures — brief §5.8; discovery is the finder (docs/brochure-finder-brief.md).
+ *   POST /api/brochures/ensure { make, model, force? }  stored copy, or a search. Always 200 with
+ *                                                        { state, brochure?, search?, remembered? }:
+ *                                                        state 'none' means nothing attached — `search` says
+ *                                                        what was checked and the UI offers the manual paths.
+ *   POST /api/brochures/accept { make, model }         the rep accepts an official page / request form the
+ *                                                        finder would not attach by itself (URL from the stored search)
  *   POST /api/brochures/manual { make, model, url } | multipart pdf   the manual path
- *   GET  /api/brochures/current?make=&model=          the stored copy without triggering a harvest
- *   GET  /b/:id                                       recipient link: serves our PDF, or redirects to the
- *                                                     manufacturer's request page for a gated brochure
- * Superseded brochures keep serving: a campaign that used one must not break. Click logging is build step 6.
+ *   GET  /api/brochures/current?make=&model=           the stored copy without triggering a search
+ *   GET  /b/:id                                        recipient link: serves our PDF, or redirects to the
+ *                                                      manufacturer's page for a web brochure / request form
+ * Superseded brochures keep serving: a campaign that used one must not break.
  */
-import { BrochureNotFoundError, FirecrawlBrochureSource, ManualBrochureError, createFirecrawlClient, ensureBrochure, manualBrochure } from '@offer-mailer/adapters';
-import type { BrochureRepo } from '@offer-mailer/adapters';
-import { Brochure, assertNoCapId, vehicleKey } from '@offer-mailer/schema';
-import type { Brochure as BrochureT } from '@offer-mailer/schema';
+import { FirecrawlBrochureSource, ManualBrochureError, acceptSearchOutcome, createFirecrawlClient, ensureBrochure, manualBrochure } from '@offer-mailer/adapters';
+import type { BrochureRepo, Downloaded, FinderHttp } from '@offer-mailer/adapters';
+import { Brochure, BrochureSearch, assertNoCapId, vehicleKey } from '@offer-mailer/schema';
+import type { Brochure as BrochureT, BrochureSearch as BrochureSearchT } from '@offer-mailer/schema';
 import { and, desc, eq } from 'drizzle-orm';
 import { Hono } from 'hono';
-import domainsConfig from '../../../config/manufacturer-uk-domains.json' with { type: 'json' };
 import { db } from './db/index.js';
-import { brochures as brochuresTable } from './db/schema.js';
+import { brochureSearches, brochures as brochuresTable } from './db/schema.js';
 import type { AppEnv, Env } from './env.js';
-import { brochureStore, downloadFile } from './files.js';
-
-export const ALLOWLIST: string[] = domainsConfig.domains;
+import { BROWSER_UA, brochureStore, downloadFile } from './files.js';
 
 export function d1BrochureRepo(env: Env): BrochureRepo & { findById(id: string): Promise<BrochureT | undefined> } {
   const d = db(env.DB);
@@ -41,8 +43,28 @@ export function d1BrochureRepo(env: Env): BrochureRepo & { findById(id: string):
       const data = { ...(row.data as BrochureT), status: 'superseded' as const };
       await d.update(brochuresTable).set({ status: 'superseded', data }).where(eq(brochuresTable.id, id)).run();
     },
+    async findSearch(key) {
+      const row = await d.select().from(brochureSearches).where(eq(brochureSearches.vehicleKey, key)).get();
+      const parsed = row ? BrochureSearch.safeParse(row.data) : undefined;
+      return parsed?.success ? parsed.data : undefined;
+    },
+    async saveSearch(s: BrochureSearchT) {
+      assertNoCapId(s, 'brochure search');
+      const values = { vehicleKey: s.vehicleKey, status: s.status, searchedAt: s.searchedAt, data: s };
+      await d.insert(brochureSearches).values(values).onConflictDoUpdate({ target: brochureSearches.vehicleKey, set: values }).run();
+    },
   };
 }
+
+/** The finder's plain GET: follows redirects, never throws, reads the body only when asked. */
+export const finderHttp: FinderHttp = async (url) => {
+  try {
+    const res = await fetch(url, { headers: { 'user-agent': BROWSER_UA, accept: 'text/html,application/pdf;q=0.9,*/*;q=0.8', 'accept-language': 'en-GB,en;q=0.9' }, redirect: 'follow', signal: AbortSignal.timeout(15_000) });
+    return { status: res.status, contentType: res.headers.get('content-type') ?? '', finalUrl: res.url || url, text: () => res.text() };
+  } catch {
+    return undefined;
+  }
+};
 
 const vehicleFrom = (q: { make?: unknown; model?: unknown }): { make: string; model: string } | undefined =>
   typeof q.make === 'string' && q.make.trim() && typeof q.model === 'string' && q.model.trim() ? { make: q.make.trim(), model: q.model.trim() } : undefined;
@@ -57,26 +79,31 @@ brochuresApi.get('/brochures/current', async (c) => {
 });
 
 brochuresApi.post('/brochures/ensure', async (c) => {
-  const body = (await c.req.json().catch(() => ({}))) as { make?: unknown; model?: unknown };
+  const body = (await c.req.json().catch(() => ({}))) as { make?: unknown; model?: unknown; force?: unknown };
   const vehicle = vehicleFrom(body);
   if (!vehicle) return c.json({ error: 'make and model are required' }, 400);
   const repo = d1BrochureRepo(c.env);
   const key = c.env.FIRECRAWL_API_KEY;
   if (!key) {
     const current = await repo.findCurrent(vehicleKey(vehicle));
-    if (current) return c.json({ brochure: current, state: 'stored', warning: 'Brochure harvest is not configured (no Firecrawl key); using the stored copy.' });
-    return c.json({ error: 'Brochure harvest is not configured (no Firecrawl key). Upload a PDF or paste a link.' }, 503);
+    if (current) return c.json({ brochure: current, state: 'stored', warning: 'Brochure search is not configured (no Firecrawl key); using the stored copy.' });
+    return c.json({ error: 'Brochure search is not configured (no Firecrawl key). Upload a PDF or paste a link.' }, 503);
   }
-  const harvester = new FirecrawlBrochureSource({
-    firecrawl: createFirecrawlClient(key),
-    allowlist: ALLOWLIST,
-    download: downloadFile,
-    store: brochureStore(c.env),
-    createdBy: c.get('user').email,
-  });
-  const result = await ensureBrochure(vehicle, { repo, harvester });
-  if (!result) return c.json({ error: 'Not found. Upload a PDF or paste a link.' }, 404);
-  return c.json(result);
+  const harvester = new FirecrawlBrochureSource({ firecrawl: createFirecrawlClient(key), http: finderHttp, download: downloadFile, store: brochureStore(c.env), createdBy: c.get('user').email });
+  return c.json(await ensureBrochure(vehicle, { repo, harvester, force: body.force === true }));
+});
+
+brochuresApi.post('/brochures/accept', async (c) => {
+  const vehicle = vehicleFrom((await c.req.json().catch(() => ({}))) as { make?: unknown; model?: unknown });
+  if (!vehicle) return c.json({ error: 'make and model are required' }, 400);
+  const repo = d1BrochureRepo(c.env);
+  const search = await repo.findSearch(vehicleKey(vehicle));
+  const b = search ? acceptSearchOutcome(search, { vehicle, createdBy: c.get('user').email }) : undefined;
+  if (!b) return c.json({ error: 'There is no official page or request form on record for this vehicle. Search again, or upload / paste a link.' }, 404);
+  const current = await repo.findCurrent(b.vehicleKey);
+  await repo.save(b);
+  if (current) await repo.markSuperseded(current.id);
+  return c.json({ brochure: b, state: 'fresh' });
 });
 
 brochuresApi.post('/brochures/manual', async (c) => {
@@ -99,18 +126,50 @@ brochuresApi.post('/brochures/manual', async (c) => {
     if (typeof body.url === 'string' && body.url.trim()) url = body.url.trim();
   }
   if (!vehicle) return c.json({ error: 'make and model are required' }, 400);
+  // a pasted manufacturer PDF link is often bot-protected against the Worker: Firecrawl fetches the same public file
+  const key = c.env.FIRECRAWL_API_KEY;
+  const fetchFile = key
+    ? async (u: string): Promise<Downloaded> => {
+        const f = await createFirecrawlClient(key).fetchFile(u);
+        return f.ok ? { bytes: f.bytes, contentType: f.contentType } : { bytes: new ArrayBuffer(0), contentType: null };
+      }
+    : undefined;
   try {
-    const b = await manualBrochure({ vehicle, ...(url ? { url } : {}), ...(pdf ? { pdf } : {}), createdBy, download: downloadFile, store: brochureStore(c.env) });
+    const b = await manualBrochure({ vehicle, ...(url ? { url } : {}), ...(pdf ? { pdf } : {}), ...(fetchFile ? { fetchFile } : {}), createdBy, download: downloadFile, store: brochureStore(c.env) });
     const current = await repo.findCurrent(b.vehicleKey);
     await repo.save(b);
     if (current) await repo.markSuperseded(current.id);
     return c.json({ brochure: b, state: 'fresh' });
   } catch (err) {
     if (err instanceof ManualBrochureError) return c.json({ error: err.message }, 422);
-    if (err instanceof BrochureNotFoundError) return c.json({ error: err.message }, 404);
     throw err;
   }
 });
+
+// ---------- daily link re-check (Cron) ----------
+
+/**
+ * A `web` or `gated` brochure is a link to somebody else's page, so it is re-checked daily: one that now
+ * answers 404/410 is superseded, which stops it being attached to new campaigns. A campaign already sent keeps
+ * its /b/:id link (it redirects to wherever the manufacturer now sends that URL). Transient errors change nothing.
+ */
+export async function recheckLinkedBrochures(env: Env, http: FinderHttp = finderHttp, limit = 40): Promise<{ checked: number; superseded: number }> {
+  const d = db(env.DB);
+  const repo = d1BrochureRepo(env);
+  const rows = await d.select().from(brochuresTable).where(eq(brochuresTable.status, 'current')).all();
+  const linked = rows.filter((r) => r.kind === 'web' || r.kind === 'gated').slice(0, limit);
+  let superseded = 0;
+  for (const row of linked) {
+    const b = Brochure.safeParse(row.data);
+    if (!b.success) continue;
+    const res = await http(b.data.sourceUrl);
+    if (res && (res.status === 404 || res.status === 410)) {
+      await repo.markSuperseded(b.data.id);
+      superseded += 1;
+    }
+  }
+  return { checked: linked.length, superseded };
+}
 
 // ---------- recipient link (public) ----------
 
@@ -121,9 +180,9 @@ brochureLink.get('/b/:id', async (c) => {
   if (!/^[0-9a-f-]{36}$/i.test(id)) return c.text('Brochure not found.', 404);
   const b = await d1BrochureRepo(c.env).findById(id);
   if (!b) return c.text('Brochure not found.', 404);
-  if (b.kind === 'gated') return c.redirect(b.sourceUrl, 302);
+  if (b.kind !== 'pdf') return c.redirect(b.sourceUrl, 302);
   const obj = b.file ? await c.env.BROCHURES.get(b.file.key) : null;
   if (!obj) return c.text('Brochure not found.', 404);
-  const filename = `${b.title.replace(/[^A-Za-z0-9 ()-]+/g, '').trim() || 'brochure'}.pdf`;
+  const filename = `${b.title.replace(/[^A-Za-z0-9 ()&-]+/g, '').trim() || 'brochure'}.pdf`;
   return new Response(obj.body, { headers: { 'content-type': 'application/pdf', 'content-disposition': `inline; filename="${filename}"`, 'cache-control': 'private, max-age=3600', etag: obj.httpEtag } });
 });

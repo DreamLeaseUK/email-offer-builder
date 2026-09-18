@@ -1,0 +1,83 @@
+{
+ "path": "/search",
+ "body": {
+  "query": "Hyundai Ioniq 5 brochure",
+  "limit": 8,
+  "country": "GB",
+  "location": "United Kingdom",
+  "sources": [
+   {
+    "type": "web"
+   }
+  ],
+  "ignoreInvalidURLs": true,
+  "categories": [
+   "pdf"
+  ]
+ },
+ "response": {
+  "success": true,
+  "data": {
+   "web": [
+    {
+     "url": "https://www.hyundai.com/content/dam/hyundai/in/en/data/brochure/ioniq-5.pdf",
+     "title": "[PDF] IONIQ 5 Digital Brochure-1080x1332 - Hyundai Motor Company",
+     "description": "# Timeless perfection.\n## Peace of mind.\n| IONIQ 5 |  |\n|-|-|\n| Bose premium sound system(8 Speakers) |  |\n| Active sound design |  |\n| Safety |  |\n| 6 Airbags(Driver, passenger,side&curtain) |  |\n| Electronic stability control(ESC)&Vehicle stability management(VSM) |  |\n| Hill-start assist control(HAC) |  |\n| Multi collision-avoidance brake(MCB) |  |\n| Electric parking brake(EPB) |  |\n| Electro chromic mirror(ECM) |  |\n| Tyre pressure monitoring system(TPMS)highline |  |\n| Virtual engine sound system(VESS) |  |\n| Child seat anchor(ISOFIX) |  |\n| Parking assist | Rear parking sensor |\n| Parking assist | Front parking sensor |\n| Parking assist | Side parking sensor |\n| Hyundai SmartSense(Advanced Driver Assistance System) | Forward Collision Warning(FCW) |\n| Hyundai SmartSense(Advanced Driver Assistance System) | Forward Collision-Avoidance Assist-Car(FCA-Car) |\n| Hyundai SmartSense(Advanced Driver Assistance System) | Forward Collision-Avoidance Assist-Pedestrian(FCA-Ped) |\n| Hyundai SmartSense(Advanced Driver Assistance System) | Forward Collision-Avoidance Assist-Cycle(FCA-Cyl) |\n| Hyundai SmartSense(Advanced Driver Assistance System) | Forward Collision-Avoidance Assist-Junction Turning(FCA-JT) |\n| Hyundai SmartSense(Advanced Driver Assistance System) | Forward Collision-Avoidance Assist-Direct Oncoming(FCA-DO) |\n| Hyundai SmartSense(Advanced Driver Assistance System) | Blind-Spot Collision Warning(BCW) |\n| Hyundai SmartSense(Advanced Driver Assistance System) | Blind-Spot Collision-Avoidance Assist(BCA) |\n| Hyundai SmartSense(Advanced Driver Assistance System) | Lane Departure Warning(LDW) |\n| Hyundai SmartSense(Advanced Driver Assistance System) | Lane Keeping Assist(LKA) |\n| Hyundai SmartSense(Advanced Driver Assistance System) | Driver Attention Warning(DAW) |\n| Hyundai SmartSense(Advanced Driver Assistance System) | Safe Exit Warning(SEW) |\n| Hyundai SmartSense(Advanced Driver Assistance System) | Safe Exit Assist(SEA) |\n| Hyundai SmartSense(Advanced Driver Assistance System) | Smart Cruise Control with Stop&Go(SCC with S&G) |\n| Hyundai SmartSense(Advanced Driver Assistance System) | Lane Following Assist(LFA) |\n| Hyundai SmartSense(Advanced Driver Assistance System) | High Beam Assist(HBA) |\n| Hyundai SmartSense(Advanced Driver Assistance System) | Leading Vehicle Departure Alert(LVDA) |\n| Hyundai SmartSense(Advanced Driver Assistance System) | Rear Cross-Traffic Collision Warning(RCCW) |\n| Hyundai SmartSense(Advanced Driver Assistance System) | Rear Cross-Traffic Collision-Avoidance Assist(RCCA) |\n| Hyundai SmartSense(Advanced Driver Assistance System) | Parking Collision Avoidance Assist-Rear(PCA-R) |\n| Blind-Spot View Monitor(BVM) |  |\n| Surround View Monitor(SVM) |  |\n| Charger |  |\n| Portable charging cable |  |\n| 11kW wallbox charger |  |\n\n| Items | IONIQ 5 |\n|-|-|\n| Dimensions |  |\n| Overall length(mm) | 4655 |\n| Overall width(mm) | 1890 |\n| Overall height(mm) | 1625*** |\n| Wheelbase(mm) | 3000 |\n| Electric motor |  |\n| Electric motor type | Permanent magnet synchronous motor(PMSM) |\n| Configuration | Rear wheel drive(RWD) |\n| Max power(kW(ps)) | 168(228.5) |\n| High voltage battery&charging |  |\n| Battery type | Liquid cooled lithium-ion with battery heating system |\n| Capacity(kWh) | 84 |\n| Estimated AC fast charging time** (SOC10% to100%) from11kWAC fast charger | 7h35min |\n| Estimated DC fast charging time** (SOC10% to80%) usingDC fast charger* | 18min |\n| Transmission |  |\n| Type | Single speed reduction gear |\n| Suspension |  |\n| Front | McPherson strut |\n| Rear | Multi-link |\n| Brakes |  |\n| Front | Disc |\n| Rear | Disc |\n| Wheel&tyre |  |\n| Size | 255/45R20(D=512.8mm)Aero alloy wheel |\n| Spare tyre | Tyre Mobility Kit(TMK) |",
+     "position": 1,
+     "category": "pdf"
+    },
+    {
+     "url": "https://www.kenbrownmotors.co.uk/docstore/hyundai-uk-ioniq-5-specs-tech.pdf",
+     "title": "[PDF] IONIQ 5 - Ken Brown Motors",
+     "description": "## Hyundai announces IONIQ 5 prices and specifications\n• IONIQ 5, the first model from Hyundai’s IONIQ EV-exclusive brand\n\n• Choice of 58kWh or 73kWh with RWD and AWD powertrains\n\n## Leatherhead, 7th March\n| Description | SE Connect | Premium | Ultimate |\n|-|-|-|-|\n| TRANSMISSION |  |  |  |\n| Paddle Shift - Regenerative Braking | ● | ● | ● |\n| Shift By Wire - E-Shift | ● | ● | ● |\n| EXTERIOR |  |  |  |\n| 19° Alloy Wheels / Michelin tyres | ● | ● | ● 58 kWh |\n| 20° Alloy Wheels / Michelin tyres | - | - | ● (73 kWh) |\n| Door Mirrors - Black | ● | ● | - |\n| Door Mirrors - High Glossy | - | - | ● |\n| Exterior Door Handle - Flush | ● | ● | ● |\n| Exterior Door Handles - Body Coloured | ● | ● | ● |\n| Rear Spoiler with Integrated LED Brake Light | ● | ● | ● |\n| Side Body Moulding - Black | ● | - | - |\n| Side Sill - Anthracite Colour | ● | ● | ● |\n| INTERIOR STYLING |  |  |  |\n| A/B/C Pillar Trim - Cloth | ● | ● | ● |\n| Door Scuff - Deluxe Plate | - | - | ● |\n| Door Scuff - Standard Plate | ● | ● | - |\n| Interior Door Handles - Metal Paint Effect | ● | ● | ● |\n| Leather Wrapped Steering Wheel | ● | ● | ● |\n| Mood Lighting | ● | ● | ● |\n| Pedals - Alloy Pedals | - | - | ● |\n| Roof Trim - Cloth | ● | ● | ● |\n| Driver's Seat Height Adjustment (Manual) | ● | - | - |\n| Driver's Seat Electric Adjustments | - | ● | ● |\n| Driver's Seat Lumbar Support (Electric) | ● | ● | ● |\n| Front Passenger's Seat Height Adjustment (Manual) | ● | ● | - |\n| Front Passenger's Seat Electric Adjustments | - | - | ● |\n| Front Passenger's Seat Lumbar Support (Electric) | - | - | ● |\n| Front Seats - Heated | - | ● | ● |\n| Front Seats - Memory Seats Driver and Passenger* | - | - | □ |\n| Front Seats - Premium Relaxation Seats - Driver and Passenger* | - | - | □ |\n| Front Seats - Ventilated | - | - | ● |\n| Head Restraints - Vertical Adjustment (Second Row Outer) | ● | ● | ● |\n| Head Restraints - Vertical and Horizontal Adjustment (Front) | ● | ● | ● |\n| Rear Seats - Sliding - Manual | ● | ● | ● |\n| Rear Seats (Outer) - Heated | - | - | ● |\n| Rear Seats (Second Row) - Split Folding (60/40) | ● | ● | ● |\n| Seat Trim - Eco Grey Cloth | ● | - | - |\n| Seat Trim - Black Shadow Leather (Seat Facing only) | - | - | ● |\n| Seat Trim - Moonlight Grey Leather (Seat Facings Only) | - | - | □ |\n| VENTILATION & VISIBILITY |  |  |  |\n| Air Conditioning - Climate Control (Dual Zone) | ● | ● | ● |\n\n|  | - | - | ● |\n|-|-|-|-|\n| Speakers - BOSE Premium Audio - 7 Speakers + 1 Subwoofer |  |  | ● |\n| Steering Wheel Audio Controls | ● | ● | ● |\n| USB Charging Ports - 2 Front | ● | ● | ● |\n| USB Connectivity Port - 1 Front | ● | ● | ● |\n| Wireless Phone Charging Pad | ● | ● | ● |\n| Childproof Rear Door Locks | ● | ● | ● |\n| FCA - Forward Collision Avoidance Assist - Car, Pedestrian, Cycle | ● | ● | ● |\n| Immobiliser | ● | ● | ● |\n| ISOfix Child Seat Anchorage Points - Rear (Second Row, outer seats only) | ● | ● | ● |\n| Rear Occupancy Alert | ● | ● | ● |\n| Seatbelts - Height Adjustable Driver and Front Passenger | ● | ● | ● |\n| CCS Combo Rapid Charge Port (50kW) | ● | ● | ● |\n| Charging Cable - 7 Pin Type 2 | ● | ● | ● |\n| Charging Cable - Emergency 3 Pin Connector (ICCB) | ● | ● | ● |\n| 12 Years' Anti-Perforation Warranty | ● | ● | ● |\n| Five Year Unlimited Mileage Warranty | ● | ● | ● |\n| High Voltage Battery Warranty - 8 Years, 100,000 Miles | ● | ● | ● |\n| Metallic/ Pearl/ Solid | ☐ | ☐ | ☐ |",
+     "position": 2,
+     "category": "pdf"
+    },
+    {
+     "url": "https://www.hyundai.ie/home/brochure/ioniq5_brochure_new.pdf",
+     "title": "[PDF] ioniq 5 - Hyundai Ireland",
+     "description": "# Dimensions.\n| Classification |  | 2WD Long Range |\n|-|-|-|\n| Electric Motor | Motor type | Permanent Magnet Synchronous Motor(PMSM) |\n| Max. power(kW) | 168 |  |\n| Max. power(hp) | 229 |  |\n| Max. torque(Nm) | 350 |  |\n| Battery | Capacity(kWh) | 84.0 |\n| Type | Lithium-ion |  |\n| On-board charger(OBC) | Max capacity(kW) | 7(1-phase)/10.5(3-phase) |\n| Standard,AC* | 7h35min |  |\n| Charging time | Quick charge,up to 80%(50kW) | -1h16min |\n| Quick charge,up to 80%(350kW) | -18min |  |\n| Electric energy consumption | combined(kW/100km) | 19” tyres:16,04/20” tyres:16,99/20” tyres N Line:17,20 |\n| Electric range(WLTP)** | combined(km) | 19” tyres:570/20” tyres:530/20” tyres N Line:515 |\n| Performance |  |  |\n| Max.speed(km/h) |  | 185 |\n| Acceleration0to100km/h(s) |  | 7.5 |\n| Weights |  |  |\n| Curb weight(kg) |  | 1,985-2,075/N Line:2,005-2,085 |\n| Payload(kg) |  | 515-605/N Line:505-585 |\n| Gross vehicle weight(kg) |  | 2,590/N Line:2,590 |\n| Roof load(kg) |  | 80 |",
+     "position": 3,
+     "category": "pdf"
+    },
+    {
+     "url": "https://autocatalogarchive.com/wp-content/uploads/2025/03/Hyundai-Ioniq-5-N-2024-UK.pdf",
+     "title": "[PDF] IONIQ 5 N - Auto Catalog Archive",
+     "description": "IONIQ 5 N is our first all-electric N model. High-performance 84 kWh battery. Providing up to 278 miles4 of range, IONIQ 5 N er charging and increased range",
+     "position": 4,
+     "category": "pdf"
+    },
+    {
+     "url": "https://brendanfoot.co.nz/wp-content/uploads/2021/09/SY1860_-_HYN_-_Ioniq_5_Brochure_2021-portrait_v5_compressed.pdf",
+     "title": "[PDF] IONIQ 5 | Brendan Foot",
+     "description": "Breathtakingly beautiful and amazingly advanced, the IONIQ 5 is redefining the way people look at electric cars. Brochure-Ioniq-5_07/21",
+     "position": 5,
+     "category": "pdf"
+    },
+    {
+     "url": "https://cdn.dealereprocess.org/cdn/brochures/hyundai/2022-ioniq5.pdf",
+     "title": "[PDF] IONIQ 5 - Dealer E Process",
+     "description": "Popular Features Parking Distance Warning. Heated steering wheel and ambient LED interior lighting. Standard Range RWD with 58 kWh battery & 168 hp motor (late ...",
+     "position": 6,
+     "category": "pdf"
+    },
+    {
+     "url": "https://www.lotushyundai.in/wp-content/uploads/2024/06/ioniq-5-brochure.pdf",
+     "title": "[PDF] IONIQ 5 | Lotus Hyundai",
+     "description": "This dedicated battery electric vehicle platform enables faster charging, increased driving range, more interior space and better handling.",
+     "position": 7,
+     "category": "pdf"
+    },
+    {
+     "url": "https://www.hyundai.com/content/dam/hyundai/template_en/en/data/marketing/brochure/product/N/IONIQ-5-N-FLYER.pdf",
+     "title": "[PDF] The Hyundai IONIQ 5 N",
+     "description": "The Hyundai IONIQ 5. Overall Width 1,940. Length Wheel Base 4,715 3,000 Overall Height 1,585. ENGINE & TRANSMISSION Electric Motor. Transmission CHASSIS ...",
+     "position": 8,
+     "category": "pdf"
+    }
+   ]
+  },
+  "creditsUsed": 2,
+  "id": "01a0b018-3887-71cc-a608-902629b5aa5a"
+ }
+}

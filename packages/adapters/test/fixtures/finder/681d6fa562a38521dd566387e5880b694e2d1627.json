@@ -1,0 +1,77 @@
+{
+ "path": "/search",
+ "body": {
+  "query": "XPENG G6 brochure",
+  "limit": 8,
+  "country": "GB",
+  "location": "United Kingdom",
+  "sources": [
+   {
+    "type": "web"
+   }
+  ],
+  "ignoreInvalidURLs": true,
+  "categories": [
+   "pdf"
+  ]
+ },
+ "response": {
+  "success": true,
+  "data": {
+   "web": [
+    {
+     "url": "https://xpengcars.co.uk/wp-content/uploads/2025/12/Brochure-NEW-G6.pdf",
+     "title": "[PDF] Brochure-NEW-G6.pdf - XPENG UK",
+     "description": "# EXPLORE XPENG G6\nColour Options & Design Features / 6\n\nSteering Wheel Functions / 15\n\n# NEW ALL-ELECTRIC XPENG G6\n**WARRANTY** This document is for informational purposes only.\n\nThis document is for informational purposes only.",
+     "position": 1,
+     "category": "pdf"
+    },
+    {
+     "url": "https://xpengcars.co.uk/models/g6/",
+     "title": "G6 Vehicle Page - XPENG UK",
+     "description": "Explore the XPENG G6. View Brochure. Register Your Interest. Tell us more about your requirements and we'll connect you with your nearest dealer. Personal ...",
+     "position": 2
+    },
+    {
+     "url": "https://www.xpeng.com/ie/models/g6",
+     "title": "The all-new XPENG G6 | All-Electric SUV",
+     "description": "# ​​​​​​​  The all new XPENG G6\n[DOWNLOAD A BROCHURE](https://xpeng.keyelement.cloud/assets/1/brochures/XPENG_G6_MY26.pdf)\n\n## Next-Gen 5C Battery, Ultra-Fast Charging\n### Full-Scene XOS COCKPIT\nSeamless voice control, OTA-upgradeable ⁴ interface\n\n### All-Round Protection from the Core\n**Triple-Layer Battery Shield**\n\n**Smart Power Isolation**\n\n**Adaptive front comfort**\n\nUp to 12-way electric adjustment with memory, heating, ventilation, and full recline with footrest²\n\n**Executive-Class Rear Recline**\n\n27°–38.4° recline range with seat heating and deep side support\n\n**2.12 m² All-Season Panoramic Skylight**\n\nSilver-plated glass, 99.99% UV protection, SPF100+ ¹\n\n**Quiet-Cabin Glass Package**\n\nDouble-layer laminated glass on all windows",
+     "position": 3
+    },
+    {
+     "url": "https://xpengcars.co.uk/wp-content/uploads/2026/08/XPENG-G6-Brochure-August-2026.pdf",
+     "title": "[PDF] XPENG-G6-Brochure-August-2026 ...",
+     "description": "8 Dec 2025 · The G6's powerful electric motor provides smooth acceleration and responsive handling, available in rear-wheel drive (RWD) in Standard. Range ...",
+     "position": 4,
+     "category": "pdf"
+    },
+    {
+     "url": "https://m.sgcarmart.com/new_cars/includes/brochures.php?CarCode=21899",
+     "title": "Brochure for XPENG G6 Electric in Singapore - Sgcarmart.com",
+     "description": "... Brochure. DOWNLOAD BROCHURE. XPENG G6 Electric Pro Long Range RWD & Performance AWD - Spec Sheet202 - uploaded 04-Feb-2026. XPENG G6 Electric AIR Standard ...",
+     "position": 5
+    },
+    {
+     "url": "https://www.facebook.com/groups/xpeng.sg/posts/793143943541734/",
+     "title": "Xpeng G6 facelift specifications and brochures - Facebook",
+     "description": "28 Aug 2025 · The all-new G6 features significant upgrades, with 34% of key components being replaced, and a total of 81 improvements in user experience. In ...",
+     "position": 6
+    },
+    {
+     "url": "https://xpengcars.co.uk/owners/",
+     "title": "Owners - XPENG UK",
+     "description": "New G6 Brochure. Download Brochure. Customer Care Charter. Customer Care Document. Vehicle Warranty. Warranty Document. G6 User Manual. User Manual Document ...",
+     "position": 7
+    },
+    {
+     "url": "https://xpengnorthshore.co.nz/vehicles/xpeng-g6/",
+     "title": "XPENG G6",
+     "description": "# XPENG G6\n## XPENG G6 RANGE & PRICING\n### G6 RWD STANDARD RANGE\n#### **From $59,990 +ORC**\n- EV Driving Range 480 (R18) 470 km (R20)\n\n## GET IN TOUCH\nPhone *\n\nEmail *\n\nThe features, specifications, design, and visuals displayed on this page are for general reference only.",
+     "position": 8
+    }
+   ]
+  },
+  "creditsUsed": 2,
+  "id": "01a0b017-d7a8-727a-9a30-577db99b0906"
+ }
+}

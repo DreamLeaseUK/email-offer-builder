@@ -1,0 +1,83 @@
+{
+ "path": "/search",
+ "body": {
+  "query": "BYD Seal brochure",
+  "limit": 8,
+  "country": "GB",
+  "location": "United Kingdom",
+  "sources": [
+   {
+    "type": "web"
+   }
+  ],
+  "ignoreInvalidURLs": true,
+  "categories": [
+   "pdf"
+  ]
+ },
+ "response": {
+  "success": true,
+  "data": {
+   "web": [
+    {
+     "url": "https://www.byd.com/material/byd-site/id/brochure/SEAL-BROCHURE.pdf",
+     "title": "[PDF] BROCHURE SEAL - BYD",
+     "description": "| Item | Standard Range Dynamic | Extended Range Premium | AWD Performance |\n|-|-|-|-|\n| Dimensions |  |  |  |\n| Overall Length (mm) |  | 4800 |  |\n| Overall Width (mm) |  | 1875 |  |\n| Overall Height (mm) |  | 1460 |  |\n| Wheel Trade - Front / Rear (mm) |  | 1620 / 1625 |  |\n| Wheelbase (mm) |  | 2920 |  |\n| Minimum Turning Radius (m) |  | 5.7 |  |\n| Front Trunk Capacity (L) |  | 50 |  |\n| Rear Trunk Capacity (L) |  | 400 |  |\n| Kerb Weight (kg) | 1.922 | 2.055 | 2.185 |\n| Traction Motor |  |  |  |\n| Drivetrain | Rear Drive | Rear Drive | All-wheel Drive |\n| Front Motor Type | / | / | Steeped Cage Induction Asynchronous Motor |\n| Rear Motor Type | Permanent Magnet Synchronous Motor |  |  |\n| Maximum Power (kW) | 150 | 230 | 390 |\n| Maximum Torque (N-m) | 310 | 360 | 670 |\n| Performance |  |  |  |\n| Acceleration 0-100km/h (s) | 7.5 | 5.9 | 3.8 |\n| Electric Range: NEDC Combined Cycle (km) | 510 | 650 | 580 |\n| Seating Capacity | 5 |  |  |\n| Battery Type | BYD Blade Battery |  |  |\n| Battery Capacity (kWh) | 61.44 | 82.56 | 82.56 |\n| Chassis |  |  |  |\n| Front Suspension | Double Wishbone |  |  |\n| Rear Suspension | Multi-link |  |  |\n| Frequency Selective Damping (FSD) Shock Absorbers | — | — | Front & Rear |\n| Front Disc Brake | Ventilated | Ventilated & Drilled | Ventilated & Drilled |\n| Rear Disc Brake | Ventilated | Ventilated | Ventilated |\n| Front Brake Caliper | Floating | Fixed | Fixed |\n| Wheel Type | Alloy | Alloy | Alloy |\n| Tyre Size | 225/50 R18 | 235/45 R19 | 235/45 R19 |\n| Portable Charging Cable (mode 2) | ● | ● | ● |\n| AC Charging Port - Type 2 (7kW) | ● | ● | ● |\n| DC Charging Port - CCS 2 (110kW) | ● | — | — |\n| DC Charging Port - CCS 2 (150kW) | — | ● | ● |\n| V2L Function | ● | ● | ● |\n| V2L Discharge Adapter | ● | ● | ● |\n| Regenerative Braking | ● | ● | ● |\n| Safety and Security |  |  |  |\n| Front Airbags - Driver & Front Passenger | ● | ● | ● |\n| Side Airbags - Driver & Front Passenger | ● | ● | ● |\n| Side Curtain Airbags - Front & Rear | ● | ● | ● |\n| Far-side Airbags - Driver | ● | ● | ● |\n| Side Airbags - Rear | ● | ● | ● |\n| Dual Stage Pretensioner on Front Seat Belts | ● | ● | ● |\n| Pretensioner on Rear Seat Belts | ● | ● | ● |\n| Seat Belt Reminder - Front & Rear | ● | ● | ● |\n| 360° Camera | ● | ● | ● |\n| Front Parking Sensor (2 Zones) | ● | ● | ● |\n| Rear Parking Sensor (4 Zones) | ● | ● | ● |\n| ISOFIX Child Restraint Anchorage Points | ● | ● | ● |",
+     "position": 1,
+     "category": "pdf"
+    },
+    {
+     "url": "https://byd.simemotors.my/pub/media/wysiwyg/new-pdf/byd_seal_full.pdf",
+     "title": "[PDF] BYD Seal Brochure FAOL (For Print)",
+     "description": "BYD SEAL integrates a high-voltage electric drive boost charging solution, enabling even faster charging. The system multiplexes motor charging and driving.",
+     "position": 2,
+     "category": "pdf"
+    },
+    {
+     "url": "https://bydautomotive.com.au/brochures/BYD-SEAL-2025.pdf",
+     "title": "[PDF] 2025 BYD Seal Spec Sheet_Version 02.02F",
+     "description": "BYD SEAL DYANMIC awarded 2025 Drive car of the year - best electric vehicle under $50K. Performance. 145. 2,185. 2,631. All-Wheel Drive. Squirrel Cage Induction.",
+     "position": 3,
+     "category": "pdf"
+    },
+    {
+     "url": "https://irp.cdn-website.com/89cc7168/files/uploaded/2026+Brochure+SEAL.pdf",
+     "title": "[PDF] 2026 Brochure SEAL",
+     "description": "Panoramic glass roof. Electric Sunshade. Electronic hidden door handles. Rear windscreen mount antenna. One-touch open/close tailgate.",
+     "position": 4,
+     "category": "pdf"
+    },
+    {
+     "url": "https://ppsbyd.com/wp-content/uploads/2024/03/BYD-SEAL-Brochure.pdf",
+     "title": "[PDF] BYD-SEAL-Brochure.pdf",
+     "description": "BYD SEAL's golden ratio relationship gives BYD SEAL a smart and elegant vehicle posture optimized for maximum aerodynamics. Double-U Floating LED Headlights.",
+     "position": 5,
+     "category": "pdf"
+    },
+    {
+     "url": "https://www.byd.com/material/byd-site/sg/product/pdf/BYD%20Seal%20Spec%20Sheet-PREVIEW%20.pdf",
+     "title": "[PDF] BYD Seal Spec Sheet-PREVIEW",
+     "description": "The All-New BYD SEAL. BYD provides free map update for 3 years. those detailed in this brochure. • Spec Sheet updated as of 14 Sept 2023.",
+     "position": 6,
+     "category": "pdf"
+    },
+    {
+     "url": "https://byd.com.jo/sites/default/files/2024-08/BYD%20Seal%20EV%20AWD%20Catalogue.pdf",
+     "title": "[PDF] BYD Seal EV AWD Catalogue",
+     "description": "BYD SEAL integrates a high-voltage electric drive boost charging solution, enabling even faster charging. The system multiplexes motor charging and driving.",
+     "position": 7,
+     "category": "pdf"
+    },
+    {
+     "url": "https://autocatalogarchive.com/wp-content/uploads/2025/05/BYD-Seal-2025-PK.pdf",
+     "title": "[PDF] BYD SEAL - Auto Catalog Archive",
+     "description": "ULTRA HIGH CHARGING AND DISCHARGING CAPACITY. Blade Battery technology enables BYD SEAL to charge rapidly and achieve an acceleration of 0-100km/h in 3.8s.",
+     "position": 8,
+     "category": "pdf"
+    }
+   ]
+  },
+  "creditsUsed": 2,
+  "id": "01a0b01a-a56a-723b-97e1-00d25f2f8f35"
+ }
+}

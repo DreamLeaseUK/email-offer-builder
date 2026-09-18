@@ -1,0 +1,62 @@
+{
+ "path": "/scrape",
+ "body": {
+  "url": "https://www.volkswagen.co.uk/en/owners-brochure.html",
+  "formats": [
+   "markdown"
+  ],
+  "onlyMainContent": false,
+  "waitFor": 3000
+ },
+ "response": {
+  "success": true,
+  "data": {
+   "markdown": "This website uses cookies.\n\nSome of these are necessary, while others allow us to enhance your experience, personalise content and ads (across sites and devices) and provide insights into how the site is being used. Our recommended settings are that these cookies are all active but if you aren't happy to choose this you can manage your preferences by clicking 'Manage cookies' or click to reject optional cookies. You can withdraw your consent at any time by adjusting these preferences. For full details of each of the cookies we use, please see our [cookies policy](https://www.volkswagen.co.uk/en/privacy/cookie-policy.html).\n\nAccept allReject all optionalManage cookies\n\nThis site uses cookies\n\nSome of these are necessary, while others allow us to enhance your experience, personalise content and ads, and provide insights into how the site is being used. Our recommended settings are that these cookies are all active but if you aren't happy with this you can manage your preferences below, please ensure you then click \"save my preferences\" at the bottom of the page.\n\nFor more detailed information on the cookies we use please see our [Cookies Policy](https://www.volkswagen.co.uk/privacy/cookie-policy).\n\nAccept Recommended Settings\n\n\nThis will automatically tick all boxes below to “On”.\n\n* * *\n\nAnalytical Cookies\n\nAnalytics cookies collect information that is used in aggregate form to help us understand how our website is being used and to find out more about the type of traffic our website receives. This helps us to improve your and others’ experience of the website.\n\n* * *\n\nMarketing\n\nWe use third party cookies on our site to serve you with advertisements that we believe are relevant to you and your interests. You may see these advertisements on our site and on other sites that you visit. Please note that if you disable these, you will still see adverts they just won't be tailored to your interests.\n\n* * *\n\nPersonalisation\n\nWe use cookies to understand how you engage with our website across all your devices, this includes recording your browsing habits and activity. This information is used for profiling purposes and to help identify you, so that we can show you targeted and personalised marketing content, both on our website, via email (where you consent to marketing) and in other contexts, such as on other websites or through other marketing channels.\n\n* * *\n\nSave My Preferences\n\nCancel\n\n[Skip to main content](https://www.volkswagen.co.uk/en/owners-brochure.html#)\n\n[Skip to footer](https://www.volkswagen.co.uk/en/owners-brochure.html#)",
+   "metadata": {
+    "cq:page_root_url": "/en",
+    "og:url": "https://www.volkswagen.co.uk/en/owners-brochure.html",
+    "language": [
+     "en",
+     "en"
+    ],
+    "url.level1": "owners brochure",
+    "og:title": "Owners Brochure – View Vehicle Specs & Manuals | Volkswagen UK",
+    "robots": "index, follow",
+    "description": "Access your Volkswagen owners brochure - get full specifications, warranty & servicing info, user manuals and owner support resources in one convenient place. ",
+    "twitter:card": "summary",
+    "ogTitle": "Owners Brochure – View Vehicle Specs & Manuals | Volkswagen UK",
+    "viewport": "width=device-width",
+    "ogImage": "https://www.volkswagen.co.uk/etc.clientlibs/clientlibs/vwa-ngw18/ngw18-frontend/apps/resources/statics/img/vw-logo-2x.png",
+    "VW:thumbnail": "https://www.volkswagen.co.uk/etc.clientlibs/clientlibs/vwa-ngw18/ngw18-frontend/apps/resources/statics/img/vw-logo-2x.png",
+    "msapplication-config": "/etc.clientlibs/clientlibs/vwa-ngw18/ngw18-frontend/apps/resources/statics/favicons/browserconfig.xml",
+    "og:image": "https://www.volkswagen.co.uk/etc.clientlibs/clientlibs/vwa-ngw18/ngw18-frontend/apps/resources/statics/img/vw-logo-2x.png",
+    "VW.thumbnail": "https://www.volkswagen.co.uk/etc.clientlibs/clientlibs/vwa-ngw18/ngw18-frontend/apps/resources/statics/img/vw-logo-2x.png",
+    "VW:gsaTitle": "Owners Brochure – View Vehicle Specs & Manuals | Volkswagen UK",
+    "content-page-ref": "HdUeAasOahxg8tb4XECNrFBOQ6fqgUHoekweB--3rw8WoA5-9bVEWRPOrq0y9PlZt7TwYTs8nDQDpKl7PpN2rg",
+    "VW.gsaTitle": "Owners Brochure – View Vehicle Specs & Manuals | Volkswagen UK",
+    "og:type": "website",
+    "google-site-verification": "AvNKp6Wkv6e7SbYNqrIidneLMOo59SnMpO74S6_1vFY",
+    "ogDescription": "Access your Volkswagen owners brochure - get full specifications, warranty & servicing info, user manuals and owner support resources in one convenient place. ",
+    "title": "Owners Brochure – View Vehicle Specs & Manuals | Volkswagen UK",
+    "VW:breadcrumb": "Home;/en.html;Owners Brochure – View Vehicle Specs & Manuals | Volkswagen UK;/en/owners-brochure.html",
+    "cq:page_model_url": "/en/owners-brochure",
+    "og:description": "Access your Volkswagen owners brochure - get full specifications, warranty & servicing info, user manuals and owner support resources in one convenient place. ",
+    "twitter:title": "Owners Brochure – View Vehicle Specs & Manuals | Volkswagen UK",
+    "twitter:description": "Access your Volkswagen owners brochure - get full specifications, warranty & servicing info, user manuals and owner support resources in one convenient place. ",
+    "VW.breadcrumb": "Home;/en.html;Owners Brochure – View Vehicle Specs & Manuals | Volkswagen UK;/en/owners-brochure.html",
+    "ogUrl": "https://www.volkswagen.co.uk/en/owners-brochure.html",
+    "favicon": "https://www.volkswagen.co.uk/etc.clientlibs/clientlibs/vwa-ngw18/ngw18-frontend/apps/resources/statics/favicons/favicon-32x32.png",
+    "scrapeId": "01a0b018-3705-70ce-808b-7758ef7e6143",
+    "sourceURL": "https://www.volkswagen.co.uk/en/owners-brochure.html",
+    "url": "https://www.volkswagen.co.uk/en/owners-brochure.html",
+    "statusCode": 200,
+    "contentType": "text/html;charset=utf-8",
+    "proxyUsed": "basic",
+    "cacheState": "hit",
+    "cachedAt": "2026-09-17T14:31:37.418Z",
+    "creditsUsed": 1,
+    "concurrencyLimited": false
+   }
+  }
+ }
+}

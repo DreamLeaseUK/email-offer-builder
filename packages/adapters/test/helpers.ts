@@ -10,8 +10,6 @@ export const Rewriter = HTMLRewriter as unknown as HtmlRewriterCtor;
 
 export const KNOWN_BADGES = ['In stock', 'Special offer', 'DreamLease exclusive!', 'Hot offer', 'Factory order', 'Limited numbers', 'Price drop', 'New model', 'Free maintenance', 'Home charger included'];
 
-export const ALLOWLIST = ['kia.co.uk', 'hyundai.co.uk', 'bmw.co.uk', 'cupraofficial.co.uk', 'mercedes-benz.co.uk', 'volvocars.com/uk', 'tesla.com/en_gb', 'byd.com/uk', 'landrover.co.uk', 'nissan.co.uk', 'kia.com'];
-
 export const NOW = new Date('2026-09-14T09:00:00.000Z');
 export const BY = 'sam.carter@dreamlease.co.uk';
 

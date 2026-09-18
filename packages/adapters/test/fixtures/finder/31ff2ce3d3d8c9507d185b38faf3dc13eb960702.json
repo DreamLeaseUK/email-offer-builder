@@ -1,0 +1,79 @@
+{
+ "path": "/search",
+ "body": {
+  "query": "MG ZS brochure",
+  "limit": 8,
+  "country": "GB",
+  "location": "United Kingdom",
+  "sources": [
+   {
+    "type": "web"
+   }
+  ],
+  "ignoreInvalidURLs": true,
+  "categories": [
+   "pdf"
+  ]
+ },
+ "response": {
+  "success": true,
+  "data": {
+   "web": [
+    {
+     "url": "https://www.mg.co.uk/sites/default/files/2026-01/MG_ZS_Range_Brochure_Jan_2026.pdf",
+     "title": "[PDF] MG ZS",
+     "description": "# MG ZS HYBRID+ TROPHY\n## Just like MG ZS HYBRID+ SE, Plus…\n- Heated Front Seats\nMG ZS Trophy available as Hybrid+ only. MG ZS Trim levels Trim levels MG ZS\n\n| Dimensions | MG ZS Petrol SE | MG ZS Hybrid+SE | MG ZS Hybrid+Trophy |\n|-|-|-|-|\n| Kerb Weight,kg | 1260 | 1410 | 1420 |\n| Turning Circle,m | 10.64 | 10.51 | 10.51 |",
+     "position": 1,
+     "category": "pdf"
+    },
+    {
+     "url": "https://www.mgmotor.co.za/ufile/att/cf170cdd-9093-47e9-82a9-26cbfa16614a/ZS-brochure.pdf",
+     "title": "[PDF] ZS-brochure.pdf - MG Motor South Africa",
+     "description": "Tuned for three steering modes (Urban, Normal, Dynamic) to meet your various needs, offering flexible and effortless steering. MD. MG ZS. Page 8. HISTORY. In ...",
+     "position": 2,
+     "category": "pdf"
+    },
+    {
+     "url": "https://autocatalogarchive.com/wp-content/uploads/2020/11/MG-ZS-2020-UK.pdf",
+     "title": "[PDF] MG-ZS-2020-UK.pdf - Auto Catalog Archive",
+     "description": "The striking exterior of New MG ZS makes the model more dynamic than ever before. It's the perfect family-ready compact. SUV. From the swept back signature ...",
+     "position": 3,
+     "category": "pdf"
+    },
+    {
+     "url": "https://www.ericstead.co.uk/mg-brochures/",
+     "title": "MG Brochures | Download Information About The MG Range",
+     "description": "Download the latest brochures and vehicle information for the MG3, MG ZS, MG HS, MG5 EV Long Range, MG HS Plug-In Hybrid, New MG ZS EV or the MG4 EV.",
+     "position": 4
+    },
+    {
+     "url": "https://s7ap1.scene7.com/is/content/mgmotor/mgmotor/documents/MG%20ZSEV%20-%20Brochure.pdf",
+     "title": "[PDF] 29529_ZS EV Brochure_Digital_A4",
+     "description": "The MG ZS EV is equipped with 17 ADAS features which work on 3 levels of sensitivity – low, medium and high and. 3 levels of warning – haptic, audio and visual.",
+     "position": 5,
+     "category": "pdf"
+    },
+    {
+     "url": "https://dealer.mg.co.uk/hammonds-halesworth/brochure",
+     "title": "Hammond MG Request a brochure",
+     "description": "MG HS. MG HS. From £26,495. Download brochure. MG3 Hybrid+. MG3 Hybrid+. From £19,495. Download brochure. MG ZS Hybrid+. MG ZS Hybrid+. From £22,995. Download ...",
+     "position": 6
+    },
+    {
+     "url": "https://www.mgmotor.eu/model/zs",
+     "title": "Discover MG ZS - MG Motor Europe",
+     "description": "The MG ZS presents a new, cutting-edge design, seamlessly integrating compact SUV proportions with keyless entry, 18-inch Alloy Wheels, and LED lights, ...",
+     "position": 7
+    },
+    {
+     "url": "https://www.mg.co.uk/brochure",
+     "title": "Car Products Entity | MG MOTOR UK",
+     "description": "# Download a brochure\n- [![MG ZS Hybrid+](https://www.mg.co.uk/sites/default/files/2025-05/MG_ZS_Hybrid_EV.png)\\\n\\\nMG ZS Hybrid+\\\n\\\n\\\n\\\nFrom £22,995](https://www.mg.co.uk/brochure/mg-zs-hybrid)\n- [![MG ZS Petrol](https://www.mg.co.uk/sites/default/files/2025-05/MG_ZS_Petrol.png)\\\n\\\nMG ZS\\\n\\\n\\\n\\\nFrom £20,495](https://www.mg.co.uk/brochure/mg-zs)",
+     "position": 8
+    }
+   ]
+  },
+  "creditsUsed": 2,
+  "id": "01a0b019-c4d6-7521-85c9-5b28c4c76e32"
+ }
+}

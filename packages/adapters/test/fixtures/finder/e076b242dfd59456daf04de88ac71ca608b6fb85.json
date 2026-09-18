@@ -1,0 +1,81 @@
+{
+ "path": "/search",
+ "body": {
+  "query": "Audi Q4 e-tron brochure",
+  "limit": 8,
+  "country": "GB",
+  "location": "United Kingdom",
+  "sources": [
+   {
+    "type": "web"
+   }
+  ],
+  "ignoreInvalidURLs": true,
+  "categories": [
+   "pdf"
+  ]
+ },
+ "response": {
+  "success": true,
+  "data": {
+   "web": [
+    {
+     "url": "https://media.audi.com/is/content/audi/country/ie/assets/downloads/product-guides/my24/Q4-e-tron-Product-Guide-MY24.pdf",
+     "title": "[PDF] Audi Q4 e-tron",
+     "description": "Audi Q4 e-tron. Product and Price Guide. Model Year 2024. Page 2. Audi Q4 e-tron ... Note: Only available on Q4 e-tron 40 and Q4 e-tron 50 quattro models.",
+     "position": 1,
+     "category": "pdf"
+    },
+    {
+     "url": "https://media.audi.com/is/content/audi/country/ie/assets/downloads/product-guides/my26/Q4etron_MY26.pdf",
+     "title": "[PDF] Audi Q4 e-tron",
+     "description": "Audi e-tron. Audi Q4 e-tron. Product and Price Guide. Model Year 2026. Page 2. Audi Q4 e-tron Retail Price List. Model. Description. Range km. Road. Tax. Perfor ...",
+     "position": 2,
+     "category": "pdf"
+    },
+    {
+     "url": "https://cogcms.co.uk/media/14622/e-tron.pdf",
+     "title": "[PDF] e-tron Pricelist",
+     "description": "20” alloy wheels, LED headlights and contrast bumpers create road presence, whilst Twin leather upholstery and electric heated front seats ensure comfort behind ...",
+     "position": 3,
+     "category": "pdf"
+    },
+    {
+     "url": "https://stc.aeplcdn.com/f/brochure/18/1346/wntnttf.pdf",
+     "title": "[PDF] E-tron Digital Brochure-opt-F-6",
+     "description": "The e-tron name describes Audi vehicles that are wholly driven by electric power, featuring plug-in and fast-charging convenience, advanced energy ...",
+     "position": 4,
+     "category": "pdf"
+    },
+    {
+     "url": "https://www.e-tronforum.com/attachments/2024-q4-55-order-guide-pdf.10922/",
+     "title": "[PDF] 2024 - Audi Q4 45/55 e-tron",
+     "description": "21 Jan 2024 · Battery: 82 kW (Gross) | 76.6kW (Net). • Audi drive select. • High gloss exterior window strips. • 19\" 5-W-spoke aero wheels.",
+     "position": 5
+    },
+    {
+     "url": "https://www.unicars.com/gr/docs/pl/q4.pdf",
+     "title": "[PDF] Q4 SUV e-tron - Unicars",
+     "description": "All prices are stated in euro (€) including 19% VAT, Registration and Road Tax. Prices and equipment subject to change without notice.",
+     "position": 6,
+     "category": "pdf"
+    },
+    {
+     "url": "https://archibalds.co.nz/resources/audi-q4-e-tron-sportback-specsheet.pdf",
+     "title": "[PDF] Audi Q4 Sportback e-tron - Archibalds",
+     "description": "26 Jun 2025 · Audi Q4 Sportback e-tron. Model year 2026. 26/06/2025 | 1/4. • Standard equipment | ○ Available as an option | - not available. All prices and ...",
+     "position": 7,
+     "category": "pdf"
+    },
+    {
+     "url": "https://media.audifrance.fr/download/?n=DPQ4e-tron-pdf&id=68499",
+     "title": "[PDF] Des SUV compacts électriques et polyvalents : Les Audi Q4 e-tron et ...",
+     "description": "Elles ont toutes en commun une conduite entièrement électrique, sans émissions et des autonomies élevées, des temps de charge d'environ dix minutes pour une.",
+     "position": 8
+    }
+   ]
+  },
+  "creditsUsed": 2,
+  "id": "01a0b01a-bea0-750b-9fbb-f18eab1d7f93"
+ }
+}

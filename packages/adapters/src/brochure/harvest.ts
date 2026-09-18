@@ -1,18 +1,22 @@
 /**
- * Brochure harvest — brief §5.8 steps 3 to 5. Cheapest step first, stop as soon as a PDF is found:
- *   1. Firecrawl search "<make> <model> brochure pdf" (UK), keep allowlisted hosts, prefer a .pdf
- *   2. else scrape the best allowlisted page and take its first PDF link
- *   3. else map the manufacturer's UK domain for "brochure" and repeat
- *   4. an allowlisted brochure page with no PDF is a `gated` brochure, not a failure
- * Hard cap of ~15 credits per harvest. PDFs are downloaded directly by the Worker (no credits),
- * checked (application/pdf, ≤ 40 MB) and stored under brochures/<sha256>.pdf. UK verification is by
- * domain, upgraded to `content` when a cheap look at the first two pages shows £ or OTR and no €.
+ * Brochure sources — brief §5.8, discovery redesigned 17–18 Sept 2026 (docs/brochure-finder-brief.md).
+ *
+ * FirecrawlBrochureSource runs the finder (finder.ts) and turns its outcome into something the tool can use:
+ *   verified_pdf           → the bytes are retrieved (direct, then Firecrawl rawBase64 past bot protection),
+ *                            checked (%PDF, ≤ 40 MB) and stored under brochures/<sha256>.pdf → a `pdf` brochure.
+ *                            If the manufacturer's storage refuses the file outright, the outcome is downgraded
+ *                            to official_page_only: we never work around a download protection.
+ *   verified_web_brochure  → a `web` brochure that links the manufacturer's own page.
+ *   anything else          → no brochure. The search record says what was checked and why nothing attached.
+ * official_page_only and brochure_request are never attached automatically; the rep can accept them in one
+ * click (acceptSearchOutcome). The manual path (upload / paste) always works.
  */
 import { BROCHURE_TTL_DAYS, vehicleKey } from '@offer-mailer/schema';
-import type { Brochure, Vehicle } from '@offer-mailer/schema';
+import type { Brochure, BrochureSearch, Vehicle } from '@offer-mailer/schema';
 import type { FirecrawlClient } from '../firecrawl/client.js';
-import type { BrochureSource } from '../types.js';
-import { entryUrl, isAllowlisted, manufacturerEntry, matchAllowlist } from './allowlist.js';
+import type { BrochureFindOutcome, BrochureSource } from '../types.js';
+import { FINDER_VERSION, findBrochure } from './finder.js';
+import type { FinderHttp, FinderResult } from './finder.js';
 
 export const MAX_PDF_BYTES = 40 * 1024 * 1024;
 
@@ -28,25 +32,15 @@ export interface BrochureStore {
 
 export interface HarvestDeps {
   firecrawl: FirecrawlClient;
-  /** config/manufacturer-uk-domains.json */
-  allowlist: string[];
+  /** Plain GET used to probe pages and resolve "download" links. */
+  http: FinderHttp;
   download(url: string): Promise<Downloaded>;
   store: BrochureStore;
   createdBy: string;
   now?: () => Date;
   newId?: () => string;
-  /** Credits per harvest before giving up. */
+  /** Credits per search before giving up. */
   creditCap?: number;
-}
-
-export class BrochureNotFoundError extends Error {
-  constructor(
-    message: string,
-    readonly creditsUsed: number,
-  ) {
-    super(message);
-    this.name = 'BrochureNotFoundError';
-  }
 }
 
 export const isPdfUrl = (url: string): boolean => {
@@ -57,11 +51,7 @@ export const isPdfUrl = (url: string): boolean => {
   }
 };
 
-/**
- * Upgrade http -> https. A Firecrawl search/scrape/map result can be an http URL, but allowlisted
- * manufacturer sites all serve https and the Brochure schema stores https only (a stored http URL
- * would fail Brochure.parse on load and 500 any campaign that used it). The recipient link is https too.
- */
+/** Upgrade http -> https: the Brochure schema stores https only, and the recipient link is https too. */
 export const toHttps = (url: string): string => url.replace(/^http:\/\//i, 'https://');
 
 export function brochureExpiresAt(fetchedAt: Date): string {
@@ -79,139 +69,125 @@ export function looksLikePdf(d: Downloaded): boolean {
   return magic.startsWith('%PDF') || (d.contentType ?? '').toLowerCase().includes('application/pdf');
 }
 
-/** £ or OTR present, no €: a UK brochure. */
-export function ukContentCheck(text: string): boolean {
-  return (text.includes('£') || /\bOTR\b/.test(text)) && !text.includes('€');
+const usablePdf = (d: Downloaded): boolean => d.bytes.byteLength > 0 && d.bytes.byteLength <= MAX_PDF_BYTES && looksLikePdf(d);
+
+/** Direct download first (free); Firecrawl's proxies only when the origin blocks the Worker. */
+export async function retrievePdf(url: string, deps: Pick<HarvestDeps, 'download' | 'firecrawl'>): Promise<{ pdf?: Downloaded; credits: number }> {
+  const direct = await deps.download(url).catch((): Downloaded => ({ bytes: new ArrayBuffer(0), contentType: null }));
+  if (usablePdf(direct)) return { pdf: direct, credits: 0 };
+  try {
+    const f = await deps.firecrawl.fetchFile(url);
+    const d: Downloaded = { bytes: f.bytes, contentType: f.contentType };
+    return f.ok && usablePdf(d) ? { pdf: d, credits: f.creditsUsed } : { credits: f.creditsUsed };
+  } catch {
+    return { credits: 0 };
+  }
 }
+
+const documentNoun = (t: Brochure['documentType']): string => (t === 'price_spec_guide' ? 'price & spec guide' : 'brochure');
 
 export class FirecrawlBrochureSource implements BrochureSource {
   readonly kind = 'firecrawl' as const;
 
   constructor(private readonly d: HarvestDeps) {}
 
-  async harvest(vehicle: Pick<Vehicle, 'make' | 'model'>): Promise<Brochure> {
-    const cap = this.d.creditCap ?? 15;
-    let credits = 0;
-    const spend = (n: number) => {
-      credits += n;
-    };
-    const budgetLeft = (n: number) => credits + n <= cap;
-    const key = vehicleKey(vehicle);
-    const title = `${vehicle.make} ${vehicle.model} brochure (UK)`;
-    let gatedPage: string | undefined;
-
-    const finishPdf = async (pdfUrl: string, viaPage?: string): Promise<Brochure | undefined> => {
-      let d = await this.d.download(pdfUrl);
-      // A blocked or failed direct download (e.g. a manufacturer CDN 403ing the Worker) yields no bytes.
-      // Firecrawl's proxies fetch the original file; rawBase64 returns it. Only spend a credit then.
-      if (d.bytes.byteLength === 0 && budgetLeft(2)) {
-        try {
-          const f = await this.d.firecrawl.fetchFile(pdfUrl);
-          spend(f.creditsUsed);
-          if (f.ok) d = { bytes: f.bytes, contentType: f.contentType };
-        } catch {
-          /* keep the empty direct result; this PDF is skipped */
-        }
-      }
-      if (!looksLikePdf(d) || d.bytes.byteLength === 0 || d.bytes.byteLength > MAX_PDF_BYTES) return undefined;
-      const file = await this.d.store.putPdf(d.bytes);
-      let by: Brochure['ukVerified']['by'] = 'domain';
-      let note = matchAllowlist(viaPage ?? pdfUrl, this.d.allowlist)?.entry ?? 'allowlisted host';
-      if (budgetLeft(2)) {
-        try {
-          const peek = await this.d.firecrawl.scrape(pdfUrl, { formats: ['markdown'], pdfMaxPages: 2 });
-          spend(peek.creditsUsed);
-          if (peek.markdown && ukContentCheck(peek.markdown)) {
-            by = 'content';
-            note += ', £ pricing on the first pages';
-          }
-        } catch {
-          /* the domain check stands on its own */
-        }
-      }
-      return this.record({ key, title, kind: 'pdf', file, sourceUrl: pdfUrl, by, note });
-    };
-
-    // 1. search
-    const search = await this.d.firecrawl.search(`${vehicle.make} ${vehicle.model} brochure pdf`, { limit: 10 });
-    spend(search.creditsUsed);
-    const allowed = search.results.filter((r) => isAllowlisted(r.url, this.d.allowlist));
-    for (const hit of allowed.filter((r) => isPdfUrl(r.url))) {
-      const b = await finishPdf(hit.url);
-      if (b) return b;
-    }
-
-    // 2. scrape the best allowlisted page for a PDF link
-    const pages = allowed.filter((r) => !isPdfUrl(r.url)).map((r) => r.url);
-    for (const pageUrl of pages.slice(0, 2)) {
-      if (!budgetLeft(1)) break;
-      const found = await this.pdfFromPage(pageUrl, spend);
-      if (found) {
-        const b = await finishPdf(found, pageUrl);
-        if (b) return b;
-      } else {
-        gatedPage ??= pageUrl;
-      }
-    }
-
-    // 3. map the manufacturer's UK site
-    const entry = manufacturerEntry(vehicle.make, this.d.allowlist);
-    if (entry && budgetLeft(1)) {
-      const mapped = await this.d.firecrawl.map(entryUrl(entry), { search: 'brochure', limit: 30 });
-      spend(mapped.creditsUsed);
-      const links = mapped.links.filter((l) => isAllowlisted(l, this.d.allowlist));
-      for (const l of links.filter(isPdfUrl)) {
-        const b = await finishPdf(l);
-        if (b) return b;
-      }
-      const brochurePages = links.filter((l) => !isPdfUrl(l) && /brochure/i.test(l));
-      for (const pageUrl of brochurePages.slice(0, 2)) {
-        if (!budgetLeft(1)) break;
-        const found = await this.pdfFromPage(pageUrl, spend);
-        if (found) {
-          const b = await finishPdf(found, pageUrl);
-          if (b) return b;
-        } else {
-          gatedPage ??= pageUrl;
-        }
-      }
-    }
-
-    // 4. a request-a-brochure page is a result in its own right
-    if (gatedPage) {
-      return this.record({ key, title, kind: 'gated', sourceUrl: gatedPage, by: 'domain', note: matchAllowlist(gatedPage, this.d.allowlist)?.entry ?? 'allowlisted host' });
-    }
-    throw new BrochureNotFoundError('No UK brochure found on an allowlisted manufacturer site.', credits);
-  }
-
-  private async pdfFromPage(pageUrl: string, spend: (n: number) => void): Promise<string | undefined> {
-    try {
-      const page = await this.d.firecrawl.scrape(pageUrl, { formats: ['links'] });
-      spend(page.creditsUsed);
-      return (page.links ?? []).find((l) => isPdfUrl(l) && /^https?:/i.test(l));
-    } catch {
-      return undefined;
-    }
-  }
-
-  private record(r: { key: string; title: string; kind: 'pdf' | 'gated'; file?: NonNullable<Brochure['file']>; sourceUrl: string; by: Brochure['ukVerified']['by']; note: string }): Brochure {
+  async find(vehicle: Pick<Vehicle, 'make' | 'model'>): Promise<BrochureFindOutcome> {
     const now = this.d.now?.() ?? new Date();
+    const r = await findBrochure(vehicle, { firecrawl: this.d.firecrawl, http: this.d.http, now: () => now, ...(this.d.creditCap ? { creditCap: this.d.creditCap } : {}) });
+    let brochure: Brochure | undefined;
+
+    if (r.status === 'verified_pdf' && r.url) {
+      const got = await retrievePdf(r.url, this.d);
+      r.credits += got.credits;
+      if (got.pdf) {
+        r.assetRetrievable = true;
+        const file = await this.d.store.putPdf(got.pdf.bytes);
+        brochure = this.record(vehicle, r, now, { kind: 'pdf', file, sourceUrl: r.url });
+      } else {
+        // the document is real but its storage refuses everyone: point at the page, never around the block
+        const noun = documentNoun(r.documentType === 'price_spec_guide' ? 'price_spec_guide' : 'brochure');
+        Object.assign(r, { status: 'official_page_only', assetUrl: r.url, url: r.fromPage ?? r.url, assetRetrievable: false, reason: `The official ${noun} was verified, but the manufacturer's site would not release the file.` });
+      }
+    } else if (r.status === 'verified_web_brochure' && r.url) {
+      brochure = this.record(vehicle, r, now, { kind: 'web', sourceUrl: r.url });
+    }
+    return { ...(brochure ? { brochure } : {}), search: toSearchRecord(vehicle, r, now, this.d.createdBy) };
+  }
+
+  private record(vehicle: Pick<Vehicle, 'make' | 'model'>, r: FinderResult, now: Date, x: { kind: 'pdf' | 'web'; file?: NonNullable<Brochure['file']>; sourceUrl: string }): Brochure {
+    const documentType = r.documentType === 'price_spec_guide' ? 'price_spec_guide' : 'brochure';
+    const evidence = r.candidates.find((c) => c.status === 'accepted')?.evidence;
+    const note = [r.officialSite, evidence?.['poundPricing'] ? '£ pricing' : undefined, evidence?.['ukWording'] ? 'UK wording' : undefined, r.editionDate ? `edition ${r.editionDate}` : undefined].filter(Boolean).join(', ');
     const b: Brochure = {
       id: this.d.newId?.() ?? crypto.randomUUID(),
-      vehicleKey: r.key,
-      title: r.title,
-      kind: r.kind,
-      sourceUrl: toHttps(r.sourceUrl),
+      vehicleKey: vehicleKey(vehicle),
+      title: `${vehicle.make} ${vehicle.model} ${documentNoun(documentType)} (UK)`,
+      kind: x.kind,
+      sourceUrl: toHttps(x.sourceUrl),
       source: 'harvest',
-      ukVerified: { by: r.by, note: r.note },
+      ukVerified: { by: 'content', ...(note ? { note } : {}) },
+      documentType,
+      finder: { version: FINDER_VERSION, status: r.status, ...(r.flags.length ? { flags: r.flags } : {}) },
       fetchedAt: now.toISOString(),
       expiresAt: brochureExpiresAt(now),
       status: 'current',
       createdBy: this.d.createdBy,
     };
-    if (r.file) b.file = r.file;
+    if (r.editionDate) b.editionDate = r.editionDate;
+    if (x.file) b.file = x.file;
     return b;
   }
+}
+
+export function toSearchRecord(vehicle: Pick<Vehicle, 'make' | 'model'>, r: FinderResult, now: Date, searchedBy: string): BrochureSearch {
+  const s: BrochureSearch = {
+    vehicleKey: vehicleKey(vehicle),
+    vehicle: `${vehicle.make} ${vehicle.model}`,
+    status: r.status,
+    flags: r.flags,
+    queries: r.queries,
+    pagesOpened: r.pagesOpened,
+    candidates: r.candidates,
+    credits: r.credits,
+    durationMs: r.durationMs,
+    finderVersion: FINDER_VERSION,
+    searchedAt: now.toISOString(),
+    searchedBy,
+  };
+  if (r.documentType) s.documentType = r.documentType;
+  if (r.url) s.url = r.url;
+  if (r.assetUrl) s.assetUrl = r.assetUrl;
+  if (r.assetRetrievable !== undefined) s.assetRetrievable = r.assetRetrievable;
+  if (r.reason) s.reason = r.reason;
+  if (r.officialSite) s.officialSite = r.officialSite;
+  return s;
+}
+
+/**
+ * The rep accepts an outcome the finder would not attach by itself: an official page whose document is
+ * protected or is a price page (→ `web`), or a request-a-brochure form (→ `gated`). The URL comes from the
+ * stored search, never from the browser.
+ */
+export function acceptSearchOutcome(search: BrochureSearch, o: { vehicle: Pick<Vehicle, 'make' | 'model'>; createdBy: string; now?: () => Date; newId?: () => string }): Brochure | undefined {
+  if (!search.url || (search.status !== 'official_page_only' && search.status !== 'brochure_request')) return undefined;
+  const now = o.now?.() ?? new Date();
+  const isRequest = search.status === 'brochure_request';
+  const documentType = search.documentType === 'price_spec_guide' ? 'price_spec_guide' : 'brochure';
+  return {
+    id: o.newId?.() ?? crypto.randomUUID(),
+    vehicleKey: vehicleKey(o.vehicle),
+    title: isRequest ? `${o.vehicle.make} ${o.vehicle.model} brochure request (UK)` : `${o.vehicle.make} ${o.vehicle.model} ${documentNoun(documentType)} (UK)`,
+    kind: isRequest ? 'gated' : 'web',
+    sourceUrl: toHttps(search.url),
+    source: 'harvest',
+    ukVerified: { by: 'user', note: `accepted by the rep from a ${search.status} search result` },
+    ...(isRequest ? {} : { documentType }),
+    finder: { version: search.finderVersion, status: search.status, ...(search.flags.length ? { flags: search.flags } : {}) },
+    fetchedAt: now.toISOString(),
+    expiresAt: brochureExpiresAt(now),
+    status: 'current',
+    createdBy: o.createdBy,
+  };
 }
 
 // ---------- manual path (brief §5.8 step 7) ----------
@@ -224,6 +200,8 @@ export interface ManualBrochureInput {
   pdf?: Downloaded;
   createdBy: string;
   download(url: string): Promise<Downloaded>;
+  /** Optional second attempt (Firecrawl rawBase64) when a manufacturer CDN blocks the direct download. */
+  fetchFile?: (url: string) => Promise<Downloaded>;
   store: BrochureStore;
   now?: () => Date;
   newId?: () => string;
@@ -264,7 +242,9 @@ export async function manualBrochure(i: ManualBrochureInput): Promise<Brochure> 
   }
   if (u.protocol !== 'https:') throw new ManualBrochureError('Brochure links must be https.');
   if (isPdfUrl(i.url)) {
-    const d = await i.download(i.url);
+    let d = await i.download(i.url);
+    const fetchFile = i.fetchFile;
+    if ((!looksLikePdf(d) || d.bytes.byteLength === 0) && fetchFile) d = await fetchFile(i.url).catch(() => d);
     if (!looksLikePdf(d) || d.bytes.byteLength === 0) throw new ManualBrochureError('That link did not return a PDF.');
     if (d.bytes.byteLength > MAX_PDF_BYTES) throw new ManualBrochureError('That PDF is over 40 MB.');
     const file = await i.store.putPdf(d.bytes);

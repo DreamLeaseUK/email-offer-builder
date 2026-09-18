@@ -1,0 +1,54 @@
+{
+ "path": "/search",
+ "body": {
+  "query": "site:byd.com Seal brochure",
+  "limit": 5,
+  "country": "GB",
+  "location": "United Kingdom",
+  "sources": [
+   {
+    "type": "web"
+   }
+  ],
+  "ignoreInvalidURLs": true
+ },
+ "response": {
+  "success": true,
+  "data": {
+   "web": [
+    {
+     "url": "https://www.byd.com/material/byd-site/id/brochure/SEAL-BROCHURE.pdf",
+     "title": "[PDF] BROCHURE SEAL - BYD",
+     "description": "| Item | Standard Range Dynamic | Extended Range Premium | AWD Performance |\n|-|-|-|-|\n| Dimensions |  |  |  |\n| Overall Length (mm) |  | 4800 |  |\n| Overall Width (mm) |  | 1875 |  |\n| Overall Height (mm) |  | 1460 |  |\n| Wheelbase (mm) |  | 2920 |  |\n| Minimum Turning Radius (m) |  | 5.7 |  |\n| Front Trunk Capacity (L) |  | 50 |  |\n| Rear Trunk Capacity (L) |  | 400 |  |\n| Drivetrain | Rear Drive | Rear Drive | All-wheel Drive |\n| Maximum Power (kW) | 150 | 230 | 390 |\n| Maximum Torque (N-m) | 310 | 360 | 670 |\n| Performance |  |  |  |\n| Acceleration 0-100km/h (s) | 7.5 | 5.9 | 3.8 |\n| Seating Capacity | 5 |  |  |\n| Battery Capacity (kWh) | 61.44 | 82.56 | 82.56 |\n| Chassis |  |  |  |\n| Rear Suspension | Multi-link |  |  |\n| Frequency Selective Damping (FSD) Shock Absorbers | — | — | Front & Rear |\n| Wheel Type | Alloy | Alloy | Alloy |\n| Tyre Size | 225/50 R18 | 235/45 R19 | 235/45 R19 |\n| V2L Function | ● | ● | ● |\n| Regenerative Braking | ● | ● | ● |\n| Safety and Security |  |  |  |\n| Pretensioner on Rear Seat Belts | ● | ● | ● |",
+     "position": 1
+    },
+    {
+     "url": "https://www.byd.com/uk/electric-cars/seal",
+     "title": "BYD SEAL - Dynamic & Intelligent | Luxury Electric Saloon",
+     "description": "# BYD SEAL\n- Choose your dealer 0",
+     "position": 2
+    },
+    {
+     "url": "https://www.byd.com/eu/electric-cars/seal",
+     "title": "BYD SEAL: Dynamic and Intelligent | BYD Europe",
+     "description": "![](https://www.byd.com/material/byd-site/eu-v3/model/seal2026/pc/herobanner/car-1.webp)\n\n# BYD SEAL\n![](https://www.byd.com/material/byd-site/eu-v3/model/seal2026/pc/exterior-gallery/indigogrey/1.webp)\n\n![](https://www.byd.com/material/byd-site/eu-v3/model/seal2026/pc/exterior-gallery/white/1.webp)\n\n![](https://www.byd.com/material/byd-site/eu-v3/model/seal2026/pc/exterior-gallery/black/1.webp)\n\n![](https://www.byd.com/material/byd-site/eu-v3/model/seal2026/pc/exterior-gallery/red/1.webp)\n\n![](https://www.byd.com/material/byd-site/eu-v3/model/seal2026/pc/exterior-gallery/lavendergrey/1.webp)\n\n![](https://www.byd.com/material/byd-site/eu-v3/model/seal2026/pc/interior/bc-1.webp)\n\n![](https://www.byd.com/material/byd-site/eu-v3/model/seal2026/pc/interior/2.webp)\n\n![](https://www.byd.com/material/byd-site/eu-v3/model/seal2026/pc/interior-detail/1.webp)\n\n![](https://www.byd.com/material/byd-site/eu-v3/model/seal2026/pc/interior-detail/2.webp)\n\n![](https://www.byd.com/material/byd-site/eu-v3/model/seal2026/pc/interior-detail/3.webp)\n\n![](https://www.byd.com/material/byd-site/eu-v3/model/seal2026/pc/tech/bc-1.webp)\n\n## Discover BYD's Technology and Safety\n![](https://www.byd.com/material/byd-site/eu-v3/model/seal2026/pc/tech/1.webp)\n\n![](https://www.byd.com/material/byd-site/eu-v3/model/seal2026/pc/tech/2.webp)\n\n![](https://www.byd.com/material/byd-site/eu-v3/model/seal2026/pc/tech/3.webp)\n\n![](https://www.byd.com/material/byd-site/eu-v3/model/seal2026/pc/tech/4.webp)\n\nBYD Blade Battery\n\n[Learn more](https://www.byd.com/eu/technology/byd-blade-battery)\n\n![](https://www.byd.com/material/byd-site/eu-v3/model/seal2026/pc/tech/5.webp)\n\n![](https://www.byd.com/material/byd-site/eu-v3/model/seal2026/pc/tech/6.webp)\n\n[BROCHURE\\\n![BROCHURE](https://www.byd.com/static_material/byd/overseas/public-icon/subHeader-Specification.svg)](https://www.byd.com/material/byd-site/eu/product/seal/BYD%20SEAL%20V4.pdf)",
+     "position": 3
+    },
+    {
+     "url": "https://www.byd.com/material/byd-site/sg/product/pdf/BYD%20Seal%20Spec%20Sheet-PREVIEW%20.pdf",
+     "title": "[PDF] BYD Seal Spec Sheet-PREVIEW",
+     "description": "The All-New BYD SEAL … provides free map update for 3 years. and standard features from those detailed in this brochure. • Spec Sheet updated as of 14 Sept ...",
+     "position": 4
+    },
+    {
+     "url": "https://www.byd.com/material/byd-site/fr/product/seal-u/SEAL-U-0524-BPS-FR-V5-web.pdf",
+     "title": "[PDF] SEAL U-0524-BPS-FR-V5-web - BYD",
+     "description": "Peinture métallisée. Phares à LED, allumage/extinction automatique. Feux de jour à LED. Éclairage d'accompagnement (fonction d'allumage anticipé et ...",
+     "position": 5
+    }
+   ]
+  },
+  "creditsUsed": 2,
+  "id": "01a0b01a-a89b-76cf-aff0-610097b1e75a"
+ }
+}

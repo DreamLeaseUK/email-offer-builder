@@ -6,11 +6,12 @@
 import { env } from 'cloudflare:test';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { findCapIdLeak } from '@offer-mailer/schema';
-import type { Brochure } from '@offer-mailer/schema';
+import type { Brochure, BrochureSearch } from '@offer-mailer/schema';
 import type { LookupResult } from '@offer-mailer/adapters';
 import pageHtml from '../../../packages/adapters/test/fixtures/offer-page-personal.html?raw';
 import pricingJson from '../../../packages/adapters/test/fixtures/pricing-personal.json?raw';
 import app from '../src/index.js';
+import { recheckLinkedBrochures } from '../src/brochures.js';
 import type { Env } from '../src/env.js';
 import { vehicleImageStore } from '../src/files.js';
 
@@ -153,7 +154,7 @@ describe('brochures', () => {
     expect((await app.request('/api/brochures/ensure', post(vehicle), anon)).status).toBe(503);
   });
 
-  it('refuses to harvest without a Firecrawl key but still returns a stored copy', async () => {
+  it('refuses to search without a Firecrawl key but still returns a stored copy', async () => {
     const before = await app.request('/api/brochures/ensure', post(vehicle), noKey());
     expect(before.status).toBe(503);
     on('https://www.kia.co.uk', '/ev3.pdf', bytes(PDF, 'application/pdf'));
@@ -206,25 +207,81 @@ describe('brochures', () => {
     expect((await app.request('/api/brochures/manual', { method: 'POST', body: bad }, authed())).status).toBe(422);
   });
 
-  it('harvests through Firecrawl with the v2 wire format when a key is set', async () => {
-    on('https://api.firecrawl.dev', '/v2/search', json({ success: true, creditsUsed: 2, data: { web: [{ url: 'https://www.tesla.com/de_de/brochure.pdf' }, { url: 'https://www.tesla.com/en_gb/model3-brochure.pdf', title: 'Model 3' }] } }));
-    on('https://api.firecrawl.dev', '/v2/scrape', json({ success: true, data: { markdown: 'Model 3 from £39,990 OTR' } }));
-    on('https://www.tesla.com', '/en_gb/model3-brochure.pdf', bytes(PDF, 'application/pdf'));
+  it('finds, verifies, retrieves and stores a brochure through Firecrawl (v2 wire format), then serves the stored copy', async () => {
+    const pdfUrl = 'https://www.tesla.com/en_gb/downloads/model-3-brochure-june-2026.pdf';
+    on('https://api.firecrawl.dev', '/v2/search', (body) => {
+      const b = JSON.parse(body ?? '{}') as { categories?: string[] };
+      const web = b.categories ? [{ url: 'https://www.tesla.com/de_de/model-3-brochure.pdf', title: 'Model 3 Broschüre' }, { url: pdfUrl, title: '[PDF] Model 3 brochure' }] : [{ url: 'https://www.tesla.com/en_gb/model3', title: 'Model 3 | Tesla United Kingdom' }];
+      return new Response(JSON.stringify({ success: true, creditsUsed: 2, data: { web } }), { status: 200, headers: { 'content-type': 'application/json' } });
+    });
+    on('https://api.firecrawl.dev', '/v2/scrape', (body) => {
+      const b = JSON.parse(body ?? '{}') as { url: string; parsers?: unknown[] };
+      const markdown = b.parsers ? `Tesla Model 3. ${'Range, performance and equipment. '.repeat(10)} From £39,990 OTR. UK specification. June 2026.` : '# Model 3';
+      return new Response(JSON.stringify({ success: true, data: { markdown, metadata: { statusCode: 200, totalPages: 24, creditsUsed: b.parsers ? 4 : 1 } } }), { status: 200, headers: { 'content-type': 'application/json' } });
+    });
+    on('https://www.tesla.com', '/en_gb/downloads/model-3-brochure-june-2026.pdf', bytes(PDF, 'application/pdf'));
 
-    const res = await app.request('/api/brochures/ensure', post({ make: 'Tesla', model: 'Model 3' }), authed({ FIRECRAWL_API_KEY: 'fc-test' }));
+    const car = { make: 'Tesla', model: 'Model 3' };
+    const res = await app.request('/api/brochures/ensure', post(car), authed({ FIRECRAWL_API_KEY: 'fc-test' }));
     expect(res.status).toBe(200);
-    const r = (await res.json()) as { brochure: Brochure; state: string };
+    const r = (await res.json()) as { brochure: Brochure; state: string; search: BrochureSearch };
     expect(r.state).toBe('fresh');
-    expect(r.brochure.kind).toBe('pdf');
-    expect(r.brochure.sourceUrl).toBe('https://www.tesla.com/en_gb/model3-brochure.pdf');
-    expect(r.brochure.ukVerified).toEqual({ by: 'content', note: 'tesla.com/en_gb, £ pricing on the first pages' });
+    expect(r.brochure).toMatchObject({ kind: 'pdf', documentType: 'brochure', sourceUrl: pdfUrl, editionDate: '2026-06-01', finder: { status: 'verified_pdf' }, ukVerified: { by: 'content' } });
+    expect(r.search).toMatchObject({ status: 'verified_pdf', officialSite: 'tesla.com', assetRetrievable: true });
+    expect(r.search.candidates.find((c) => c.url.includes('de_de'))?.reasons.join()).toMatch(/another market/);
     expect(findCapIdLeak(r)).toBeNull();
 
-    const search = calls.find((c) => c.url.endsWith('/v2/search'));
-    expect(JSON.parse(search?.body ?? '{}')).toMatchObject({ query: 'Tesla Model 3 brochure pdf', country: 'GB', limit: 10 });
-    const scrape = calls.find((c) => c.url.endsWith('/v2/scrape'));
-    expect(JSON.parse(scrape?.body ?? '{}')).toMatchObject({ url: 'https://www.tesla.com/en_gb/model3-brochure.pdf', formats: ['markdown'], parsers: [{ type: 'pdf', maxPages: 2 }] });
-    expect(calls.some((c) => c.url.includes('de_de'))).toBe(false);
+    const searches = calls.filter((c) => c.url.endsWith('/v2/search')).map((c) => JSON.parse(c.body ?? '{}') as { query: string; categories?: string[] });
+    expect(searches[0]).toMatchObject({ query: '"Tesla Model 3" UK official brochure PDF', country: 'GB', limit: 10 });
+    expect(searches.some((q) => q.categories?.[0] === 'pdf')).toBe(true);
+    const parse = calls.filter((c) => c.url.endsWith('/v2/scrape')).map((c) => JSON.parse(c.body ?? '{}') as { url: string; parsers?: unknown[] }).find((q) => q.parsers);
+    expect(parse).toMatchObject({ url: pdfUrl, formats: ['markdown'], parsers: [{ type: 'pdf', maxPages: 4 }] });
+
+    const before = calls.length;
+    const again = (await (await app.request('/api/brochures/ensure', post(car), authed({ FIRECRAWL_API_KEY: 'fc-test' }))).json()) as { state: string };
+    expect(again.state).toBe('stored');
+    expect(calls.length).toBe(before); // a stored copy costs nothing
+  });
+
+  it('remembers "nothing found" with what was checked, and never treats a failed search as a negative', async () => {
+    const car = { make: 'Denza', model: 'Z9 GT' };
+    on('https://api.firecrawl.dev', '/v2/search', json({ success: true, creditsUsed: 2, data: { web: [{ url: 'https://autocatalogarchive.com/Denza-Z9GT-2026.pdf', title: '[PDF] DENZA Z9GT' }] } }));
+    const first = (await (await app.request('/api/brochures/ensure', post(car), authed({ FIRECRAWL_API_KEY: 'fc-test' }))).json()) as { state: string; search: BrochureSearch; remembered?: boolean };
+    expect(first).toMatchObject({ state: 'none', search: { status: 'not_verified' } });
+    expect(first.search.candidates[0]?.reasons.join()).toMatch(/aggregator/);
+    const before = calls.length;
+    const second = (await (await app.request('/api/brochures/ensure', post(car), authed({ FIRECRAWL_API_KEY: 'fc-test' }))).json()) as { state: string; remembered?: boolean };
+    expect(second).toMatchObject({ state: 'none', remembered: true });
+    expect(calls.length).toBe(before);
+    await app.request('/api/brochures/ensure', post({ ...car, force: true }), authed({ FIRECRAWL_API_KEY: 'fc-test' }));
+    expect(calls.length).toBeGreaterThan(before);
+
+    routes.length = 0; // Firecrawl now unreachable (599)
+    const failed = (await (await app.request('/api/brochures/ensure', post({ make: 'Lotus', model: 'Eletre' }), authed({ FIRECRAWL_API_KEY: 'fc-test' }))).json()) as { state: string; search: BrochureSearch };
+    expect(failed).toMatchObject({ state: 'none', search: { status: 'search_failed' } });
+    expect(await env.DB.prepare('select count(*) as n from brochure_searches where vehicle_key = ?').bind('lotus/eletre').first<{ n: number }>()).toEqual({ n: 0 });
+  });
+
+  it('lets the rep accept an official page from the stored search, and drops a linked brochure once its page is gone', async () => {
+    const car = { make: 'Leapmotor', model: 'C10' };
+    const search: BrochureSearch = { vehicleKey: 'leapmotor/c10', vehicle: 'Leapmotor C10', status: 'official_page_only', documentType: 'price_spec_guide', url: 'https://www.leapmotor.net/uk/price-guides', assetRetrievable: false, flags: [], queries: ['q'], pagesOpened: [], candidates: [], credits: 7, durationMs: 800, finderVersion: 'finder-1.0', searchedAt: new Date().toISOString(), searchedBy: USER };
+    await env.DB.prepare('insert into brochure_searches (vehicle_key, status, searched_at, data) values (?, ?, ?, ?)').bind(search.vehicleKey, search.status, search.searchedAt, JSON.stringify(search)).run();
+
+    const accepted = (await (await app.request('/api/brochures/accept', post(car), authed())).json()) as { brochure: Brochure };
+    expect(accepted.brochure).toMatchObject({ kind: 'web', documentType: 'price_spec_guide', sourceUrl: 'https://www.leapmotor.net/uk/price-guides', ukVerified: { by: 'user' } });
+    const link = await app.request(`/b/${accepted.brochure.id}`, {}, env);
+    expect(link.status).toBe(302);
+    expect(link.headers.get('location')).toBe('https://www.leapmotor.net/uk/price-guides');
+    expect((await app.request('/api/brochures/accept', post({ make: 'Nobody', model: 'Nothing' }), authed())).status).toBe(404);
+
+    const alive = await recheckLinkedBrochures(env as Env, async () => ({ status: 200, contentType: 'text/html', finalUrl: '', text: async () => '' }));
+    expect(alive.superseded).toBe(0);
+    const flaky = await recheckLinkedBrochures(env as Env, async () => undefined);
+    expect(flaky.superseded).toBe(0); // a transient failure changes nothing
+    const gone = await recheckLinkedBrochures(env as Env, async (u) => ({ status: u.includes('leapmotor') ? 404 : 200, contentType: 'text/html', finalUrl: u, text: async () => '' }));
+    expect(gone.superseded).toBe(1);
+    expect((await app.request('/api/brochures/current?make=Leapmotor&model=C10', {}, authed())).status).toBe(404);
+    expect((await app.request(`/b/${accepted.brochure.id}`, {}, env)).status).toBe(302); // a sent campaign's link still resolves
   });
 });
 

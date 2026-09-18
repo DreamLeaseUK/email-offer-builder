@@ -1,0 +1,82 @@
+{
+ "path": "/search",
+ "body": {
+  "query": "Kia EV2 brochure",
+  "limit": 8,
+  "country": "GB",
+  "location": "United Kingdom",
+  "sources": [
+   {
+    "type": "web"
+   }
+  ],
+  "ignoreInvalidURLs": true,
+  "categories": [
+   "pdf"
+  ]
+ },
+ "response": {
+  "success": true,
+  "data": {
+   "web": [
+    {
+     "url": "https://www.kia.com/content/dam/kwcms/kme/uk/en/assets/vehicles/ev2/ev2-specifications.pdf",
+     "title": "[PDF] The Kia EV2 - Specifications",
+     "description": "## Specification\n| Exterior Features&Lighting | 'Air' | 'First Edition' | 'GT-Line' | 'GT-Line S' |\n|-|-|-|-|-|\n| LED Headlights with Adaptive Driving Beam | - | √ | √ | √ |\n| LED High Mounted Brake Lights | √ | √ | √ | √ |\n| LED Rear Lights | √ | √ | √ | √ |\n| Open full table in browser： [[https://digital-brochures.kia.com/story/the-kia-ev2-specifications/page/2/1](https://digital-brochures.kia.com/story/the-kia-ev2-specifications/page/2/1)](https://digital-brochures.kia.com/story/the-kia-ev2-specifications/page/2/1) |  |  |  |  |\n\n| Exterior Features & Lighting | 'Air' | 'First Edition' | 'GT-Line' | 'GT-Line S' |\n|-|-|-|-|-|\n| Flush Door Handles | √ | - | - | - |\n| Automatic Flush Door Handles | - | √ | √ | √ |\n| Body Coloured Bumpers | √ | √ | √ | √ |\n| Black Wheel Arches | √ | √ | √ | √ |\n| Open full table in browser： [[https://digital-brochures.kia.com/story/the-kia-ev2-specifications/page/2/2](https://digital-brochures.kia.com/story/the-kia-ev2-specifications/page/2/2)](https://digital-brochures.kia.com/story/the-kia-ev2-specifications/page/2/2) |  |  |  |  |\n| Rear Wiper | √ | √ | √ | √ |\n| Rear Spoiler | √ |  | √ | √ |\n| Front Sunroof with Tilting & Sliding Function | - | - | - | √ |\n\n[[https://digital-brochures.kia.com/story/the-kia-ev2-specifications/page/2/5](https://digital-brochures.kia.com/story/the-kia-ev2-specifications/page/2/5)](https://digital-brochures.kia.com/story/the-kia-ev2-specifications/page/2/5)\n\n[[https://digital-brochures.kia.com/story/the-kia-ev2-specifications/page/2/11](https://digital-brochures.kia.com/story/the-kia-ev2-specifications/page/2/11)](https://digital-brochures.kia.com/story/the-kia-ev2-specifications/page/2/11) ✓ ✓\n\n[[https://digital-brochures.kia.com/story/the-kia-ev2-specifications/page/2/14](https://digital-brochures.kia.com/story/the-kia-ev2-specifications/page/2/14)](https://digital-brochures.kia.com/story/the-kia-ev2-specifications/page/2/14)",
+     "position": 1,
+     "category": "pdf"
+    },
+    {
+     "url": "https://www.kia.com/content/dam/kwcms/kme/uk/en/assets/static/utility/brochure/ev2-brochure.pdf",
+     "title": "[PDF] The Kia EV2",
+     "description": "With SCC 2.0 technology, the EV2 adjusts speed to traffic and road conditions, including reducing speed on curves to keep everyone secure.",
+     "position": 2,
+     "category": "pdf"
+    },
+    {
+     "url": "https://www.kia.com/content/dam/kwcms/kme/hu/hu/assets/contents/utility/Brochure/price-list/kia-ev2-arlista.pdf",
+     "title": "[PDF] 1 Árlista - Új EV2 - Kia",
+     "description": "Új EV2 Érvényes: 2026. Kia EV2 elektromosenergia-fogyasztás (vegyes): 15,1-16,3 kWh/100 km. Kia EV2 CO2-kibocsátás (vegyes): 0 g/km.",
+     "position": 3,
+     "category": "pdf"
+    },
+    {
+     "url": "https://mma.prnewswire.com/media/2858055/Press_Release__Kia_Unveils_EV2_at_Brussels_Motor_Show.pdf",
+     "title": "[PDF] Kia Unveils EV2 at Brussels Motor Show - Prnewswire.com",
+     "description": "# NEWS\n| The Kia EV2 |  |  |  |  |\n|-|-|-|-|-|\n| Variant |  |  | Standard-range Long-range |  |\n| Dimension(mm) |  | Length | 4,060 |  |\n| Dimension(mm) |  | Width | 1,800 |  |\n| Dimension(mm) |  | Height | 1,575 |  |\n| Dimension(mm) |  | Wheelbase | 2,565 |  |\n| Battery (kWh) |  |  | 42.2 | 61.0 |\n| Charging(H:min) | DC fast charging(10-80%) |  | 0:29 | 0:30 |\n| Charging(H:min) | AC charging(11 kW / 22 kW) |  | 4:05 / 2:35 | 5:35 / 3:00 |\n| Tires |  |  | 205/65 R16215/50 R18225/45 R19 (GT-Line) |  |\n| Cargo space (L, VDA) |  |  | 362 (5-seater)403 (4-seater w/ sliding and reclining seats) |  |\n| Convenience features |  |  | Digital Key 2.0, Remote Smart Parking Assist (RSPA Entry),LED MFR Headlamps, Harman/Kardon Premium Audio,Vehicle-To-Load (V2L), Vehicle-to-Grid (V2G), OTA updates,Kia Upgrades |  |\n| ADAS |  |  | Forward Collision-Avoidance Assist 2 (FCA 2), Blind-SpotCollision-Avoidance Assist – R/P (BCA), Lane Keeping Assist(LKA), Lane Following Assist 2 (LFA 2), Smart Cruise Control2 (SCC2), Intelligent Speed Limit Assist (ISLA), HighwayDriving Assist 2 (HDA2), Rear Cross-Traffic Collision-Avoidance Assist (RCCA), Parking Collision-AvoidanceAssist (PCA-R), Safety Exit Warning (SEW), ParkingDistance Warning (PDW – Front, Rear, and Side), SurroundView Monitor (SVM), Rear View Monitor (RVM), Blind-spotView Monitor (BVM), Driver Attention Warning (DAW) |  |",
+     "position": 4,
+     "category": "pdf"
+    },
+    {
+     "url": "https://www.carzone.ie/newcars/index.cfm?fuseaction=pdf&passedcat=intro&vehicle_id=852458420260401&strSpecs=CartellSSCIRL2002",
+     "title": "[PDF] Kia EV2 Sports Utility Vehicle BEV 42KWH 144PS SR EARTH AUTO",
+     "description": "1 Apr 2026 · Fuel Type Electric Performance Wheel drive Front Engine size cc Engine power 147 bhp Top speed 161 km/h Acceleration (0-100 km/h) 8.7 seconds … ...",
+     "position": 5
+    },
+    {
+     "url": "https://cdn.kia.com.co/26_06_Ficha_Tecnica_New_EV_2_QV_v_2_0_384f4cd422.pdf",
+     "title": "[PDF] Ficha tecnica EV2 vr0.4 01 Jul - Kia",
+     "description": "Integra información y entretenimiento en una experiencia visual intuitiva, creando un espacio más tecnológico. Luces LED. Un gesto inesperado. Pantalla de 30''.",
+     "position": 6,
+     "category": "pdf"
+    },
+    {
+     "url": "https://www.ngkpartfinder.co.uk/assets/Uploads/ngk_spark_plug_diesel_glow_plug-2017_3_.pdf",
+     "title": "[PDF] CATALOGUE - NGK Partfinder",
+     "description": "This catalogue is intended for vehicles/engines officially imported or manufactured in the UK and supersedes all previous versions, which should be disposed ...",
+     "position": 7,
+     "category": "pdf"
+    },
+    {
+     "url": "https://mitskills.com/wp-content/uploads/2024/07/MIT-Prospectus-v1.2.pdf",
+     "title": "[PDF] MIT Prospectus - MITSkills",
+     "description": "A blended learning Level 2/3 EV / Hybrid course that consists of knowledge and practical learning and assessments. It contains two mandatory units EV2.2 and EV ...",
+     "position": 8,
+     "category": "pdf"
+    }
+   ]
+  },
+  "creditsUsed": 2,
+  "id": "01a0b017-9994-738a-8a3f-ba0b1c0379c7"
+ }
+}

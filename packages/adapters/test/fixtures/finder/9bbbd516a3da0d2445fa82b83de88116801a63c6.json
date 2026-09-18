@@ -1,0 +1,81 @@
+{
+ "path": "/search",
+ "body": {
+  "query": "Denza Z9 GT brochure",
+  "limit": 8,
+  "country": "GB",
+  "location": "United Kingdom",
+  "sources": [
+   {
+    "type": "web"
+   }
+  ],
+  "ignoreInvalidURLs": true,
+  "categories": [
+   "pdf"
+  ]
+ },
+ "response": {
+  "success": true,
+  "data": {
+   "web": [
+    {
+     "url": "https://autocatalogarchive.com/wp-content/uploads/2026/07/Denza-Z9GT-2026-MY.pdf",
+     "title": "[PDF] DENZA Z9GT - Digital Brochure - Auto Catalog Archive",
+     "description": "# Most Advanced Luxury Grand Tourer\n## DENZA Z9GT AWD EV Specifications\n| Dimensions |  |\n|-|-|\n| Overall length (mm) | 5,180 |\n| Overall width (mm) | 1,990 |\n| Overall height (mm) | 1,490 |\n| Wheelbase (mm) | 3,125 |\n| Trunk volume (L) | 495 |\n| Front trunk (L) | 53 |\n| Seating capacity | 5 |\n| Driving system |  |\n| Driving mode | Pure electric all wheel drive |\n| e³-motor electrified platform | ● |\n| Motor type | Front : AC asynchronous motorRear : Permanent magnet synchronous motor |\n| Maximum power (kW) | Front : 230 kWRear : 620 kW (310 kW x 2)Total System Output: 850 kW |\n| Maximum torque (N.m) | Front : 410 N.mRear : 800 N.m (400 Nm x 2)Total System Output: 1,210 Nm |\n| Performance |  |\n| Acceleration 0-100km/h (s) | 2.7 |\n| Driving range: NEDC (km) | 701 |\n| Radius of turing circle min. (m) | 4.62 |\n| Top Speed (km/h) | 240 |\n| Battery and charging |  |\n| Battery type | BYD 2nd Gen Blade Battery |\n| Battery capacity (kWh) | 122.49 |\n| DC charging: BYD Flash Charging - � 5 mins from 10-70% SoC; 9 mins from 10-97% SoC | ● |\n| AC charging: 11kW | ● |\n| AC portable charging connection device | ● |\n| V2L function (4kW) | ● |\n| Suspension |  |\n| Front Suspension | Double wishbone with dual chamber air suspension (DISUS·A) |\n| Rear Suspension | Multi-Link (5) with dual chamber air suspension (DISUS·A) |\n| Brakes |  |\n| Front | Cross-Drilled Brake Discs |\n| Rear | Cross-Drilled Brake Discs |\n| Tyres |  |\n| Multi-spoke aluminium alloy wheels | ● |\n| Tyre size | 255/45 R20 |\n| Driving functions |  |\n| Driving mode (spart, normal, eco, customize, racing, snow) | ● |\n| Rear Axle Steering | Up to 15° |\n| e'driving functions (Drift Mode, Crab Walk, Compass Turn, Ultimate Steering System) | ● |\n| Exterior |  |\n| Panoramic glass sunroof with electric sliding sunshades | ● |\n| Active air-wents | ● |\n| Intelligent electric powered doors, with soft-close functions | ● |\n| Frameless windows | ● |\n| Electric rear tailgate spoiler | ● |\n| Electric open / close charging port cover | ● |\n| Front luggage compartment (53 L) | ● |\n| Electric open / close tailgate, with remote and AR projection operation function | ● |\n| Electricly adjustable, retractable and heated exterior mirrors | ● |\n| Interior |  |\n| Leather wrapped steering wheel | ● |\n| Electrically-powered steering wheel adjustment, with memory | ● |\n| 13.2\" digital drivers' instrument panel | ● |\n| Genuine leather seats | ● |\n| Natural wood vanear for dashboard and door panels | ● |\n| Knitted fleece headliner | ● |\n| Front row dual 50W wireless chargers | ● |\n| Rear row single 50W wireless charger | ● |\n| 12 V charging socket | ● |\n\n| Comfort & convenience Bluetooth key | � |\n|-|-|\n| NFC key | � |\n| UWB key | � |\n| Keyless entry & Keyless start | � |\n| Electric Parking Brake System (EPB) | � |\n|  | � |\n| Portable card key | � |\n| Augmented Reality Heads-up Display (AR-HUD) Seats |  |\n|  |  |\n| Driver seat: with 10-way power adjustments, 4-way power lumbar adjustments and memory functions | � |\n| Driver seat: with ventilation, heated, massage (5 modes) functions | � |\n| Driver seat: with Dynamic Side Bolster active adjustment | � |\n| Driver seat: with 2-way power thigh support | � |\n| Front passenger seat:with 10-way power adjustments, | � |\n| 4-way power lumbar adjustments and memory functions |  |\n| Front passenger seat: with ventilation, heated, massage (5 modes) functions | � |\n| Front passenger seat: with 2-way power thigh support | � |\n| Rear passengers seat with 2-way power adjustment (reclining) | � |\n| Rear passengers seat: with ventilation, heated and massage functions | � |\n| \"Boss button\" front passenger seat control | � |\n| ISOFIX and LATCH child restraint anchorage points (outer rear seats) | � |\n| Safety and Security |  |\n| Airbags - total 9 Front airbags - driver & front passenger |  |\n| Side airbags - driver & front passenger Side airbags - rear passengers | � |\n| Side curtain airbags - left and right sides |  |\n| Front centre airbag - between driver and front passenger |  |\n| Seat belt reminder - front & rear |  |\n| 360° View Parking Monitor | � |\n| Active Tyre Pressure Monitoring System (TPMS) | � |\n| Front: 6 parking sensors / radars | � |\n| Rear: 6 parking sensors / radars | � |\n| Electric Parking Brake System (EPB) | � |\n| Anti-Lock Braking System (ABS) | � |\n| Electronic Stability Control (ESC) | � |\n| Traction Control System (TCS) | � |\n| Electronic Brake Force Distribution (EBD) | � |\n| Driver fatigue monitor | � |\n| Hill Descent Control (HDC) | � |\n| 17.3\" 2.5K high-res centre touch screen |  |\n| 13.2\" 2.5K high-res drivers instrument panel | � |\n| 13.2\" 2.5K high-res front passenger screen | � |\n| DiLink Ecosystem Car mounted WIFI hotspot | � |\n| Four zone voice interaction system | � |\n|  | � |\n| OTA remote upgrade capable | � |\n| Mobile phone cloud computing service | � |\n| 4G network connection | � |\n| Wireless Carplay and wireless Android Auto | � |\n| Google Apps Script (GAS) - Google Map, Voice assistance, Playstore etc | � |\n| Karaoke system, with UHF microphone | � |\n| Devialet® 20 speaker premium sound system | � |\n| BYD voice assistant | � |\n| USB - C port ×1 + USB - A port ×1, Centre console | � |\n| USB - C port ×2 , Rear | � |\n| Lights |  |\n| LED Matrix* headlights, with automatic activation, follow-me-home functions | � |\n| Adaptive Front Light (AFL) | � |\n| Dynamic welcome lights for headlights | � |\n| LED daytime running lights | � |\n| LED rear combination lights | � |\n| Front and rear dynamic turn signals | � |\n| LED high-mounted brake light | � |\n| Foot illuminating lamps for the front seats |  |\n|  | � |\n| Luggage compartment, glovebox and cubby lighting | � |\n|  |  |\n| Front and rear reading lights (LED) | � |\n\n| Windows and mirrors |  |\n|-|-|\n| Rain sensing intelligent wipers, with integrated washer spray | ● |\n| Privacy glass for rear doors and rear windscreen | ● |\n| Front windshield with silver-coated heat insulation and double-layer sound insulation | ● |\n| Electric heating defogging and defrosting for rear windshield | ● |\n| Double-layer sound insulation on all four side windows | ● |\n| One-touch up and down for four windows with anti-pinch function | ● |\n| Electric adjustment for exterior rearview mirrors | ● |\n| Automatic anti-glare for external rearview mirrors | ● |\n| Heating defrosting for rearview mirrors | ● |\n| Automatic lower when reversing for rearview mirrors (curb view, both sides) | ● |\n| Electric folding for rearview mirrors | ● |\n| Automatic folding for rearview mirrors when locking | ● |\n| Exterior rearview mirror position memory | ● |\n| Outside rearview mirror foot lights | ● |\n| Digital interior rear view mirrors with automatic anti dazzling function | ● |\n| Climate Control |  |\n| Automatic air-conditioning | ● |\n| AC ion purification system + CN95 Filter and negative ion generator | ● |\n| 6-inch LCD screen for rear climate control functions | ● |\n| Four-temperature zone control | ● |\n| Second row side air vent | ● |\n| Onboard refrigerator / heater(from-6℃ to 50℃) | ● |\n| Intellingent Driving Assistance System |  |\n| Lidar based Advanced Driver Assistance Systems(ADAS) | ● |\n| Adaptive Cruise Control, ACC | ● |\n| Intelligent Cruise Control, ICC | ● |\n| Forward Collision Warning, FWC | ● |\n| Automatic Emergency Braking,AEB | ● |\n| Front Cross Traffic Alert/Brake,FCTA/B | ● |\n| Blind Spot Detection,BSD | ● |\n| Door Open Warning,DOW | ● |\n| Rear Collision Warning,RWC | ● |\n| Rear Cross Traffic Alert/Brake,RCTA/B | ● |\n| Lane Departure Assist,LDA | ● |\n| Emergency Lane Keeping Assist,ELKA | ● |\n| Curve Speed Warning,CSW | ● |\n| Automated Parking Assist,APA | ● |\n| Intelligent Speed Limit Control**,ISLC | ● |\n| Intelligent Lane Change Assist**,ILCA | ● |\n| Traffic Light Attention/Control**TLA/C | ● |\n| Anti-Misappropriation for Accelerator Pedal**,AMAP | ● |\n| e² Automated Parking Assist**,E3APA | ● |\n| Remote Parking Assist**,RPA | ● |\n| Highway Navigation Assist**,HNOA | ● |",
+     "position": 1,
+     "category": "pdf"
+    },
+    {
+     "url": "https://www.autointernational.com.my/WebNews/News/Year%202026/July%2026/DENZA%20Z9GT,%20marking%20its%20Asia%20Pacific%20debut%20-%2014%20July%2026/DENZA%20Z9GT%20-%20Spec%20Sheet%20+%20Price%20List.pdf",
+     "title": "[PDF] DENZA Z9GT - Auto International",
+     "description": "15 Jul 2026 · Price List DENZA Z9GT AWD. Peninsular Malaysia. Updated 15th July ... brochure. e 3-motor electrified platform. 3. ○. Total System Output ...",
+     "position": 2,
+     "category": "pdf"
+    },
+    {
+     "url": "https://www.officialdenzajakarta.com/wp-content/uploads/2025/05/Denza-Brochure.pdf",
+     "title": "[PDF] Denza-Brochure.pdf",
+     "description": "This all-electric seven-seater MPV combines a powerful eight-in-one motor and a Blade Battery for an extraordinary driving experience while keeping safety at ...",
+     "position": 3,
+     "category": "pdf"
+    },
+    {
+     "url": "https://chinaimportcars.ru/catalog/view/theme/chinaimportcars/assets/pdf/Denza%20Z9%20GT%20PHEV.pdf",
+     "title": "[PDF] Denza Z9 GT PHEV",
+     "description": "Полноэкранный интеллектуальный голос. (управление несколькими автомобилями, быстрые команды, помощники по маршруту, запросы отелей, автомобильная.",
+     "position": 4,
+     "category": "pdf"
+    },
+    {
+     "url": "https://denza.sg/wp-content/uploads/2024/10/DENZA-Catalogue.pdf",
+     "title": "[PDF] DEFINITIVE DECADENCE - DENZA SG",
+     "description": "7 Oct 2024 · Available in both front-wheel-drive and all-wheel-drive configurations, DENZA D9 offers impressive electric driving ranges up to 520km. With ...",
+     "position": 5,
+     "category": "pdf"
+    },
+    {
+     "url": "https://fixauto.com/uk/wp-content/uploads/2026/08/INFOFIX_Sept-2026-online.pdf",
+     "title": "[PDF] INFOFIX | Fix Auto UK",
+     "description": "2 Sept 2026 · The Z9 GT launches with a fully electric powertrain, which is priced from £105,000 − the EV uses a three-motor layout (one at the front and two ...",
+     "position": 6,
+     "category": "pdf"
+    },
+    {
+     "url": "https://gov.ky/documents/35692/621965/Gazette_05-03_MAR_2025.pdf/3482b152-1797-4323-c21e-aa9645973072?t=1761444989078",
+     "title": "[PDF] CAYMAN ISLANDS GAZETTE",
+     "description": "3 Mar 2025 · DENZA Z9. Class List: • 12 for Automobiles; Motor cars; Cars; Motor coaches; Trucks; Lorries; Motor buses; Forklift trucks;. Automobile bodies ...",
+     "position": 7
+    },
+    {
+     "url": "https://www.jstor.org/stable/4104332",
+     "title": "The Chicago Pygmalion and the \"English Metamorphoses\" - jstor",
+     "description": "From among the tapestries with stories from Ovid, he grouped together in one volume of his catalogue all those found in. England with narrow borders and low in ...",
+     "position": 8
+    }
+   ]
+  },
+  "creditsUsed": 2,
+  "id": "01a0b017-cecc-771b-8084-e1e192919c3a"
+ }
+}

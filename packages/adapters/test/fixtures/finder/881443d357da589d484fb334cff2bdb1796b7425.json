@@ -1,0 +1,84 @@
+{
+ "path": "/search",
+ "body": {
+  "query": "\"BYD Seal\" UK official brochure PDF",
+  "limit": 10,
+  "country": "GB",
+  "location": "United Kingdom",
+  "sources": [
+   {
+    "type": "web"
+   }
+  ],
+  "ignoreInvalidURLs": true
+ },
+ "response": {
+  "success": true,
+  "data": {
+   "web": [
+    {
+     "url": "https://www.byd.com/uk/electric-cars/seal",
+     "title": "BYD SEAL - Dynamic & Intelligent | Luxury Electric Saloon",
+     "description": "BYD SEAL is equipped with the all-new BYD e-Platform 3.0 designed exclusively for pure electric vehicles. Giving full play to the advantages of intelligence, ...",
+     "position": 1
+    },
+    {
+     "url": "https://www.byd.com/uk/hybrid-cars/seal-u-dm-i",
+     "title": "BYD SEAL U DM-i: An All-New Plug-In Hybrid SUV",
+     "description": "Discover the all-new BYD SEAL U DM-I, a powerful plug-in hybrid SUV combining a 1.5-litre engine with an electric motor. Find out more today.",
+     "position": 2
+    },
+    {
+     "url": "https://www.byd.com/uk",
+     "title": "BYD UK: BYD Official Site | Electric Vehicles",
+     "description": "BYD SEAL. The Dynamic & Intelligent Luxury Electric Saloon. BYD SEAL. The Dynamic & Intelligent Luxury Electric Saloon. LEARN MORECONFIGURATOR.",
+     "position": 3
+    },
+    {
+     "url": "https://www.byd.com/material/byd-site/id/brochure/SEAL-BROCHURE.pdf",
+     "title": "[PDF] BROCHURE SEAL - BYD",
+     "description": "| Item | Standard Range Dynamic | Extended Range Premium | AWD Performance |\n|-|-|-|-|\n| Dimensions |  |  |  |\n| Overall Length (mm) |  | 4800 |  |\n| Overall Width (mm) |  | 1875 |  |\n| Overall Height (mm) |  | 1460 |  |\n| Minimum Turning Radius (m) |  | 5.7 |  |\n| Front Trunk Capacity (L) |  | 50 |  |\n| Rear Trunk Capacity (L) |  | 400 |  |\n| Drivetrain | Rear Drive | Rear Drive | All-wheel Drive |\n| Maximum Power (kW) | 150 | 230 | 390 |\n| Maximum Torque (N-m) | 310 | 360 | 670 |\n| Seating Capacity | 5 |  |  |\n| Front Suspension | Double Wishbone |  |  |\n| Rear Suspension | Multi-link |  |  |\n| Rear Disc Brake | Ventilated | Ventilated | Ventilated |\n| Wheel Type | Alloy | Alloy | Alloy |\n| Tyre Size | 225/50 R18 | 235/45 R19 | 235/45 R19 |\n| Portable Charging Cable (mode 2) | ● | ● | ● |\n| Regenerative Braking | ● | ● | ● |\n| Safety and Security |  |  |  |\n| Side Airbags - Rear | ● | ● | ● |\n| Dual Stage Pretensioner on Front Seat Belts | ● | ● | ● |\n| Pretensioner on Rear Seat Belts | ● | ● | ● |\n| Seat Belt Reminder - Front & Rear | ● | ● | ● |\n| 360° Camera | ● | ● | ● |",
+     "position": 4
+    },
+    {
+     "url": "https://irp.cdn-website.com/89cc7168/files/uploaded/2026+Brochure+SEAL.pdf",
+     "title": "[PDF] 2026 Brochure SEAL",
+     "description": "THE NEW BYD SEAL. SPECIFICATIONS. Sunglass Holder. Ventilated & Drilled. Fixed. 149. 53. 145. Ventilated & Drilled. Fixed (Red Colour) [NEW]. 19” Alloy Rim with ...",
+     "position": 5
+    },
+    {
+     "url": "https://www.byd.com/uk/service-maintenance/owners-manual",
+     "title": "BYD Owner Manuals | BYD UK",
+     "description": "BYD SEAL. The Dynamic & Intelligent Luxury Electric Saloon.",
+     "position": 6
+    },
+    {
+     "url": "https://www.bydauto.ie/assets/1/product-guides/my26/my26_seal.pdf",
+     "title": "[PDF] BYD SEAL Specification",
+     "description": "BYD SEAL New Orders (MY26). *Pricing applicable to new order models only. . Does not include dealer delivery costs or related charges. *MY26 models may differ ...",
+     "position": 7
+    },
+    {
+     "url": "https://www.scribd.com/document/737263395/BYD-Seal-E-Brochure",
+     "title": "BYD Seal Performance Overview | PDF | Airbag | Seat Belt - Scribd",
+     "description": "BYD Seal E Brochure - Free download as PDF File (.pdf), Text File (.txt) or read online for free.",
+     "position": 8
+    },
+    {
+     "url": "https://www.bydgalway.ie/assets/1/product-guides/dealers/my25/my25_seal.pdf",
+     "title": "[PDF] Product Guide - March 2025 - BYD Galway",
+     "description": "The BYD SEAL is the second vehicle in. BYD's Ocean series, designed according to the 'Ocean Aesthetics' design language. It combines a sleek and athletic ...",
+     "position": 9
+    },
+    {
+     "url": "https://www.byd.com/uk/hybrid-cars/seal-6-dm-i",
+     "title": "BYD SEAL 6 DM-i | Plug-in Hybrid Car",
+     "description": "The BYD SEAL 6 DM-i features advanced Super Hybrid with DM (Dual Mode plug-in hybrid) technology, offering a complete electric driving experience with the ...",
+     "position": 10
+    }
+   ]
+  },
+  "creditsUsed": 2,
+  "id": "01a0b01a-a4f1-707e-bd68-e4b1ed80b24f"
+ }
+}

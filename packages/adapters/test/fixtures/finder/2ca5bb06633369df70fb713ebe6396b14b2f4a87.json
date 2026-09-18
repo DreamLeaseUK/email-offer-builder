@@ -1,0 +1,84 @@
+{
+ "path": "/search",
+ "body": {
+  "query": "\"Volvo EX30\" UK official brochure PDF",
+  "limit": 10,
+  "country": "GB",
+  "location": "United Kingdom",
+  "sources": [
+   {
+    "type": "web"
+   }
+  ],
+  "ignoreInvalidURLs": true
+ },
+ "response": {
+  "success": true,
+  "data": {
+   "web": [
+    {
+     "url": "https://www.volvocars.com/uk/cars/ex30-electric/specifications/",
+     "title": "Volvo EX30 Fully Electric SUV | Specifications | Volvo Cars UK",
+     "description": "Explore the fully electric Volvo EX30 electric SUV specifications for information on capacity, range, and charging options. Learn more.",
+     "position": 1
+    },
+    {
+     "url": "https://www.volvocars.com/in/l/brochures/",
+     "title": "Download Brochures - Volvo",
+     "description": "Download Brochures. Get all the information that you need to choose your Volvo Car! Volvo XC60 · Volvo XC90 · Volvo EC40 · Volvo EX30 · Home/; Brochures. Stay ...",
+     "position": 2
+    },
+    {
+     "url": "https://azure-eu-assets.contentstack.com/v3/assets/blt84e01a6904dbd2e8/blt9179e2057a50fb38/69611d964baa310964c22a69/Volvo_EX30_and_EX30_Cross_Country_MY26_Edition_5_Price_List.pdf",
+     "title": "[PDF] VOLVO EX30 AND EX30 CROSS COUNTRY - Contentstack",
+     "description": "Volvo Car UK Limited, Scandinavia House, Norreys Drive, Maidenhead SL6 4FL. Create your own Volvo www.volvocars.co.uk/buildyourown. Volvo EX30 MY26 12/01/26.",
+     "position": 3
+    },
+    {
+     "url": "https://www.patrickvolvocars.com/download-brochure.htm",
+     "title": "Volvo Model Brochures | Patrick Volvo Cars Schaumburg",
+     "description": "DOWNLOAD XC60 BROCHURE. Volvo EX30. Big electric performance in a small package. Download EX30 Brochure. Volvo C40. Discover the compact Scandinavian SUV ...",
+     "position": 4
+    },
+    {
+     "url": "https://www.volvocars.com/uk/cars/ex30-electric/",
+     "title": "Volvo EX30 | Small fully electric SUV | Volvo Cars UK",
+     "description": "Discover the fully electric Volvo EX30, our smallest SUV with impressive range and fast charging capabilities. See prices and buy online.",
+     "position": 5
+    },
+    {
+     "url": "https://www.volvocars.com/uk/media/press-releases/979742DBF62493C1/",
+     "title": "Volvo Cars announces UK prices and specifications for the all-new, all ...",
+     "description": "7 Jun 2023 · To view the full copyright information click here. Volvo Car UK ... Related images (6). Volvo EX30 exterior. Bookmark. Volvo EX30 exterior.",
+     "position": 6
+    },
+    {
+     "url": "https://www.jpmg.ie/site/uploads/New%20Cars/Volvo/EX30/2023/EX30-MY24.5.pdf",
+     "title": "[PDF] VOLVO EX30",
+     "description": "**First customer deliveries are expected to commence Qtr 1 2024. Page 3. 3. VOLVO EX30. VOLVO EX30 PLUS STANDARD FEATURES. CLIMATE. + 2-Zone ...",
+     "position": 7
+    },
+    {
+     "url": "https://www.volvocars.com/in/cars/ex30-electric/",
+     "title": "Volvo EX30 | Fully electric SUV | Volvo Cars India",
+     "description": "Discover the fully electric Volvo EX30, our SUV with impressive range and fast charging capabilities. See prices and buy online.",
+     "position": 8
+    },
+    {
+     "url": "https://azure-eu-assets.contentstack.com/v3/assets/blt84e01a6904dbd2e8/blt9d8f3b2fb7940dff/66aa92818716666b2a8232b0/Volvo_EX30_MY25_Edition_2.1_Price_List.pdf",
+     "title": "[PDF] VOLVO EX30 - Contentstack",
+     "description": "*First deliveries expected to commence in Qtr 1 2025. Page 4. 4. VOLVO EX30. VOLVO EX30 CORE STANDARD FEATURES.",
+     "position": 9
+    },
+    {
+     "url": "https://www.volvocars.com/uk/media/documents/1530a479d58c43e1a6b4b33e001ccc17/",
+     "title": "Volvo EX30: at a glance | Volvo Cars Media UK",
+     "description": "Volvo EX30: at a glance. 6/7/2023. Bookmark. Share · Download. Volvo EX30: at a glance. To view the full copyright information click here.",
+     "position": 10
+    }
+   ]
+  },
+  "creditsUsed": 2,
+  "id": "01a0b368-3504-708c-a745-295222f7c7d9"
+ }
+}

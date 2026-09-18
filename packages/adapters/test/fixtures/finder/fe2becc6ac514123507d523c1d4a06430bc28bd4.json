@@ -1,0 +1,83 @@
+{
+ "path": "/search",
+ "body": {
+  "query": "Volkswagen ID.4 brochure",
+  "limit": 8,
+  "country": "GB",
+  "location": "United Kingdom",
+  "sources": [
+   {
+    "type": "web"
+   }
+  ],
+  "ignoreInvalidURLs": true,
+  "categories": [
+   "pdf"
+  ]
+ },
+ "response": {
+  "success": true,
+  "data": {
+   "web": [
+    {
+     "url": "https://www.volkswagen.co.uk/idhub/content/dam/onehub_pkw/importers/gb/downloads/brochures/used-cars/id-4/id4-brochure-pricelist-april-21.pdf",
+     "title": "[PDF] Price and specification guide - Volkswagen UK",
+     "description": "Welcome to the new ID.4, Volkswagen's first all-electric SUV. carbon-neutral mobility, agile performance, sporty good looks and exceptional spaciousness. ...",
+     "position": 1,
+     "category": "pdf"
+    },
+    {
+     "url": "https://autocatalogarchive.com/wp-content/uploads/2023/09/VW-ID.4-Pro-2023-SG.pdf",
+     "title": "[PDF] The all-new ID.4 Pro - Auto Catalog Archive",
+     "description": "The information, pictures, colours and specifications contained within this brochure are presented as a general guide to the products and accessories offered by ...",
+     "position": 2,
+     "category": "pdf"
+    },
+    {
+     "url": "https://www.vw.ca/idhub/content/dam/onehub_pkw/importers/ca/2023/en/showroom/my24-general/buyers-guides/VW_MY24%20BG_ID4_EN_August29.pdf",
+     "title": "[PDF] The 2024 ID.4 - Volkswagen Canada",
+     "description": "4 ID.4 trims and options ID.4 Performance • 150 kW/201 HP electric motor • Speed-sensitive power steering • Rear-wheel drive • Driving Profile",
+     "position": 3,
+     "category": "pdf"
+    },
+    {
+     "url": "https://www.frankkeanevolkswagen.ie/assets/1/product-guides/my26_master/id4_my26.pdf",
+     "title": "[PDF] ID.4 - Frank Keane Volkswagen",
+     "description": "Please consult your local Authorised Volkswagen retailer for the latest product information. ID.4 Pure 58kWh. ID.4 Pro 79kWh. ID.4 GTX 77kWh. Engine.",
+     "position": 4,
+     "category": "pdf"
+    },
+    {
+     "url": "https://www.streetvw.com/static/dealer-12576/custom-pages/brochures/MY2023_Retail_Order_Guide_US_ID4.pdf?srsltid=AU7gw4UOc5d3VwFBpibqlHOg54OcMCF9fdR7eJlRiZprui8HHHXacUWe",
+     "title": "[PDF] NEW! 2023 ID.4 - Street Volkswagen",
+     "description": "2023 ID.4 Page 1. Volkswagen of America ID.4 Pro S. ID.4 Standard 62 kWh Lithium-Ion Single-motor Electric $37,495 ID.4 Pro 82 kWh Lithium-Ion",
+     "position": 5,
+     "category": "pdf"
+    },
+    {
+     "url": "https://www.divane.ie/assets/1/product-guides/my21_master/id4_my21.pdf",
+     "title": "[PDF] The all-new ID.4 - Divane Volkswagen",
+     "description": "ID.4 1st Editions include Metallic paint pricing in the final RRP 52kWh Battery: 341km - 343km WLTP Range 77kWh Battery: 506km - 519km WLTP Range. All prices ...",
+     "position": 6,
+     "category": "pdf"
+    },
+    {
+     "url": "https://autocatalogarchive.com/wp-content/uploads/2026/02/VW-ID.4-2025-IE.pdf",
+     "title": "[PDF] The ID.4 | Auto Catalog Archive",
+     "description": "5All prices (Retail, Delivery and ROTR) are recommended by Volkswagen Ireland and are inclusive of VAT. €1,485 includes optional 'S Pack' ID. Service Plan ...",
+     "position": 7,
+     "category": "pdf"
+    },
+    {
+     "url": "https://www.breeze.co.uk/media/other/53099358/id-buzz-brochure.pdf",
+     "title": "[PDF] The ID. Buzz Brochure - Breeze Motor Group",
+     "description": "We're bringing back an iconic design with the all-electric ID. Buzz. State-of-the-art technologies and a flexible space concept provide mobile comfort that ...",
+     "position": 8,
+     "category": "pdf"
+    }
+   ]
+  },
+  "creditsUsed": 2,
+  "id": "01a0b018-29ca-747c-ba98-5e15846fcd04"
+ }
+}

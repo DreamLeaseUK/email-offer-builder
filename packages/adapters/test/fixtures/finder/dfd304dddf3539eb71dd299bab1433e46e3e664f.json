@@ -1,0 +1,84 @@
+{
+ "path": "/search",
+ "body": {
+  "query": "\"Volkswagen ID.4\" UK official brochure PDF",
+  "limit": 10,
+  "country": "GB",
+  "location": "United Kingdom",
+  "sources": [
+   {
+    "type": "web"
+   }
+  ],
+  "ignoreInvalidURLs": true
+ },
+ "response": {
+  "success": true,
+  "data": {
+   "web": [
+    {
+     "url": "https://www.volkswagen.co.uk/idhub/content/dam/onehub_pkw/importers/gb/downloads/brochures/used-cars/id-4/id4-brochure-pricelist-april-21.pdf",
+     "title": "[PDF] Price and specification guide - Volkswagen UK",
+     "description": "2 Figures for the Volkswagen ID.4 battery electric vehicle. Fuel consumption ... This brochure can be viewed or downloaded in pdf format at: www ...",
+     "position": 1
+    },
+    {
+     "url": "https://www.volkswagen.co.uk/en/electric-and-hybrid/electric-cars/id4.html",
+     "title": "ID.4 | The All Electric Family SUV - Volkswagen UK",
+     "description": "Owners Brochure · Owner's Offers · Loyalty offers · Black Edition loyalty offers ... On UK roads since 2021, the Volkswagen ID.4 is the second model from the ...",
+     "position": 2
+    },
+    {
+     "url": "https://autocatalogarchive.com/wp-content/uploads/2026/02/VW-ID.4-2025-IE.pdf",
+     "title": "[PDF] The ID.4 | Auto Catalog Archive",
+     "description": "1This vehicle is a WLTP (Worldwide Harmonised Light-Duty Vehicles Test Procedure) type approved vehicle. More information is available at ...",
+     "position": 3
+    },
+    {
+     "url": "https://www.vw.com/idhub/content/dam/onehub_pkw/importers/us/myvw-portal-assets/us/en/owners-and-services/rsources-and-tutorials/2023-id-4/2023%20ID.4%20QSG.pdf",
+     "title": "[PDF] 2023 ID.4 EV - Quick-Start Guide - Volkswagen",
+     "description": "The 2023 Volkswagen ID.4 offers 3 years of 30 minute charging at Electrify. America DC Fast Chargers at no additional cost.¹ Electrify America chargers can.",
+     "position": 4
+    },
+    {
+     "url": "https://www.scribd.com/document/725910732/VW-ID4-Brochure",
+     "title": "VW ID4 Brochure | PDF | Motor Vehicle - Scribd",
+     "description": "VW ID4 Brochure - Free download as PDF File (.pdf), Text File (.txt) or ... Volkswagen ID.4 Price & Specs Guide. 31 pages. 4th Grade Lesson on Bravery in ...",
+     "position": 5
+    },
+    {
+     "url": "https://www.volkswagen.co.uk/en.html",
+     "title": "Volkswagen UK | The official Volkswagen website",
+     "description": "Owners Brochure · Owner's Offers · Loyalty offers · Black Edition ... A yellow Volkswagen ID.4 drives along a winding road through a mountainous landscape at.",
+     "position": 6
+    },
+    {
+     "url": "https://www.carmans.net/category/volkswagen/volkswagen-id-4/",
+     "title": "New Volkswagen ID.4 Owner's Manuals download PDF for free!",
+     "description": "New Volkswagen ID.4 Owner's Manuals ➜ download PDF for free!",
+     "position": 7
+    },
+    {
+     "url": "https://www.carwow.co.uk/volkswagen/id4/specifications",
+     "title": "Volkswagen ID.4 Specs & Dimensions - Carwow",
+     "description": "A complete overview of the Volkswagen ID.4 specs and dimensions. Find out about its size, boot space, equipment, and more.",
+     "position": 8
+    },
+    {
+     "url": "https://www.reddit.com/r/VWiD4Owners/comments/1blvzfs/a_review_of_my_id4_2023_1_year_after_purchase/",
+     "title": "A review of my ID.4 2023 1 year after purchase : r/VWiD4Owners - Reddit",
+     "description": "23 Mar 2024 · r/VWiD4Owners - The New 2023 Volkswagen ID.4 | The EV For Most. 19 upvotes · 16 comments ...",
+     "position": 9
+    },
+    {
+     "url": "https://www.volkswagen.co.uk/en/electric-and-hybrid/electric-cars/id5.html",
+     "title": "ID.5 | Powerful, exciting and effortlessly sleek - Volkswagen UK",
+     "description": "The new Volkswagen ID.5 SUV has now been revealed. It's a coupe version of the Volkswagen ID.4 but won't come with that car's...",
+     "position": 10
+    }
+   ]
+  },
+  "creditsUsed": 2,
+  "id": "01a0b018-2982-718f-bfa2-b3544e84996e"
+ }
+}

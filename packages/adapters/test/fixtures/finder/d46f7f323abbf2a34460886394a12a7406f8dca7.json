@@ -1,0 +1,84 @@
+{
+ "path": "/search",
+ "body": {
+  "query": "\"Jaecoo 7\" UK official brochure PDF",
+  "limit": 10,
+  "country": "GB",
+  "location": "United Kingdom",
+  "sources": [
+   {
+    "type": "web"
+   }
+  ],
+  "ignoreInvalidURLs": true
+ },
+ "response": {
+  "success": true,
+  "data": {
+   "web": [
+    {
+     "url": "https://jaecoo.co.uk/downloads/",
+     "title": "Auto Catalogue — Download Brochure PDF | JAECOO",
+     "description": "- [JAECOO 7](https://jaecoo.co.uk/jaecoo-7/)\n\n- [![JAECOO 7](https://cdn.sanity.io/images/ekfudic1/jaecoo-production/789bd11172a6c35dcdabe1cb3474a81f9febd685-4096x2439.png?w=600&q=80&auto=format)\\\nJAECOO 7\\\n\\\nFrom £29,210](https://jaecoo.co.uk/jaecoo-7/)",
+     "position": 1
+    },
+    {
+     "url": "https://jaecoo.co.uk/jaecoo-7/",
+     "title": "JAECOO 7 Petrol | Bold, Premium SUV",
+     "description": "The JAECOO 7 Petrol is built for versatile UK driving — a turbocharged 1.6-litre engine delivering 147ps, a responsive 7-speed dual-clutch transmission, and ...",
+     "position": 2
+    },
+    {
+     "url": "https://jaecoo.co.uk/jaecoo-8/",
+     "title": "JAECOO 8 SHS-P (Plug-in Hybrid) | Photos, Specifications",
+     "description": "- [JAECOO 7](https://jaecoo.co.uk/jaecoo-7/)\n\n- [![JAECOO 7](https://cdn.sanity.io/images/ekfudic1/jaecoo-production/789bd11172a6c35dcdabe1cb3474a81f9febd685-4096x2439.png?w=600&q=80&auto=format)\\\nJAECOO 7\\\n\\\nFrom £29,210](https://jaecoo.co.uk/jaecoo-7/)",
+     "position": 3
+    },
+    {
+     "url": "https://jaecoo.co.uk/fleet/",
+     "title": "Fleet | JAECOO",
+     "description": "For wherever business takes you. JAECOO offers true capability, style, and technology for drivers and businesses · JAECOO 5 · JAECOO E5 · JAECOO 7 SHS-H · JAECOO 7.",
+     "position": 4
+    },
+    {
+     "url": "https://automotivegroup.be/images/JAECOO%207%20SHS%20-Brochure_EN.pdf",
+     "title": "[PDF] JAECOO 7 SHS - Automotive Group Roeselare",
+     "description": "*All information provided in this brochure applies to the current version of JAECOO 7 SHS. While every effort has been made to ensure the accuracy of this ...",
+     "position": 5
+    },
+    {
+     "url": "https://jaecoo.co.uk/warranty/",
+     "title": "About our Warranty | JAECOO",
+     "description": "- [JAECOO 7](https://jaecoo.co.uk/jaecoo-7/)\n\n- [![JAECOO 7](https://cdn.sanity.io/images/ekfudic1/jaecoo-production/789bd11172a6c35dcdabe1cb3474a81f9febd685-4096x2439.png?w=600&q=80&auto=format)\\\nJAECOO 7\\\n\\\nFrom £29,210](https://jaecoo.co.uk/jaecoo-7/)",
+     "position": 6
+    },
+    {
+     "url": "https://www.youtube.com/watch?v=xJbzmBxEmEg",
+     "title": "JAECOO 7 SHS Tutorial | From specs to performance - YouTube",
+     "description": "15 Apr 2025 · JAECOO 7 SHS Tutorial | From specs to performance | The official, ultimate guide | JAECOO UK · Comments.",
+     "position": 7
+    },
+    {
+     "url": "https://www.petercoopergroup.co.uk/jaecoo/new-cars/j7/",
+     "title": "JAECOO Dealer Chichester & Southampton",
+     "description": "JAECOO 7 Black Luxury Offer ; Annual Fixed Interest Rate, 0.00% ; Interest Charges, £0.00 ; Annual Mileage, 6,000 ; Excess Mileage Charge (pence per mile), 0.11ppm.",
+     "position": 8
+    },
+    {
+     "url": "https://jaecoo.co.uk/jaecoo-5/",
+     "title": "JAECOO 5 Petrol | Bold, Premium SUV",
+     "description": "- [JAECOO 7](https://jaecoo.co.uk/jaecoo-7/)\n\n- [![JAECOO 7](https://cdn.sanity.io/images/ekfudic1/jaecoo-production/789bd11172a6c35dcdabe1cb3474a81f9febd685-4096x2439.png?w=600&q=80&auto=format)\\\nJAECOO 7\\\n\\\nFrom £29,210](https://jaecoo.co.uk/jaecoo-7/)",
+     "position": 9
+    },
+    {
+     "url": "https://www.leasingoptions.co.uk/news/vehicle-reviews/jaecoo-j7-buyers-guide-differences-between-the-deluxe-and-luxury-trims/9023",
+     "title": "Jaecoo J7 Deluxe vs Luxury: Trim Comparison Guide (UK)",
+     "description": "27 Jun 2025 · Discover the new Jaecoo 7 with it's standout features like 19” alloy wheels, panoramic sunroof, Sony audio, and a 540° camera. Explore our lease ...",
+     "position": 10
+    }
+   ]
+  },
+  "creditsUsed": 2,
+  "id": "01a0b018-1ecb-700e-97fc-53332b6561d0"
+ }
+}

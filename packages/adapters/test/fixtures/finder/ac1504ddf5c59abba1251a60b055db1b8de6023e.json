@@ -1,0 +1,84 @@
+{
+ "path": "/search",
+ "body": {
+  "query": "\"Audi Q4 e-tron\" UK official brochure PDF",
+  "limit": 10,
+  "country": "GB",
+  "location": "United Kingdom",
+  "sources": [
+   {
+    "type": "web"
+   }
+  ],
+  "ignoreInvalidURLs": true
+ },
+ "response": {
+  "success": true,
+  "data": {
+   "web": [
+    {
+     "url": "https://www.audi.co.uk/en/models/q4/q4-e-tron/",
+     "title": "New Audi Q4 SUV e-tron | Fully electric | Highlights & Price",
+     "description": "Please use the model configurator to view UK specifications. New Q4 ... Rear three-quarter view of a dark blue Audi Q4 e-tron, showcasing. Powerful ...",
+     "position": 1
+    },
+    {
+     "url": "https://media.audi.com/is/content/audi/country/ie/assets/downloads/product-guides/my24/Q4-e-tron-Product-Guide-MY24.pdf",
+     "title": "[PDF] Audi Q4 e-tron",
+     "description": "Audi Q4 e-tron. Product and Price Guide. Model Year 2024. Page 2. Audi Q4 e-tron Retail Price List. Model. Description. Range km. Road. Tax. Output. HP. CO₂.",
+     "position": 2
+    },
+    {
+     "url": "https://www.audi.co.uk/en/models/q4/q4-e-tron/design-and-specification/2026",
+     "title": "Q4 e-tron | Design and Specification | Q4 Range - Audi UK",
+     "description": "Audi Q4 e-tron design and specification. For pricing details, see the configurator. Book a test driveSearch available new cars. Models shown are not UK ...",
+     "position": 3
+    },
+    {
+     "url": "https://press.audi.co.uk/releases/142",
+     "title": "The all-new Audi Q4 e-tron and Q4 Sportback e-tron pricing and ...",
+     "description": "The all-new, all-electric Audi Q4 e-tron and Q4 Sportback e-tron are both on sale now, priced from £40750 OTR and £42250 OTR respectively.",
+     "position": 4
+    },
+    {
+     "url": "https://ev-database.org/uk/car/1490/Audi-Q4-e-tron-40",
+     "title": "Audi Q4 e-tron 40 (MY21-23) - EV Database",
+     "description": "All details and specs of the Audi Q4 e-tron 40 (MY21-23) (2021-2024). Compare price, lease, real-world range and consumption of every electric vehicle.",
+     "position": 5
+    },
+    {
+     "url": "https://media.audi.com/is/content/audi/country/ie/assets/downloads/product-guides/my26/Q4etron_MY26.pdf",
+     "title": "[PDF] Audi Q4 e-tron",
+     "description": "Audi Q4 e-tron. Product and Price Guide. Model Year 2026. Page 2. Audi Q4 e-tron Retail Price List. Model. Description. Range km. Road. Tax. Perfor- mance. CO₂.",
+     "position": 6
+    },
+    {
+     "url": "https://www.audi.co.uk/en/electric/e-tron/",
+     "title": "Fully Electric e-tron range - Audi UK",
+     "description": "Audi Q4 e-tron, The Q4 e-tron is Audi's compact electric SUV, combining everyday versatility with a choice of SUV or coupé-inspired Sportback design. › Q4 SUV e ...",
+     "position": 7
+    },
+    {
+     "url": "https://www.carwow.co.uk/audi/q4-e-tron/specifications",
+     "title": "Audi Q4 e-tron Specs & Dimensions - Carwow",
+     "description": "Specs",
+     "position": 8
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/Audi_Q4_e-tron",
+     "title": "Audi Q4 e-tron - Wikipedia",
+     "description": "# Audi Q4 e-tron\nAudi Q4 e-tron",
+     "position": 9
+    },
+    {
+     "url": "https://www.scribd.com/document/864398293/PL-BG-Q4-e-tron-MY-25-31-10-2024-V-7",
+     "title": "Audi Q4 e-tron Pricing and Specs Guide | PDF - Scribd",
+     "description": "Audi Q4 e-tron Brochure Overview. PDF. No ratings yet. Audi Q4 e-tron Brochure Overview. 20 pages. Audi A8 и S8: Модели и Цени. PDF. No ratings yet. Audi A8 и ...",
+     "position": 10
+    }
+   ]
+  },
+  "creditsUsed": 2,
+  "id": "01a0b01a-bea3-7739-bf74-b5887b1073ed"
+ }
+}

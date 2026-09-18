@@ -1,0 +1,84 @@
+{
+ "path": "/search",
+ "body": {
+  "query": "\"Kia EV2\" UK official brochure PDF",
+  "limit": 10,
+  "country": "GB",
+  "location": "United Kingdom",
+  "sources": [
+   {
+    "type": "web"
+   }
+  ],
+  "ignoreInvalidURLs": true
+ },
+ "response": {
+  "success": true,
+  "data": {
+   "web": [
+    {
+     "url": "https://www.kia.com/content/dam/kwcms/kme/uk/en/assets/vehicles/ev2/ev2-specifications.pdf",
+     "title": "[PDF] The Kia EV2 - Specifications",
+     "description": "## Specification\n| Exterior Features&Lighting | 'Air' | 'First Edition' | 'GT-Line' | 'GT-Line S' |\n|-|-|-|-|-|\n| 19\" Alloy Wheels with GT-Line Styling | - | - | √ | √ |\n\n| Exterior Features & Lighting | 'Air' | 'First Edition' | 'GT-Line' | 'GT-Line S' |\n|-|-|-|-|-|\n| Automatic Flush Door Handles | - | √ | √ | √ |\n| Front Sunroof with Tilting & Sliding Function | - | - | - | √ |",
+     "position": 1
+    },
+    {
+     "url": "https://www.kia.com/uk/new-cars/ev2/specification/",
+     "title": "Specification - The Kia EV2",
+     "description": "## Specification\n### AUDIO, COMMUNICATION & INFORMATION    collapsedcollapsed\n|  |  |  |  |  |\n|-|-|-|-|-|\n| Front Passenger USB-C Charging Port x1 | ✓ | ✓ | ✓ | ✓ |\n| Rear Passenger USB-C Charging Ports x2 | ✓ | ✓ | ✓ | ✓ |\n| 12.3\" Driver Display Screen | ✓ | ✓ | ✓ | ✓ |\n\n### SECURITY    collapsedcollapsed\n|  |  |  |  |  |\n|-|-|-|-|-|\n| Smart Key with Motion Sensor | ✓ | ✓ | ✓ | ✓ |\n\n### DIMENSIONS    collapsedcollapsed\n|  |  |  |  |\n|-|-|-|-|\n| Length (mm) | 4 060 | - |\n| Wheelbase (mm) | 2 565 | - |\n| Width (mm) | 1 800 | - |\n| Length (mm) | - | 4 060 |\n| Wheelbase (mm) | - | 2 565 |\n| Width (mm) | - | 1 800 |\n| Height (mm) | - | 1 575 |\n| Length (mm) | - | 4 065 |\n| Wheelbase (mm) | - | 2 565 |\n| Width (mm) | - | 1 800 |\n| Height (mm) | - | 1 585 |",
+     "position": 2
+    },
+    {
+     "url": "https://www.kia.com/uk/new-cars/ev2/",
+     "title": "The Kia EV2 | Kia UK",
+     "description": "Discover the new all-electric Kia EV2, an expression of progressive EV styling in a size ready for urban streets.",
+     "position": 3
+    },
+    {
+     "url": "https://www.kia.com/content/dam/kwcms/kme/uk/en/assets/static/utility/brochure/ev2-brochure.pdf",
+     "title": "[PDF] The Kia EV2",
+     "description": "The Kia EV2 reimagines electric mobility for urban lifestyles. With compact SUV proportions, flexible space, and smart connected features, it brings ...",
+     "position": 4
+    },
+    {
+     "url": "https://www.pentagon-group.co.uk/kia/new-car-brochures",
+     "title": "Kia Brochure Download - Pentagon Motor Group",
+     "description": "The Kia EV2 Brochure. The Kia EV2. Discover More. The Kia EV3 Brochure. The Kia EV3. Discover More. The Kia EV9 Brochure. The Kia EV9. Discover More. The Kia ...",
+     "position": 5
+    },
+    {
+     "url": "https://www.kia.com/eu/new-cars/ev2/1w23/",
+     "title": "1w23 - EV2 | Kia Motors Europe",
+     "description": "Download the new Kia EV2 mobile brochure. Discover more about the all-electric Kia EV2. Download the mobile-friendly ...",
+     "position": 6
+    },
+    {
+     "url": "https://www.kia.com/uk/new-cars/offers/ev2/",
+     "title": "Kia EV2 Offers | Kia UK",
+     "description": "Request a Brochure Download a brochure today. Configure Your Car Design and build your perfect Kia ... Kia EV2 Offers. United Kingdom. © KIA UK 2026.",
+     "position": 7
+    },
+    {
+     "url": "https://www.kenbrownmotors.co.uk/kia/news/kia-ev2-full-pricing-specifications-tech-and-range-revealed",
+     "title": "Kia EV2 full pricing, specifications, tech and range revealed",
+     "description": "7 Apr 2026 · Kia has revealed UK pricing and specifications for the Kia EV2, a fully-electric B-segment SUV offering space for five in Kia's most compact ...",
+     "position": 8
+    },
+    {
+     "url": "https://www.kia.com/eu/new-cars/ev2/premiere/",
+     "title": "The Kia EV2",
+     "description": "Compact yet spacious, the Kia EV2 combines spirited design, confident range and an adjustable cabin to make a striking first impression.",
+     "position": 9
+    },
+    {
+     "url": "https://www.electrifying.com/blog/article/kia-ev2-everything-we-know-about-kias-baby-ev",
+     "title": "2026 Kia EV2: everything we know about the most affordable electric Kia",
+     "description": "4 Dec 2025 · Can a better range, longer warranty and loads of tech give the new 2026 Kia EV2 the edge over the Renault 5?",
+     "position": 10
+    }
+   ]
+  },
+  "creditsUsed": 2,
+  "id": "01a0b017-999e-75df-ad09-987de7f5b315"
+ }
+}

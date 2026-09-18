@@ -1,0 +1,54 @@
+{
+ "path": "/search",
+ "body": {
+  "query": "site:xpengcars.co.uk G6 brochure",
+  "limit": 5,
+  "country": "GB",
+  "location": "United Kingdom",
+  "sources": [
+   {
+    "type": "web"
+   }
+  ],
+  "ignoreInvalidURLs": true
+ },
+ "response": {
+  "success": true,
+  "data": {
+   "web": [
+    {
+     "url": "https://xpengcars.co.uk/wp-content/uploads/2025/12/Brochure-NEW-G6.pdf",
+     "title": "[PDF] Brochure-NEW-G6.pdf - XPENG UK",
+     "description": "8 Dec 2025 · The G6's powerful electric motor provides smooth acceleration and responsive handling, available in rear-wheel drive (RWD) in Standard. Range ...",
+     "position": 1
+    },
+    {
+     "url": "https://xpengcars.co.uk/models/g6/",
+     "title": "G6 Vehicle Page - XPENG UK",
+     "description": "![](https://xpengcars.co.uk/wp-content/uploads/2025/12/Carwow-x-XPENG-G6-5-2-1-1-scaled.jpg)![](https://xpengcars.co.uk/wp-content/uploads/2025/12/Carwow-x-XPENG-G6-5-2-1-1-scaled.jpg)![](https://xpengcars.co.uk/wp-content/uploads/2025/12/Carwow-x-XPENG-G6-5-2-1-1-scaled.jpg)\n\n# More Time for What Matters\n## Available From £39,990\n![](https://xpengcars.co.uk/wp-content/uploads/2025/12/Carwow_x_XPENG_G6_16-1024x683-1.jpg)\n\n## Step Inside Your New G6\n![](https://xpengcars.co.uk/wp-content/uploads/2025/12/G6_Left_Side_View_Midnight-Black_20-inch-wheel-1024x576-1.webp)![](https://xpengcars.co.uk/wp-content/uploads/2025/12/G6_Left_Side_View_Arctic-White_20-inch-wheel-1024x576-1.webp)![](https://xpengcars.co.uk/wp-content/uploads/2025/12/G6_Left_Side_View_Graphite-Gray_20-inch-wheel-1024x576-1.webp)![](https://xpengcars.co.uk/wp-content/uploads/2025/12/G6_Left_Side_View_Silver-Frost_20-inch-wheel-1024x576-1.webp)![](https://xpengcars.co.uk/wp-content/uploads/2025/12/G6_Left_Side_View_Stellar-Purple_20-inch-wheel-1024x576-1.webp)![](https://xpengcars.co.uk/wp-content/uploads/2025/12/G6_Left_Side_View_Black-Edition_20-inch-black-wheel-1024x576-1.webp)",
+     "position": 2
+    },
+    {
+     "url": "https://xpengcars.co.uk/wp-content/uploads/2026/08/XPENG-G6-Brochure-August-2026.pdf",
+     "title": "[PDF] XPENG-G6-Brochure-August-2026 ...",
+     "description": "8 Dec 2025 · The G6's powerful electric motor provides smooth acceleration and responsive handling, available in rear-wheel drive (RWD) in Standard. Range ...",
+     "position": 3
+    },
+    {
+     "url": "https://xpengcars.co.uk/owners/",
+     "title": "Owners - XPENG UK",
+     "description": "## Owners\n##### **Everything you need to guarantee the best experience with your XPENG**\n[Download Brochure](https://xpengcars.co.uk/wp-content/uploads/2025/12/Brochure-NEW-G6.pdf)",
+     "position": 4
+    },
+    {
+     "url": "https://xpengcars.co.uk/2024/04/new-xpeng-g6-has-electric-market-leaders-in-its-sights/",
+     "title": "NEW XPENG G6 HAS ELECTRIC MARKET LEADERS IN ITS SIGHTS",
+     "description": "## **The options list: good story, nice and short**\nFor example, every G6 has 20-inch rims with Michelin tyres, a large panoramic glass roof, multi-adjustable, heated and leatherette-covered seats all around, ventilated front seats, a heated steering wheel, 4 x USB ports, 2 x 50W induction charging points for smartphones, a 960W audio system with 18 speakers and an extensive library of music, video, entertainment and social media apps.\n\nEvery G6 comes with a 7-year or 160,000 km warranty.\n\n![](https://xpengcars.co.uk/wp-content/uploads/2024/06/ba3fc0be552b43b2a23a6ed4349bc7fb.jpg)",
+     "position": 5
+    }
+   ]
+  },
+  "creditsUsed": 2,
+  "id": "01a0b017-da63-75fb-8033-bcbe47f33a8e"
+ }
+}

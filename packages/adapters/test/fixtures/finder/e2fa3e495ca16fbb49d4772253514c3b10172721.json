@@ -1,0 +1,83 @@
+{
+ "path": "/search",
+ "body": {
+  "query": "Citroen e-C3 brochure",
+  "limit": 8,
+  "country": "GB",
+  "location": "United Kingdom",
+  "sources": [
+   {
+    "type": "web"
+   }
+  ],
+  "ignoreInvalidURLs": true,
+  "categories": [
+   "pdf"
+  ]
+ },
+ "response": {
+  "success": true,
+  "data": {
+   "web": [
+    {
+     "url": "https://www.citroen.co.uk/content/dam/citroen/uk/b2c/tools/brochure/pdf/car-range/New-C3-price-and-specification-guide.pdf",
+     "title": "[PDF] Prices & Specifications - Citroen",
+     "description": "# The revolution has begun\n### All Electric.\n#### without any compromise on design, comfort or technology.\n##### ENQUIRY TEST DRIVE ORDER ONLINE ENHANCED ONLINE PRICES & SPECS\n| e-C3 specific features |  |  |\n|-|-|-|\n| On Board Charger 7.4kW | ● | ● |\n| Mode 3 charging cable - Monophase 7kW-5metres | ● | ● |",
+     "position": 1,
+     "category": "pdf"
+    },
+    {
+     "url": "https://www.citroen.co.uk/content/dam/citroen/uk/b2c/tools/brochure/pdf/brochures/new-brochures/cars/c3-aircross/C3-Aircross-price-and-specification-guide.pdf",
+     "title": "[PDF] C3-Aircross-price-and-specification ... - Citroen",
+     "description": "# SUV outside. Lounge inside.\n### Aircross offers a choice of Petrol or Hybrid powertrains.\n#### ORDER ONLINE ENHANCED ONLINE PRICES & SPECS\n| ë-C3 Aircross specific features |  |  |\n|-|-|-|\n| On Board Charger 7.4kW | ● | ● |\n| Mode 3 charging cable - single-phase 7kW-6metres | ● | ● |\n\n• Citroën Battery Electric Vehicles: ë-C3, ë-C3",
+     "position": 2,
+     "category": "pdf"
+    },
+    {
+     "url": "https://www.citroen.co.uk/content/dam/citroen/uk/b2c/tools/brochure/pdf/brochures/new-brochures/cars/new-e-c3/New-e-C3-price-and-specification-guide.pdf",
+     "title": "[PDF] Prices & Specifications - Citroen",
+     "description": "# The revolution has begun\n### All Electric.\n#### Turbo Petrol power.\n##### ORDER ONLINE ENHANCED ONLINE PRICES & SPECS\n| ë-C3 specific features |  |  |  |\n|-|-|-|-|\n| On Board Charger 7.4kW | ● | ● | ● |\n| Rapid charging DC 100kW |  | ● | ● |\n| Mode 3 charging cable - single phase 7kW-6metres | ● | ● | ● |\n| Deferred charging via MyCitroen app or touchscreen | ● | ● | ● |\n| Cabin temperature pre-conditioning via MyCitroen app or touchscreen |  |  | ● |",
+     "position": 3,
+     "category": "pdf"
+    },
+    {
+     "url": "https://bluesky-cogcms.cdn.imgeng.in/media/72949/new_c3_citro%C3%ABn_range.pdf",
+     "title": "[PDF] NEW CITROËN C3",
+     "description": "All equipment described in this brochure represents the technology of the New Citroën C3. Scan features and components and access details of the exact new ...",
+     "position": 4,
+     "category": "pdf"
+    },
+    {
+     "url": "https://www.bassettsgroup.co.uk/images/citroen/new-cars/brochures/2023-Citroen-e-C3-brochure.pdf",
+     "title": "[PDF] THE NEW Ë-C3 - Bassetts Motor Group",
+     "description": "The intuitive and modern 26cm Citroën Connect touchscreen allows you to mirror key functions of your smartphone* through wireless compatibility with. Apple ...",
+     "position": 5,
+     "category": "pdf"
+    },
+    {
+     "url": "https://www.axess.mu/sites/default/files/2025-05/e%CC%88-C3%20Brochure%202025.pdf",
+     "title": "[PDF] ë-C3 Brochure - Axess.mu",
+     "description": "Featuring split headlights, extended chrome chevrons, imposing wheel arches, front skid plates, and a lean muscle exterior, with command an electric style",
+     "position": 6,
+     "category": "pdf"
+    },
+    {
+     "url": "https://autocatalogarchive.com/wp-content/uploads/2025/08/Citroen-C3-2025-NP.pdf",
+     "title": "[PDF] new citroën c3 - Auto Catalog Archive",
+     "description": "Citroën presents the New e-C4, a 100%-electric vehicle. Drawing on Citroën's rich 92-year history in the hatchback segment, the. New e-C4 offers cutting-edge.",
+     "position": 7,
+     "category": "pdf"
+    },
+    {
+     "url": "https://nepalevs.com/wp-content/uploads/wp-cardealer-uploads/_listing_attachments/2024/07/Download-brochure.pdf?ver=1788462347",
+     "title": "[PDF] THE NEW Ë-C3 - Nepalevs",
+     "description": "The intuitive and modern 26cm Citroën Connect touchscreen allows you to mirror key functions of your smartphone* through wireless compatibility with Apple.",
+     "position": 8,
+     "category": "pdf"
+    }
+   ]
+  },
+  "creditsUsed": 2,
+  "id": "01a0b01a-11bc-7432-8d23-b711944052fe"
+ }
+}

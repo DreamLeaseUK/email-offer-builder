@@ -1,0 +1,84 @@
+{
+ "path": "/search",
+ "body": {
+  "query": "\"XPENG G6\" UK official brochure PDF",
+  "limit": 10,
+  "country": "GB",
+  "location": "United Kingdom",
+  "sources": [
+   {
+    "type": "web"
+   }
+  ],
+  "ignoreInvalidURLs": true
+ },
+ "response": {
+  "success": true,
+  "data": {
+   "web": [
+    {
+     "url": "https://xpengcars.co.uk/wp-content/uploads/2025/12/Brochure-NEW-G6.pdf",
+     "title": "[PDF] Brochure-NEW-G6.pdf - XPENG UK",
+     "description": "8 Dec 2025 · Max 451kW charging capacity. XPENG G6 is not just built for today's generation of chargers, but the next. 5C Supercharging Battery developed on ...",
+     "position": 1
+    },
+    {
+     "url": "https://xpengcars.co.uk/owners/",
+     "title": "Owners - XPENG UK",
+     "description": "New G6 Brochure. Download Brochure. Customer Care Charter. Customer Care Document ... Please allow 24hrs for a response. Get a Finance Quote for your XPENG G6 ...",
+     "position": 2
+    },
+    {
+     "url": "https://xpengcars.co.uk/wp-content/uploads/2026/08/XPENG-G6-Brochure-August-2026.pdf",
+     "title": "[PDF] XPENG-G6-Brochure-August-2026 ...",
+     "description": "8 Dec 2025 · XPENG G6 is not just built for today's generation of chargers, but the next. 5C Supercharging Battery developed on Full-Domain 800V High ...",
+     "position": 3
+    },
+    {
+     "url": "https://xpengcars.co.uk/",
+     "title": "XPENG UK: Homepage",
+     "description": "XPENG strengthens UK presence with new direct operating structure. Read More. 18 August 2026. How cool: the XPENG G6 takes the heat off UK drivers this summer.",
+     "position": 4
+    },
+    {
+     "url": "https://xpeng.com.hk/media/wysiwyg/g6-rhd-user-manual.pdf",
+     "title": "[PDF] g6-rhd-user-manual.pdf",
+     "description": "XPENG G6 is an intelligent coupe SUV with features different from ordinary vehicles. Before starting the journey on your G6, it is recommended to read the ...",
+     "position": 5
+    },
+    {
+     "url": "https://www.facebook.com/groups/xpeng.sg/posts/793143943541734/",
+     "title": "Xpeng G6 facelift specifications and brochures - Facebook",
+     "description": "28 Aug 2025 · Xpeng G6 facelift specifications and brochures. Summarized by AI from ... The official launch date is February 28, following the release ...",
+     "position": 6
+    },
+    {
+     "url": "https://www.scribd.com/document/1021983290/Digital-Xpeng-g6-Rhd-Flyer-en-240712",
+     "title": "Digital Xpeng g6 RHD Flyer en 240712 | PDF - Scribd",
+     "description": "The XPENG G6 is a super intelligent driving coupe SUV featuring advanced technology and design, including a customizable smart cockpit and a full scene ...",
+     "position": 7
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/XPeng_G6",
+     "title": "XPeng G6 - Wikipedia",
+     "description": "# XPeng G6\n## Powertrain\n| Model | Calendar year | Battery | [Motor](https://en.wikipedia.org/wiki/Electric_motor) | Power | Torque | 0–100km/h (62mph) | Range | 10-80% [DCFC](https://en.wikipedia.org/wiki/DC_Fast_Charge) time | Weight |\n|-|-|-|-|-|-|-|-|-|-|\n| Standard Range (global) | 2024–present | 66 kWh [CALB](https://en.wikipedia.org/wiki/CALB) [LFP](https://en.wikipedia.org/wiki/Lithium_iron_phosphate_battery) | Rear | 190kW (255hp; 258PS) | 440N⋅m (325lb⋅ft) | 6.6 sec | — | 505km (314mi) | 435km (270mi) | 20 min | 2,025kg (4,464lb) |\n| Long Range (global) | 87.5 kWh CALB [NMC](https://en.wikipedia.org/wiki/NMC_battery) | 210kW (282hp; 286PS) | 6.2 sec | — | 625km (388mi) | 570km (354mi) |\n| AWD Max Performance | 2023–present | Rear | 3.9 sec | 700km (435mi) | 575km (357mi) | 550km (342mi) | 2,095kg (4,619lb) |\n| Front | 140kW (188hp; 190PS) | 220N⋅m (162lb⋅ft) |\n| Combined: | 358kW (480hp; 487PS) | 660N⋅m (487lb⋅ft) |\n| 2025 refresh |\n| Standard Range (Export) | 2025–present | 68.5 kWh CALB LFP | Rear | 187kW (251hp; 254PS) | 440N⋅m (325lb⋅ft) | 6.94 sec | — | 540km (336mi) | 435km (270mi) | 12 min | 2,065kg (4,553lb) |\n| Long Range (export) | 80.8 kWh CALB LFP | Rear | 218kW (292hp; 296PS) | 450N⋅m (332lb⋅ft) | 6.7 sec | — | 625km (388mi) | 525km (326mi) | 2,115kg (4,663lb) |\n| AWD Performance (export) | 4.13 sec | — | 575km (357mi) | 510km (317mi) | 2,220kg (4,890lb) |\n| Front | 140kW (188hp; 190PS) | 220N⋅m (162lb⋅ft) |\n| Combined: | 358kW (480hp; 487PS) | 660N⋅m (487lb⋅ft) |\n| References: [[24]](https://en.wikipedia.org/wiki/XPeng_G6#cite_note-24)[[25]](https://en.wikipedia.org/wiki/XPeng_G6#cite_note-25) |",
+     "position": 8
+    },
+    {
+     "url": "https://xpeng-cars.ch/en",
+     "title": "Smart Electric Vehicles, SUVs & MPVs | Xpeng Switzerland",
+     "description": "New XPENG G6 AWD Performance, model year 2025. Sample calculation based on purchase price: Monthly leasing instalment (including VAT) CHF 323.55. This XPENG ...",
+     "position": 9
+    },
+    {
+     "url": "https://www.linkedin.com/posts/alan-ren-0589aa14_xpeng-g6-evrevolution-activity-7324264311067967488-4qxF",
+     "title": "Remote control my car with XPENG G6 | Alan Ren posted on the topic",
+     "description": "2 May 2025 · ... XPENG G6 and its mobile app, I can literally remote control my car. Whether it's parking from a distance or just showing off to friends, I'm ...",
+     "position": 10
+    }
+   ]
+  },
+  "creditsUsed": 2,
+  "id": "01a0b017-d786-71d8-a5f2-7472c129c970"
+ }
+}
