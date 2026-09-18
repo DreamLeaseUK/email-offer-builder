@@ -1,5 +1,11 @@
 # Pickup prompt — DreamLease Offer Mailer
 
+> **UPDATE 18 Sept 2026 (session 4) — read `docs/status-2026-09-18.md` before anything below.** §5's "next major
+> task" (brochure discovery) is **built and deployed** (production Worker v0.4.0), on branch `brochure-finder`, not yet
+> merged to `main`. The design changed: no rep picking, web brochures accepted, six outcomes + `documentType`.
+> Tests are 172, not 157. The HEAD, "Fable unavailable" and "NOT started" statements below are stale. The
+> brochure-library skill is parked until after launch.
+
 Paste everything below the line into a new Claude Code session opened in `C:\Users\MatthewWilson\email-offer-builder`. **Rewritten 16 September 2026 (end of session 3).** It supersedes all earlier pickup prompts. Read it top to bottom before doing anything.
 
 ---

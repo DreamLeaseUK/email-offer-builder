@@ -19,7 +19,7 @@
     // custom domain is attached; until then the workers.dev URL so emails render end to end.
     "PUBLIC_BASE_URL": "https://offer-mailer.matt-wilson-9b8.workers.dev",
     "TOOL_BASE_URL": "https://mailer.dreamlease.co.uk",
-    "APP_VERSION": "0.3.0"
+    "APP_VERSION": "0.4.0"
   },
   "d1_databases": [
     {

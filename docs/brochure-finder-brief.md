@@ -1,5 +1,15 @@
 # Brief: rebuild brochure discovery ("Find brochure")
 
+> **STATUS — BUILT 18 Sept 2026, and the design below was changed on the way.** Read `status-2026-09-18.md` §2–§4
+> first. What changed: §5's "rep picks from a candidate list" was **dropped** (Matt: the rep must not pick) — the
+> finder verifies the document itself and attaches nothing when unsure; official **web brochures** are accepted as
+> well as PDFs; outcomes are six statuses with a separate `documentType`; "not found" carries a trace; the
+> promotions register is **not** changed for brochures (§5 step 6 and §6 "Register" do not apply); §3's "UNCOMMITTED"
+> note is stale (those changes were committed in `70aadd6` / `5f40928`, and the allowlist has since been deleted).
+> §2 (the problem), §4 (the thinking gaps) and §7 (constraints) still stand. §9's open questions are closed: brochures
+> outrank price/spec guides; a found or uploaded brochure is shared by every rep for 90 days; the junk-host list is in
+> `finder.ts`.
+
 **For:** Fable (implementing agent) · **Author:** Claude Code with Matt Wilson · **Date:** 15 Sept 2026
 **Repo:** `email-offer-builder` (DreamLease Offer Mailer). Read `CLAUDE.md` and `docs/dreamlease-offer-mailer-brief.md` §5.8 first.
 

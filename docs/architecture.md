@@ -48,8 +48,10 @@ Three audiences / lease products, each with its own compliance wording and terms
   signature, separate from the primary button, pruned to methods whose field is present.
 - **Rep profile (persisted)**: portrait photo (upload/replace/remove) + editable contact details, remembered
   per rep and prefilled next time.
-- **Brochures**: attach a manufacturer brochure PDF per vehicle (allowlist harvest via Firecrawl, or a manual
-  link / uploaded PDF). Discovery is being redesigned — see `brochure-finder-brief.md`.
+- **Brochures**: the finder searches, verifies and attaches by itself — the manufacturer's UK PDF (hosted by us),
+  or its own web brochure / price & spec page as a link; no allowlist, no picking. When nothing verifies the rep sees
+  what was checked and can upload, paste a link, accept the official page, or send without. See
+  `brochure-finder-brief.md` and `status-2026-09-18.md`.
 - **Offer library**; **Campaigns** (list + per-campaign stats); **Promotions register** (master table + CSV).
 - **Template admin (master-admin only)**: author the Emma-approved compliance templates, publish (self-
   approve), lock approved, new-version/retire. See A4 / B6.
@@ -116,7 +118,7 @@ memory); a free Cloudflare-served subdomain is needed — proposed `offer-mailer
 | Package | Responsibility |
 |---|---|
 | `packages/schema` | Zod offer model + `assertNoCapId`. The shared contract. |
-| `packages/adapters` | Source & output adapters, pure: URL lookup (normalise → parse → pricing → buildOffer), Firecrawl client, brochure allowlist/harvest/manual/ensure. No adapter imports another. |
+| `packages/adapters` | Source & output adapters, pure: URL lookup (normalise → parse → pricing → buildOffer), Firecrawl client, brochure finder/harvest/manual/ensure. No adapter imports another. |
 | `packages/render` | `render(campaign, template)` — the sole HTML producer. v5 markup as template functions; four layouts; `diff-reference.ts` fidelity check; `MARKUP_VERSION`. |
 | `packages/design-system` | Vendored DreamLease design system (`dl-*` React components, tokens, Sofia Pro), consumed as source. |
 | `apps/api` | The Cloudflare Worker (Hono): API, hosted pages, redirects, files, static assets, the retention Cron. |
@@ -141,6 +143,7 @@ memory); a free Cloudflare-served subdomain is needed — proposed `offer-mailer
 | `offers` | Saved offer library | rep email |
 | `templates` | Compliance templates (blocks, footer, markup/version, status, approvedBy/At) | approver email |
 | `brochures` | Brochure metadata (PDF bytes are in R2) | none |
+| `brochure_searches` | Latest completed brochure search per vehicle: outcome + what was checked (7-day negative memory) | rep email |
 | `senders` | Rep profile (name/phone/WhatsApp/booking/secondary + headshot URL), keyed by email | rep business data |
 | `clicks` | Click/view log: coarse uaClass + timestamp | **none — no IP/UA** |
 | `suppressions` | Opt-out **emails (plain text)** + addedBy/at/note | recipient email (lawful basis; admin-removable) |
@@ -162,10 +165,10 @@ memory); a free Cloudflare-served subdomain is needed — proposed `offer-mailer
 ## B5. Routing surface (`apps/api/src/index.ts`)
 **Public (no login):** `/health` · `/c/:slug` · `/f/*` · `/b/:id` · `/r/:slug/:link` · `/a/*`.
 **Behind Access (`/api/*`):** `/me`, `/me/photo`, `/me/sender` · `/offers/lookup`, `/offers/library` ·
-`/brochures/ensure`, `/brochures/manual` · `/campaigns*`, `/register`, `/register.csv` ·
+`/brochures/ensure`, `/brochures/accept`, `/brochures/manual` · `/campaigns*`, `/register`, `/register.csv` ·
 `/templates*` **(admin)** · `/suppressions`, `/suppressions.csv`, `/suppressions/check`,
 `/suppressions/remove` **(remove = admin)** · `/dev/*`.
-**Cron:** `scheduled()` → `runRetention()`.
+**Cron:** `scheduled()` → `runRetention()` + `recheckLinkedBrochures()` (a web / request brochure whose page is now 404/410 is superseded).
 
 ## B6. Authentication & authorization
 - **Authentication** — Cloudflare Access with **Microsoft Entra ID** as IdP. Access stamps each request with a
@@ -208,7 +211,7 @@ hero keeps its natural count.
 |---|---|
 | 1 Scaffold, schema, D1, Worker, Access, deploy | Done, deployed |
 | 2 `render()`, four layouts, hosted page | Done |
-| 3 URL lookup, image pipeline, brochure harvest | Done (brochure discovery being redesigned) |
+| 3 URL lookup, image pipeline, brochure harvest | Done (brochure discovery rebuilt as the finder, 18 Sept) |
 | 4 Web app | Core built (dev-only) |
 | 5 Graph draft, Copy-for-Outlook | Copy-for-Outlook done; Graph parked |
 | 6 Redirects, click logging, stats | Done |
@@ -240,7 +243,8 @@ IT — Access + a Cloudflare-served subdomain (parked; `mailer.` occupied) + the
 secret + Workers Paid plan; the prod deploy; Tawk webchat (parked, renewals-only stage one).
 
 ## B10. Testing & verification
-- `pnpm test` — **157 tests**: schema 18, render 30, adapters 52, api 57. `apps/api` runs inside workerd with
+- `pnpm test` — **172 tests**: schema 18, render 31, adapters 64, api 59. The adapter suite replays 12 recorded
+  manufacturer sites through the brochure finder at zero credits. `apps/api` runs inside workerd with
   real local D1/R2/Images; adapter tests use the wasm HTMLRewriter.
 - `pnpm typecheck` clean (incl. `apps/web`); `apps/web` builds. `scripts/diff-reference.ts` guards markup
   fidelity. CI greps for CAP-ID leaks. `.dev.vars` is git-ignored and must never be committed.
@@ -253,4 +257,4 @@ secret + Workers Paid plan; the prod deploy; Tawk webchat (parked, renewals-only
   `suppressions.ts`, `retention.ts`, `roles.ts`, `files.ts`, `brochures.ts`, `lookup.ts`, `library.ts`,
   `hosted.ts`, `tracking.ts`, `middleware/access.ts`, `db/schema.ts`
 - Web: `apps/web/src/App.tsx`, `Compose.tsx`, `Templates.tsx`, `Suppressions.tsx`, `api.ts`
-- Config: `apps/api/wrangler.jsonc`, `config/` (badges, manufacturer domains, admins)
+- Config: `apps/api/wrangler.jsonc`, `config/` (badges, admins)
