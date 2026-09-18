@@ -132,10 +132,22 @@ export function buildCards(campaign: Campaign, opts: VmOptions): CardVM[] {
       const b = brochures[offer.brochure.brochureId];
       if (!b) throw new RenderError(`offer ${n}: brochure ${offer.brochure.brochureId} not supplied to render()`);
       const href = links.track(`o${n}-brochure`, `${publicBaseUrl}/b/${b.id}`);
+      // The label says what the document IS (brochure vs price & spec guide) and how it arrives (our PDF,
+      // the manufacturer's page, or a request form). `web` reuses the reference's external-link construction:
+      // the difference is text only, so the v5 markup is untouched.
+      const guide = b.documentType === 'price_spec_guide';
+      const doc = { alt: 'PDF document', kind: 'pdf' as const, iconUrl: `${publicBaseUrl}/a/icon-doc-2x.png` };
+      const ext = { alt: 'Opens manufacturer site', kind: 'gated' as const, iconUrl: `${publicBaseUrl}/a/icon-external-2x.png` };
       brochure =
         b.kind === 'pdf'
-          ? { href, label: 'Download brochure (PDF)', shortLabel: 'Brochure (PDF)', alt: 'PDF document', kind: 'pdf', iconUrl: `${publicBaseUrl}/a/icon-doc-2x.png` }
-          : { href, label: 'Request a brochure', shortLabel: 'Request brochure', alt: 'Opens manufacturer site', kind: 'gated', iconUrl: `${publicBaseUrl}/a/icon-external-2x.png` };
+          ? guide
+            ? { href, label: 'Download price & spec guide (PDF)', shortLabel: 'Price guide (PDF)', ...doc }
+            : { href, label: 'Download brochure (PDF)', shortLabel: 'Brochure (PDF)', ...doc }
+          : b.kind === 'web'
+            ? guide
+              ? { href, label: 'View price & spec guide', shortLabel: 'Price & spec guide', ...ext }
+              : { href, label: 'View brochure', shortLabel: 'View brochure', ...ext }
+            : { href, label: 'Request a brochure', shortLabel: 'Request brochure', ...ext };
     }
 
     const smallPrintParts = [];

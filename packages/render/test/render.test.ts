@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { Rendered, findCapIdLeak } from '@offer-mailer/schema';
-import type { TemplateLayout } from '@offer-mailer/schema';
+import type { Brochure, TemplateLayout } from '@offer-mailer/schema';
 import { render, resolveLayout, TemplateNotApprovedError, RenderError, MARKUP_VERSION } from '../src/index.js';
 import { fixtureCampaign, fixtureTemplate } from '../src/fixtures/index.js';
 
@@ -126,6 +126,32 @@ describe('render()', () => {
     const gated = r({ offerCount: 1, brochure: 'gated' }).out;
     expect(gated.html).toMatch(/Request a brochure/);
     expect(r({ offerCount: 1 }).out.html).not.toMatch(/brochure/i);
+  });
+
+  it("labels a web brochure and a price & spec guide as what they are, in the reference's external-link construction", () => {
+    const withBrochure = (patch: Partial<Brochure>, layout: 'single' | 'grid3' = 'single') => {
+      const { campaign, brochures } = fixtureCampaign({ offerCount: layout === 'grid3' ? 3 : 1, layout, brochure: 'gated' });
+      const id = Object.keys(brochures)[0]!;
+      return render(campaign, fixtureTemplate, { publicBaseUrl: BASE, brochures: { [id]: { ...brochures[id]!, ...patch } } });
+    };
+    const web = withBrochure({ kind: 'web', documentType: 'brochure' });
+    expect(web.html).toContain('>View brochure</a>');
+    expect(web.html).toContain('icon-external-2x.png');
+    expect(web.html).not.toMatch(/Request a brochure|Download brochure/);
+    expect(web.text).toContain('View brochure: ');
+
+    const guidePage = withBrochure({ kind: 'web', documentType: 'price_spec_guide' });
+    expect(guidePage.html).toContain('>View price &amp; spec guide</a>');
+    expect(withBrochure({ kind: 'web', documentType: 'price_spec_guide' }, 'grid3').html).toContain('>Price &amp; spec guide</a>');
+
+    const { campaign, brochures } = fixtureCampaign({ offerCount: 1, brochure: 'pdf' });
+    const id = Object.keys(brochures)[0]!;
+    const guidePdf = render(campaign, fixtureTemplate, { publicBaseUrl: BASE, brochures: { [id]: { ...brochures[id]!, documentType: 'price_spec_guide' } } });
+    expect(guidePdf.html).toContain('>Download price &amp; spec guide (PDF)</a>');
+    expect(guidePdf.html).toContain('icon-doc-2x.png');
+    // the structure is the gated / pdf construction: only the words differ
+    const strip = (h: string) => h.replace(/>[^<]+</g, '><');
+    expect(strip(web.html)).toBe(strip(withBrochure({}).html));
   });
 
   it('shows the same, even number of stat tiles on every card in a multi-offer email', () => {
