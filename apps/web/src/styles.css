@@ -207,6 +207,57 @@ body {
 .brochure__err {
   color: var(--dl-ignition-red, #e30613);
 }
+.brochure__panel {
+  padding: 10px 12px;
+  border: 1px solid var(--dl-flashpoint-orange, #ff8811);
+  border-radius: 8px;
+  background: var(--dl-orange-tint, #fff3e5);
+  font-size: 13px;
+}
+.brochure__panel--failed {
+  border-color: var(--dl-ignition-red, #e30613);
+  background: #fdecee;
+}
+.brochure__progress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--dl-ink, #000);
+}
+.brochure__spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--dl-border, #e1e0e4);
+  border-top-color: var(--dl-ignition-red, #e30613);
+  border-radius: 50%;
+  animation: brochure-spin 0.8s linear infinite;
+}
+@keyframes brochure-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.brochure__trace {
+  font-size: 12px;
+}
+.brochure__trace summary {
+  cursor: pointer;
+  color: var(--dl-graphite-grey, #787580);
+}
+.brochure__cands {
+  margin: 4px 0 0;
+  padding-left: 0;
+  list-style: none;
+  display: grid;
+  gap: 3px;
+  max-height: 220px;
+  overflow: auto;
+  word-break: break-word;
+}
+.brochure__cands .is-ok {
+  font-weight: 600;
+}
 
 .portrait {
   display: flex;

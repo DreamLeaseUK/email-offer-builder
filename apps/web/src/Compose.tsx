@@ -1,7 +1,7 @@
 import type React from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Badge, Button, Field, Input, OfferCard, Select, Textarea } from 'dreamlease-design-system';
-import type { Brochure, CtaKind, Offer, Sender } from '@offer-mailer/schema';
+import type { Brochure, BrochureSearch, CtaKind, Offer, Sender } from '@offer-mailer/schema';
 import { CTA_DEFAULT_LABELS } from '@offer-mailer/schema';
 import { api, type Audience, type ContactMethod, type CreateResponse, type Draft, type Item, type LayoutChoice, type LeaseOption, type UseCase } from './api';
 
@@ -91,9 +91,57 @@ function ChipRow({ label, options, current, disabled, format, onPick }: { label:
   );
 }
 
+/** Plain words for what the finder concluded, shown above the evidence. */
+const SEARCH_HEADLINE: Record<BrochureSearch['status'], string> = {
+  verified_pdf: 'Brochure found and checked.',
+  verified_web_brochure: 'The manufacturer publishes this brochure as a web page; it has been checked and linked.',
+  official_page_only: 'We found the manufacturer’s official page, but not a document we can attach for you.',
+  brochure_request: 'The manufacturer only offers a request-a-brochure form for this model.',
+  not_verified: 'We searched for an official UK brochure but could not verify one.',
+  search_failed: 'The brochure search could not be completed. No conclusion was made.',
+};
+
+const hostOfUrl = (u: string): string => {
+  try {
+    return new URL(u).hostname.replace(/^www\./, '');
+  } catch {
+    return u;
+  }
+};
+
+/** "What we checked": the queries, the pages opened, and every document with the reason it was kept or dropped. */
+function SearchTrace({ search }: { search: BrochureSearch }) {
+  const mark = (s: string) => (s === 'accepted' ? '✓' : s === 'not_checked' ? '·' : '✕');
+  return (
+    <details className="brochure__trace">
+      <summary>See what we checked ({search.candidates.length} document{search.candidates.length === 1 ? '' : 's'}, {search.credits} credits, {Math.round(search.durationMs / 1000)}s)</summary>
+      <p className="dl-small app__muted">
+        {search.officialSite ? <>Official UK site: <strong>{search.officialSite}</strong>. </> : 'No official UK site was identified. '}
+        Searched: {search.queries.join(' · ')}
+      </p>
+      {search.pagesOpened.length > 0 && <p className="dl-small app__muted">Pages opened: {search.pagesOpened.map(hostOfUrl).join(', ')}</p>}
+      <ul className="brochure__cands">
+        {search.candidates.map((c) => (
+          <li key={c.url} className={c.status === 'accepted' ? 'is-ok' : ''}>
+            <span aria-hidden>{mark(c.status)}</span>{' '}
+            <a href={c.url} target="_blank" rel="noreferrer">{hostOfUrl(c.url)}{c.linkText ? ` — ${c.linkText}` : ''}</a>
+            {c.reasons.length > 0 && <span className="app__muted"> — {c.reasons.join('; ')}</span>}
+            {c.status === 'accepted' && <span className="app__muted"> — passed every check</span>}
+          </li>
+        ))}
+        {search.candidates.length === 0 && <li className="app__muted">No documents turned up at all.</li>}
+      </ul>
+    </details>
+  );
+}
+
+const SEARCH_STAGES = ['Searching for the official UK brochure…', 'Opening the manufacturer’s site…', 'Reading the documents it links…', 'Checking the model, the market and the date…', 'Still checking — some manufacturer sites are slow…'];
+
 /**
- * Brief §5.8 "Include brochure". Tries the stored copy / Firecrawl harvest first (`ensure`); if that
- * finds nothing or harvest is not configured, it drops to the manual path (upload a PDF or paste a link).
+ * Brief §5.8 "Include brochure". The finder searches, verifies and attaches by itself; the rep never picks
+ * from a list. When nothing verifies the panel says so, shows what was checked, and offers: search the web,
+ * upload a PDF, paste a link, accept the manufacturer's page / request form when there is one, or carry on
+ * without. A search that FAILED is shown differently from one that found nothing, and offers a retry.
  * The offer stores only { brochureId, include }; the full record rides on the tray Item for display.
  */
 function BrochureControl({ item, onAttach, onToggle, onRemove }: { item: Item; onAttach: (b: Brochure) => void; onToggle: (include: boolean) => void; onRemove: () => void }) {
@@ -101,24 +149,55 @@ function BrochureControl({ item, onAttach, onToggle, onRemove }: { item: Item; o
   const attached = item.brochure;
   const included = o.brochure?.include ?? false;
   const [busy, setBusy] = useState(false);
+  const [stage, setStage] = useState(0);
   const [manual, setManual] = useState(false);
   const [murl, setMurl] = useState('');
   const [err, setErr] = useState('');
   const [note, setNote] = useState('');
+  const [search, setSearch] = useState<BrochureSearch | undefined>();
+  const [remembered, setRemembered] = useState(false);
+  const [skipped, setSkipped] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  async function doEnsure() {
+  // the search is one request of 10–60s: walk the stage line so the rep can see it is working
+  useEffect(() => {
+    if (!busy) return;
+    setStage(0);
+    const t = setInterval(() => setStage((s) => Math.min(s + 1, SEARCH_STAGES.length - 1)), 6000);
+    return () => clearInterval(t);
+  }, [busy]);
+
+  async function doEnsure(force = false) {
     setBusy(true);
     setErr('');
     setNote('');
+    setSkipped(false);
     try {
-      const res = await api.ensureBrochure(o.vehicle.make, o.vehicle.model);
-      onAttach(res.brochure);
-      setManual(false);
-      setNote(res.state === 'fresh' ? 'Harvested a fresh brochure.' : res.state === 'stale' ? `Kept the stored copy — harvest failed: ${res.error ?? 'unknown error'}.` : (res.warning ?? 'Attached the stored brochure.'));
+      const res = await api.ensureBrochure(o.vehicle.make, o.vehicle.model, force);
+      setSearch(res.search);
+      setRemembered(!!res.remembered);
+      if (res.brochure) {
+        onAttach(res.brochure);
+        setManual(false);
+        setNote(res.state === 'fresh' ? 'Found and checked just now.' : res.state === 'stale' ? `Kept the stored copy — the new search found nothing (${res.error ?? 'no reason given'}). Replace it if it looks out of date.` : (res.warning ?? 'Attached the stored copy.'));
+      }
     } catch (e) {
       setErr(errMsg(e));
-      setManual(true); // nothing found, or harvest not configured — offer the manual path
+      setManual(true); // search not configured — the manual path still works
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function doAccept() {
+    setBusy(true);
+    setErr('');
+    try {
+      const res = await api.acceptBrochure(o.vehicle.make, o.vehicle.model);
+      onAttach(res.brochure);
+      setNote('Linked the manufacturer’s page.');
+    } catch (e) {
+      setErr(errMsg(e));
     } finally {
       setBusy(false);
     }
@@ -136,7 +215,7 @@ function BrochureControl({ item, onAttach, onToggle, onRemove }: { item: Item; o
       onAttach(res.brochure);
       setManual(false);
       setMurl('');
-      setNote('Brochure attached.');
+      setNote('Brochure attached. It is now the stored copy for this model, for every rep.');
     } catch (e) {
       setErr(errMsg(e));
     } finally {
@@ -144,19 +223,88 @@ function BrochureControl({ item, onAttach, onToggle, onRemove }: { item: Item; o
     }
   }
 
+  const manualForm = (
+    <div className="brochure__manual">
+      <Input placeholder="Paste a PDF or brochure-page link (https)" value={murl} onChange={(e) => setMurl(e.target.value)} />
+      <input ref={fileRef} type="file" accept="application/pdf" hidden onChange={(e) => { const f = e.target.files?.[0]; if (f) doManual(f); }} />
+      <div className="brochure__btns">
+        <Button variant="outline" size="sm" onClick={() => fileRef.current?.click()} disabled={busy}>Choose PDF…</Button>
+        <Button size="sm" onClick={() => doManual()} disabled={busy}>{busy ? 'Attaching…' : 'Attach link'}</Button>
+        <Button variant="ghost" size="sm" onClick={() => { setManual(false); setErr(''); }} disabled={busy}>Cancel</Button>
+      </div>
+    </div>
+  );
+
+  if (busy && !manual) {
+    return (
+      <div className="brochure">
+        <span className="brochure__progress"><span className="brochure__spinner" aria-hidden /> {SEARCH_STAGES[stage]}</span>
+        <span className="dl-small app__muted">This usually takes 10–40 seconds the first time a model is searched. After that it is instant for everyone.</span>
+      </div>
+    );
+  }
+
   if (attached) {
+    const what = attached.kind === 'gated' ? 'request form' : attached.documentType === 'price_spec_guide' ? 'price & spec guide' : 'brochure';
+    const how = attached.kind === 'pdf' ? 'PDF, hosted by us' : attached.kind === 'web' ? 'manufacturer’s web page' : 'manufacturer’s form';
     return (
       <div className="brochure">
         <label className="brochure__on">
-          <input type="checkbox" checked={included} onChange={(e) => onToggle(e.target.checked)} /> Include brochure in the email
+          <input type="checkbox" checked={included} onChange={(e) => onToggle(e.target.checked)} /> Include in the email
         </label>
-        <span className="brochure__title">{attached.kind === 'pdf' ? '📄' : '🔗'} {attached.title} <span className="app__muted">({attached.kind === 'pdf' ? 'PDF' : 'request page'})</span></span>
-        <div className="brochure__btns">
-          <Button variant="ghost" size="sm" onClick={doEnsure} disabled={busy}>{busy ? '…' : 'Replace'}</Button>
-          <Button variant="ghost" size="sm" onClick={onRemove} disabled={busy}>Remove brochure</Button>
-        </div>
+        <span className="brochure__title">
+          {attached.kind === 'pdf' ? '📄' : '🔗'} {attached.title} <span className="app__muted">({what} · {how})</span>
+        </span>
+        <span className="dl-small app__muted">
+          From {hostOfUrl(attached.sourceUrl)}
+          {attached.editionDate ? ` · edition ${attached.editionDate}` : ''}
+          {attached.source === 'manual' ? ` · added by ${attached.createdBy}` : attached.ukVerified.by === 'user' ? ` · accepted by ${attached.createdBy}` : ' · checked automatically'}
+          {' · '}
+          <a href={attached.kind === 'pdf' && attached.file ? attached.file.url : attached.sourceUrl} target="_blank" rel="noreferrer">Open it to check</a>
+        </span>
+        {manual ? manualForm : (
+          <div className="brochure__btns">
+            <Button variant="ghost" size="sm" onClick={() => { setManual(true); setErr(''); }}>Wrong? Replace it</Button>
+            <Button variant="ghost" size="sm" onClick={() => doEnsure(true)}>Search again</Button>
+            <Button variant="ghost" size="sm" onClick={onRemove}>Remove</Button>
+          </div>
+        )}
         {note && <span className="dl-small app__muted">{note}</span>}
         {err && <span className="dl-small brochure__err">{err}</span>}
+        {search && <SearchTrace search={search} />}
+      </div>
+    );
+  }
+
+  if (search && !skipped) {
+    const failed = search.status === 'search_failed';
+    const canAccept = (search.status === 'official_page_only' || search.status === 'brochure_request') && !!search.url;
+    const vehicle = `${o.vehicle.make} ${o.vehicle.model}`;
+    const google = `https://www.google.com/search?q=${encodeURIComponent(`${vehicle} brochure UK filetype:pdf`)}`;
+    return (
+      <div className={`brochure brochure__panel ${failed ? 'brochure__panel--failed' : 'brochure__panel--none'}`}>
+        <strong>{failed ? SEARCH_HEADLINE.search_failed : `No brochure attached for ${vehicle}.`}</strong>
+        {!failed && <span className="dl-small">{SEARCH_HEADLINE[search.status]}</span>}
+        {search.reason && <span className="dl-small app__muted">{search.reason}</span>}
+        {remembered && <span className="dl-small app__muted">This is the result of a search on {new Date(search.searchedAt).toLocaleDateString('en-GB')}; it is re-run automatically after 7 days.</span>}
+        {manual ? manualForm : (
+          <div className="brochure__btns">
+            {failed && <Button size="sm" onClick={() => doEnsure(true)}>Try again</Button>}
+            {canAccept && (
+              <Button size="sm" onClick={doAccept}>
+                {search.status === 'brochure_request' ? 'Add a “Request a brochure” link' : search.documentType === 'price_spec_guide' ? 'Link the official price & spec page' : 'Link the official brochure page'}
+              </Button>
+            )}
+            {canAccept && search.url && <a className="dl-small" href={search.url} target="_blank" rel="noreferrer">Open it first ↗</a>}
+            {!failed && <a className="dl-btn dl-btn--outline dl-btn--sm" href={google} target="_blank" rel="noreferrer">Search the web for it ↗</a>}
+            {!failed && search.officialSite && <a className="dl-small" href={`https://${search.officialSite}`} target="_blank" rel="noreferrer">Go to {search.officialSite} ↗</a>}
+            <Button variant="outline" size="sm" onClick={() => { setManual(true); setErr(''); }}>Upload a PDF / paste a link</Button>
+            {!failed && <Button variant="ghost" size="sm" onClick={() => doEnsure(true)}>Search again</Button>}
+            <Button variant="ghost" size="sm" onClick={() => setSkipped(true)}>Send without a brochure</Button>
+          </div>
+        )}
+        {err && <span className="dl-small brochure__err">{err}</span>}
+        <SearchTrace search={search} />
       </div>
     );
   }
@@ -165,20 +313,10 @@ function BrochureControl({ item, onAttach, onToggle, onRemove }: { item: Item; o
     <div className="brochure">
       {!manual ? (
         <div className="brochure__btns">
-          <Button variant="outline" size="sm" onClick={doEnsure} disabled={busy}>{busy ? 'Finding brochure…' : 'Add brochure'}</Button>
-          <Button variant="ghost" size="sm" onClick={() => { setManual(true); setErr(''); }} disabled={busy}>Upload / paste link</Button>
+          <Button variant="outline" size="sm" onClick={() => doEnsure()}>{skipped ? 'Add a brochure after all' : 'Add brochure'}</Button>
+          <Button variant="ghost" size="sm" onClick={() => { setManual(true); setErr(''); }}>Upload / paste link</Button>
         </div>
-      ) : (
-        <div className="brochure__manual">
-          <Input placeholder="Paste a PDF or brochure-page link (https)" value={murl} onChange={(e) => setMurl(e.target.value)} />
-          <input ref={fileRef} type="file" accept="application/pdf" hidden onChange={(e) => { const f = e.target.files?.[0]; if (f) doManual(f); }} />
-          <div className="brochure__btns">
-            <Button variant="outline" size="sm" onClick={() => fileRef.current?.click()} disabled={busy}>Choose PDF…</Button>
-            <Button size="sm" onClick={() => doManual()} disabled={busy}>{busy ? 'Attaching…' : 'Attach link'}</Button>
-            <Button variant="ghost" size="sm" onClick={() => { setManual(false); setErr(''); }} disabled={busy}>Cancel</Button>
-          </div>
-        </div>
-      )}
+      ) : manualForm}
       {err && <span className="dl-small brochure__err">{err}</span>}
     </div>
   );

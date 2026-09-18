@@ -2,7 +2,7 @@
  * Thin client for the Worker API (apps/api). Everything is same-origin: Vite proxies /api, /c, /r,
  * /f, /b and /a to the Worker in dev, and in production the Worker serves the built app too.
  */
-import type { Brochure, Campaign, ComplianceBlock, ContractType, Offer, Sender, Template } from '@offer-mailer/schema';
+import type { Brochure, BrochureSearch, Campaign, ComplianceBlock, ContractType, Offer, Sender, Template } from '@offer-mailer/schema';
 
 /** The admin-authored parts of a template; identity/version/markupVersion/status are server-owned. */
 export interface TemplateInput {
@@ -61,9 +61,13 @@ export interface Item {
 }
 
 export interface EnsureBrochureResponse {
-  brochure: Brochure;
-  /** stored: unexpired copy; fresh: harvested now; stale: expired copy kept after a failed harvest. */
-  state: 'stored' | 'fresh' | 'stale';
+  /** Absent when nothing attached (state 'none'): `search` then says what was checked and why. */
+  brochure?: Brochure;
+  /** stored: unexpired copy; fresh: found now; stale: expired copy kept after a search found nothing; none: nothing attached. */
+  state: 'stored' | 'fresh' | 'stale' | 'none';
+  search?: BrochureSearch;
+  /** `search` is a remembered result (re-run after 7 days), not one run just now. */
+  remembered?: boolean;
   error?: string;
   warning?: string;
 }
@@ -137,8 +141,10 @@ export const api = {
   create: (draft: Draft) => jsonPost('/api/campaigns', draft).then((r) => jsonOrThrow<CreateResponse>(r)),
   listCampaigns: () => fetch('/api/campaigns').then((r) => jsonOrThrow<{ campaigns: Campaign[] }>(r)),
   stats: (id: string) => fetch(`/api/campaigns/${id}/stats`).then((r) => jsonOrThrow<CampaignStats>(r)),
-  /** Attach a brochure for a vehicle: stored copy, or a Firecrawl harvest. Throws on 404/503 (offer the manual path). */
-  ensureBrochure: (make: string, model: string) => jsonPost('/api/brochures/ensure', { make, model }).then((r) => jsonOrThrow<EnsureBrochureResponse>(r)),
+  /** Attach a brochure for a vehicle: the stored copy, or a search. Throws only when search is not configured (503). */
+  ensureBrochure: (make: string, model: string, force = false) => jsonPost('/api/brochures/ensure', { make, model, ...(force ? { force: true } : {}) }).then((r) => jsonOrThrow<EnsureBrochureResponse>(r)),
+  /** The rep accepts the official page / request form the finder found but would not attach by itself. */
+  acceptBrochure: (make: string, model: string) => jsonPost('/api/brochures/accept', { make, model }).then((r) => jsonOrThrow<{ brochure: Brochure; state: string }>(r)),
   /** The manual path: a pasted PDF/brochure-page link, or an uploaded PDF (multipart). */
   manualBrochure: (make: string, model: string, opts: { url?: string; file?: File }) => {
     if (opts.file) {
