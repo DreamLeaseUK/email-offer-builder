@@ -1,5 +1,18 @@
 # Offer Mailer — implementation notes for Claude Code
 
+> **Status, 21 Sept 2026 — read before relying on the text below (which is kept verbatim).** These notes were
+> written for a send that leaves the HTML intact. The real send path is the HTML **pasted into New Outlook**, which
+> drops the `<style>` block and the conditional comments, so several of the non-negotiables need qualifying:
+> **(1) and (2) ghost tables** are still emitted but do not reach the recipient, and classic Outlook is not the
+> current target; **(7) pills** still holds as written (one-cell table, 126 / 100 content widths), but the pill table is now
+> `display:inline-block` rather than the reference markup's `align="left"` float (the clearing spacer did not
+> survive and the make name broke beside the pill in Gmail); **(8)** is now a hard requirement rather than a safety
+> net — the media query never arrives, so the wrapper is fluid (100% up to 600px, not fixed at 600px) and the stack
+> card's image column is fluid inline; **(9) forced light mode** lives in the style block and so does not arrive
+> either (untested consequence in Outlook mobile dark mode). The tool also sends one offer per row now, so the
+> grid2 / grid3 guidance is dormant. The acceptance test below has **not** been run; the current scope is Gmail and
+> New Outlook, validated by Matt's own test sends. Details: `architecture.md` A5 and B7, header of `cards.ts`.
+
 Received from Matt Wilson on 14 September 2026 with `dreamlease-offer-mailerv5.html`. This supersedes the constructions chosen during the 14 September client review (see `status-2026-09-14.md` §2 for what changed and why). Reproduced verbatim.
 
 Two files matter:

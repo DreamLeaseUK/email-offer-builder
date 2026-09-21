@@ -29,7 +29,8 @@
  *
  * Knowing deviations of 21 Sept 2026 (Matt's tests: HTML pasted into New Outlook, read in Gmail and Outlook
  * mobile). The paste drops the <style> block and the conditional comments, so nothing may depend on either.
- * diff-reference reports these (22 lines in all, 8 of them the old logo width):
+ * diff-reference reports 22 lines in all: 8 pre-date 21 Sept (2 the logo width, 6 the third hero pill) and 14 are
+ * a (10) and b (4); c sits outside the sections the script compares:
  *  a. pills are inline-block tables, not align="left" floats: the clearing spacer did not survive, and the
  *     make name ran beside the pill and broke in Gmail ("VOLKSWA / GEN").
  *  b. the row card's image column is calc()-fluid (its desktop width beside the details, the full card width

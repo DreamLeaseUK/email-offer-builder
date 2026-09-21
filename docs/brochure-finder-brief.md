@@ -6,14 +6,21 @@
 > well as PDFs; outcomes are six statuses with a separate `documentType`; "not found" carries a trace; the
 > promotions register is **not** changed for brochures (§5 step 6 and §6 "Register" do not apply); §3's "UNCOMMITTED"
 > note is stale (those changes were committed in `70aadd6` / `5f40928`, and the allowlist has since been deleted).
-> §2 (the problem), §4 (the thinking gaps) and §7 (constraints) still stand. §9's open questions are closed: brochures
+> §2 (the problem) still stands. §4 (the thinking gaps) stands except its second bullet and the "force a human
+> choice" in its fourth: the trust decision stayed with the machine, which reads and verifies the document itself;
+> the rep only accepts an official page or request form the finder surfaces, or uploads / pastes. §7 (constraints)
+> stands except item 3's "chosen brochure source … recorded verbatim in the register": the register has no
+> brochure column. §9's open questions are closed: brochures
 > outrank price/spec guides; a found or uploaded brochure is shared by every rep for 90 days; the junk-host list is in
 > `finder.ts`.
 >
 > **UPDATE 21 Sept 2026 — the UK-only rule was loosened (Matt).** The UK edition is still the target, but when none
 > verifies the finder now falls back to the manufacturer's own **European brochure in English** (`market: 'eu'`).
 > §4's "Non-UK leakage" concern is handled by marking, not refusing: the record is titled "European edition" and the
-> rep is told. Rules and live evidence (Polestar 2): `status-2026-09-21.md` §2–§4.
+> rep is told. Rules and live evidence (Polestar 2): `status-2026-09-21.md` §2–§4. **The same afternoon (finder-1.3)**
+> three defects that made it miss brochures a rep finds in 30 seconds were fixed — a numeric model filed without its
+> make ("R4-eBrochure.pdf"), a brochure offered through a button rather than a link (Geely EX2), and a document that
+> lost its "linked from the official site" status when the search had found it first: `status-2026-09-21.md` §8.
 
 **For:** Fable (implementing agent) · **Author:** Claude Code with Matt Wilson · **Date:** 15 Sept 2026
 **Repo:** `email-offer-builder` (DreamLease Offer Mailer). Read `CLAUDE.md` and `docs/dreamlease-offer-mailer-brief.md` §5.8 first.

@@ -370,6 +370,14 @@ Ship 1–3 as a working "paste a URL, get a hosted page and an Outlook draft" ve
 
 ## 9a. As built (14 September 2026)
 
+> **Read with care (note added 21 Sept 2026):** four of the bullets below record the MORNING of 14 Sept and were
+> superseded that same afternoon by the v5 reference, and one more on 21 Sept. As built today: the email is
+> **600px** wide (fluid up to 600), not 640; the body **does** carry `[if mso]` ghost tables (around each card row,
+> inside the stack card, in the hero CTA row) and the cards are inline-block **tables**, not divs; there is **no
+> VML** (square corners in classic Outlook are accepted; `diag-vml.ts` is a leftover script); in the **hero** card
+> the brochure link sits **beside** the button, under it only on the stack and grid cards; and auto layout is one
+> offer per row (the 21 Sept entry below). The bullets are kept as the record of what was tried.
+
 Where the implementation has departed from this brief, and why. `docs/status-2026-09-14.md` carries the full log and the client verification matrix; CLAUDE.md carries the rules.
 
 - **Email width 640px, not 600.** Fluid container up to 640 with the standard Outlook 640 ghost wrapper. The first Outlook review found 600 small in the reading pane.
@@ -388,7 +396,51 @@ Where the implementation has departed from this brief, and why. `docs/status-202
 - **The tool UI (step 4).** `apps/web` is a Vite + React app built from the DreamLease design system, which is **vendored into the monorepo as `packages/design-system`** (the `dl-*` components, tokens, Sofia Pro, stylesheet — consumed as source). Screens: Compose (URL lookup, term/mileage/initial chips that re-price in place, live preview, create, Copy-for-Outlook, Save-to-library), Campaigns (list + stats), Library (`POST`/`GET`/`DELETE /api/offers/library`), Register.
 - **URL lookup accepts any vehicle page.** Not just `/offers/<type>/<slug>/` but any dreamlease.co.uk path carrying a `personal`/`business` segment (e.g. `/<make>-car-lease-deals/<type>/<model>/<derivative>/`); identity comes from the page, so the path shape does not matter.
 - **Delivery.** Copy-for-Outlook (clipboard `text/html`+`text/plain`) is built and needs no IT. The Graph "Create draft in Outlook" is **parked** pending IT's Entra app — the compliance shape (delegated `Mail.ReadWrite`, browser-held tokens, drafts-only, app assigned to sales users) is agreed; see the status doc §4.
-- **Compliance record.** The promotions register (§5.5) is a live in-app master list plus CSV (`GET /api/register`, `/api/register.csv`). **Auto-append into DreamLease's existing Google Sheets financial-promotions register is a wanted future integration**, deferred pending the sheet's column layout, a Google service account, and a log-trigger decision. Template admin + Emma approval and the suppression list are still to build; the seeded default template's wording is a placeholder, not yet Emma-approved.
+- **Compliance record.** The promotions register (§5.5) is a live in-app master list plus CSV (`GET /api/register`, `/api/register.csv`). **Auto-append into DreamLease's existing Google Sheets financial-promotions register is a wanted future integration**, deferred pending the sheet's column layout, a Google service account, and a log-trigger decision. Template admin + Emma approval and the suppression list were still to build on 15 Sept — **both were built on 16 Sept** (see the 16 Sept entry below); the seeded default template's wording is still a placeholder, not yet Emma-approved.
+
+### As built — 16 September 2026
+
+- **Template admin and approval** (§5.5, §7.2 screen 7): master-admin-only create / edit drafts, publish, retire;
+  approved templates are locked (a change is a new version). **Departure from §5.5:** there is no separate approver
+  — the approver role is parked and the master admin who authors a template also approves it (Emma's approval
+  happens outside the tool for now). Roles are two: salesperson and master admin (`config/admins.json`).
+- **Suppression list** (§5.5): an opt-out register stored in plain text behind Access — add, check, view, CSV;
+  removal is admin-only. Screens are now Compose, Campaigns, Library, Register, Suppressions, Templates (admin).
+- **Recipient PII is not stored**: the recipient is used to render the greeting and stripped before the campaign
+  is saved; the greeting appears in the email only, never on the public hosted page. A daily Cron purges the
+  lookup cache, and campaigns only when a retention period is set.
+
+### As built — 18 to 21 September 2026 (current state in `docs/status-2026-09-21.md`, design in `docs/architecture.md`)
+
+- **Brochure discovery is the finder, not §5.8's allowlist harvest** (18 Sept). No per-brand domain list: the
+  official UK site is discovered from the search results, its brochure / download / model pages are read, and a
+  document attaches only after it has been read and passes the checks (make and model, UK evidence, document type,
+  edition age). The rep never picks from a list. Outcomes are six statuses plus a `documentType`; a manufacturer's
+  own **web brochure** is accepted as a link (`Brochure.kind` gained `web`); "nothing found" carries a trace of what
+  was checked. §5.8 steps 3 and 5 and the allowlist assumption in §9 no longer describe the build.
+  The as-built rules and evidence are in `docs/status-2026-09-18.md` §2–§4 and `docs/status-2026-09-21.md` §3 and
+  §8; `docs/brochure-finder-brief.md` holds the problem statement and the ORIGINAL design (rep picks from a list),
+  which was dropped — read its banner first.
+- **A European English-language brochure is the fallback** (21 Sept) when no UK edition verifies: same official
+  source, brochure only (never a European price guide, never the rest of the world), in English. It is stored with
+  `market: 'eu'`, titled "European edition", flagged to the rep, and the card's small print tells the recipient
+  ("This is the manufacturer's European brochure; specification, equipment and prices may differ from UK models.").
+  That sentence extends §5.8 step 9 and is Emma's to approve.
+- **One offer per row** (21 Sept). §5.1's `layout` and §7.1's four layouts stand in the schema, but the tool sends a
+  single offer as the hero card and two to six as stacked rows; the two-up and three-up grids are no longer offered
+  and the layout picker (§7.2 screen 2) is gone. Reason: side-by-side cards crowded the email and were the hard part
+  to render alike everywhere.
+- **The send path is a paste into New Outlook, and it rewrites the HTML** (21 Sept). The Graph draft of §5.4 is
+  still parked on IT, so Copy-for-Outlook is how every email goes out. The paste drops the `<style>` block and the
+  conditional comments and flattens text colour and size, so the email may not depend on a media query or on
+  `[if mso]`: the wrapper is fluid, badges are not floated, the stack card's image column is fluid inline. **The flattened
+  text colour and size is still open and unfixed** (the red 28px price and the red make name arrive black and
+  body-sized); the cause is not established and it is blocked on the as-received source (Gmail → Show original). The
+  current target is Gmail and New Outlook (desktop and mobile); §8.3's full client list is not yet attempted.
+- **Test sends run on production storage** (`pnpm dev:live`): a campaign made on local storage points its images and
+  links at production, which does not have them.
+- **Production is v0.5.0**; `/api` is still 503 there until Cloudflare Access exists, and `mailer.dreamlease.co.uk`
+  (§5.7) turned out to be already in use, so the tool needs a different subdomain.
 
 ## 9. Assumptions and open items
 

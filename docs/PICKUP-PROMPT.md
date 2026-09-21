@@ -1,104 +1,151 @@
 # Pickup prompt — DreamLease Offer Mailer
 
-> **UPDATE 18 Sept 2026 (session 4) — read `docs/status-2026-09-18.md` before anything below.** §5's "next major
-> task" (brochure discovery) is **built and deployed** (production Worker v0.4.0), on branch `brochure-finder`, not yet
-> merged to `main`. The design changed: no rep picking, web brochures accepted, six outcomes + `documentType`.
-> Tests are 172, not 157. The HEAD, "Fable unavailable" and "NOT started" statements below are stale. The
-> brochure-library skill is parked until after launch.
->
-> **UPDATE 21 Sept 2026 (session 5) — read `docs/status-2026-09-21.md` first; it supersedes the note above.** The
-> finder now has a European English-language fallback (finder-1.1) and the email's small print says so when one is
-> attached (184 tests). All of it is merged to `main`, pushed, and deployed (production Worker v0.5.0, 21 Sept). §8(a)'s "free text" badge recommendation contradicts `CLAUDE.md`
-> rule 3 (fixed list) — that is a decision for Matt, not a default. Emma still has to approve the European-brochure small print.
-
-Paste everything below the line into a new Claude Code session opened in `C:\Users\MatthewWilson\email-offer-builder`. **Rewritten 16 September 2026 (end of session 3).** It supersedes all earlier pickup prompts. Read it top to bottom before doing anything.
+Paste everything below the line into a new Claude Code session opened in `C:\Users\MatthewWilson\email-offer-builder`.
+**Rewritten 21 September 2026 (end of session 5).** It supersedes all earlier pickup prompts. Every state claim is
+marked **[verified 21 Sept]** (checked against the repo or the live system that day) or **[asserted]** (recorded,
+not re-checked). Verify before you act: run the pickup-verify skill if it is available.
 
 ---
 
-You are resuming the **DreamLease Offer Mailer**: an internal tool where a sales rep pastes a dreamlease.co.uk vehicle URL, assembles a branded HTML email of one to six lease offers, and gets Outlook-ready HTML plus a hosted web page. It is an FCA-regulated financial-promotions tool (compliance matters).
+You are resuming the **DreamLease Offer Mailer**: an internal tool where a sales rep pastes a dreamlease.co.uk
+vehicle URL, assembles a branded HTML email of one to six lease offers, and gets Outlook-ready HTML plus a hosted
+web page. It is an FCA-regulated financial-promotions tool (compliance matters).
 
 ## 0. How to behave with Matt (read this first)
 
-- Matt is Head of Marketing and the only stakeholder. He is **blunt, direct, and has zero patience for waffle, hedging, or process-for-its-own-sake.** He will swear at you when you talk around a problem or stall. Give him substance, evidence, and decisions — not essays.
-- **Do not start a build step, review, diagnostic, or any new work without an explicit instruction.** "Continue" is not one. Before a step, say in one or two lines what it is / changes / costs, then act.
-- Do **not** hide behind "compliance sign-off needed" as a reason not to build — that specific move made him furious this session. Where a human check genuinely matters, build it *into* the flow (the rep confirms), don't make it a gate.
-- **No multi-agent workflows / background runs** unless he asks. Prefer doing the work directly and showing evidence.
-- When you claim something works, **prove it** (a live call, a test run, a screenshot). He tests emails in classic Outlook + New Outlook (Windows) and forwards to his phone.
-- Report the live system's state plainly after any deploy.
+- Matt is Head of Marketing and the only stakeholder. He is **blunt, direct, and has zero patience for waffle,
+  hedging, or process-for-its-own-sake.** Give him substance, evidence and decisions — not essays.
+- **Do not start a build step, review, diagnostic, or any new work without an explicit instruction.** "Continue" is
+  not one. Before a step, say in one or two lines what it is / changes / costs, then act.
+- Do **not** hide behind "compliance sign-off needed" as a reason not to build. Where a human check genuinely
+  matters, build it *into* the flow, don't make it a gate.
+- He works **agile, by real test sends**: he makes a campaign, pastes it into New Outlook, sends it to Gmail and
+  Outlook, and sends you screenshots. Diagnose from evidence (the trace, the stored campaign, the as-received HTML),
+  fix, and let him re-test. Do not answer a rendering problem with a process proposal.
+- When you claim something works, **prove it** (a live call, a test run, a measurement in a real browser).
+- Commit only when asked. Report the live system's state plainly after any deploy.
 
 ## 1. Read these, in order
 
-1. `CLAUDE.md` — the four rules that never bend, the working method for the email template, the working agreement, runtime constraints, Cloudflare details, build order.
+1. `CLAUDE.md` — the four rules that never bend, the current rendering scope, the working agreement, commands.
 2. **This file.**
-3. **`docs/architecture.md` — the authoritative Solution Design & System Architecture (current-state).** The technical map: layers, data model & storage, auth & roles, PII/compliance posture, routing, roadmap. **Read this for the full picture.**
-4. `docs/status-2026-09-16.md` — the session-3 build log (what was built, decisions, findings). `status-2026-09-15.md` / `-14.md` are history.
-5. **`docs/brochure-finder-brief.md` — the deferred major task** (brochure discovery redesign, for Fable). See §5 below.
-6. `docs/dreamlease-offer-mailer-brief.md` — the original product brief / requirements (v1.1); §5 is the shared contract, §8 the build order.
-7. `docs/offer-mailer-implementation-notes.md` — the v5 email markup non-negotiables + acceptance test.
+3. **`docs/architecture.md`** — the authoritative Solution Design & System Architecture. **A5 (the real send path)
+   and B7 (rendering and the deviations from the v5 reference) are the parts that changed most recently.**
+4. **`docs/status-2026-09-21.md`** — the current build log. §0 is the summary; §1–§6 the brochure fallback; §7 the
+   test sends and the one-offer-per-row change. Older status files are history.
+5. `docs/brochure-finder-brief.md` — the brochure finder's design and evidence (read its status banner first).
+6. `docs/dreamlease-offer-mailer-brief.md` — the product brief (v1.1); §5 is the shared contract, **§9a is the
+   as-built log** (where the build has left the brief).
+7. `docs/offer-mailer-implementation-notes.md` — the v5 markup reference; **read its 21 Sept status block first**,
+   several of its non-negotiables no longer hold as written.
 
-## 2. Repo & live state (verified 16 Sept, end of session 3)
+## 2. Repo & live state
 
-- **Git:** `main`, clean tree, **pushed to `origin`** = `https://github.com/DreamLeaseUK/email-offer-builder` (private, DreamLeaseUK org). Auth via Git Credential Manager (stored) — `git push` just works. **HEAD `7243a19`.** Run `git log --oneline db9e1be..HEAD` for the session-3 commits (secondary links, rep profile + CTA, recipient-PII minimisation, role gate, template admin API + UI, suppression register API + UI, retention Cron, docs, then the UX pass: PCH fee, matched stat tiles, preview keep-and-flag, auto-preview + Add button). **Working tree clean — nothing uncommitted.**
-- **Tests:** `pnpm test` → **157 pass** (schema 18, render 30, adapters 52, api 57). `pnpm typecheck` clean; `apps/web` builds.
-- **Live Worker:** https://offer-mailer.matt-wilson-9b8.workers.dev/health → v0.3.0. **Prod NOT redeployed — behind HEAD.** Every `/api` route returns **503 in production until Cloudflare Access is configured (IT dependency)**, so the tool runs via `wrangler dev` + tests, not live `/api`.
-- **Firecrawl key:** in `apps/api/.dev.vars` as `FIRECRAWL_API_KEY` (local; `wrangler dev` health shows `firecrawl:true`). `.dev.vars` is git-ignored. Prod secret unconfirmed.
-- **Roles for local testing:** `matt.wilson@dreamlease.co.uk` is the configured master admin (`config/admins.json`); with `DEV_USER_EMAIL` set to any other address you're a salesperson (for testing the admin gate).
-- **Dev servers** (won't survive the session): `pnpm dev` (Worker on :8787) and `pnpm --filter @offer-mailer/web dev` (Vite; took **:5173** last run). Vite proxies `/api`,`/c`,`/r`,`/f`,`/b`,`/a` → :8787. Vite binds `localhost` (IPv6) — use `http://localhost:PORT`, not `127.0.0.1`.
+- **Git [verified 21 Sept]:** branch `main`, pushed to `origin` = `https://github.com/DreamLeaseUK/email-offer-builder`
+  (private). `git push` works through the stored credential. The `brochure-finder` branch is fully merged and can be
+  deleted. Run `git log --oneline -12` for the session-5 commits.
+- **Tests [verified 21 Sept]:** `pnpm test` → **194 pass** (schema 18, render 37, adapters 80, api 59);
+  `pnpm typecheck` clean. There is **no CI**: the tests are the only gate. `diff-reference` reports **22** differing
+  lines: 8 pre-date 21 Sept (2 the logo width, 6 the third hero pill), 14 are the inline-block pills (10) and the
+  stack card's image column (4); the fluid wrapper is outside the sections it compares. All are recorded in the
+  header of `packages/render/src/cards.ts`. `MARKUP_VERSION` is still 2.
+- **Production [verified 21 Sept]:** https://offer-mailer.matt-wilson-9b8.workers.dev/health → **v0.5.0**, db ok,
+  images true, **`firecrawl:false`** (the production Firecrawl secret is not set). **Every `/api` route answers 503**
+  until Cloudflare Access exists (IT). D1 migrations 0000–0002 applied. `wrangler` is signed in as Matt with deploy
+  rights. **Security:** production has `ACCESS_AUD` empty; `/api` is closed only because `DEV_USER_EMAIL` is not
+  defined there. Never set it in production.
+- **How the tool is actually used today [verified 21 Sept]:** locally, on production storage —
+  `pnpm dev:live` (API on :8787, `wrangler dev --remote`) + `pnpm --filter @offer-mailer/web dev` (UI on
+  http://localhost:5173, use `localhost` not `127.0.0.1`). **Plain `pnpm dev` uses local storage and must never be
+  used for an email that will be sent**: its images, hosted page and tracked links point at production, which does
+  not have them (all 404). `dev:live` writes real production data: test campaigns are in the production promotions
+  register and should be wiped before go-live. Dev servers do not survive a session.
+- **Firecrawl [verified 21 Sept]:** key in `apps/api/.dev.vars` (git-ignored); 4,021 of 5,000 credits left, period
+  ends 9 Oct. A brochure search costs about 10–16 credits.
+- **Roles:** `matt.wilson@dreamlease.co.uk` is the master admin (`config/admins.json`); any other `DEV_USER_EMAIL`
+  is a salesperson.
 
 ## 3. What exists (build order, brief §8.2)
 
 | Step | State |
 |---|---|
-| 1 Scaffold, schema, D1, Worker, Access, deploy | Done, deployed |
-| 2 `render()`, four layouts, hosted page | Done, deployed (v5 markup) |
-| 3 URL lookup, image pipeline, brochure harvest | Done (harvest works via `wrangler dev` with the key) |
-| 4 Web app (Compose/Campaigns/Library/Register/Suppressions/Templates) | **Core screens built, dev-only** (Vite+React, vendored design system). Not yet served from the prod Worker. |
-| 5 Graph draft / Copy for Outlook | Copy-for-Outlook done; Graph draft **parked** (needs IT Entra app) |
+| 1 Scaffold, schema, D1, Worker, Access middleware, deploy | Done, deployed |
+| 2 `render()`, layouts, hosted page | Done. **One offer per row since 21 Sept** (1 → hero, 2+ → stacked rows); grids dormant |
+| 3 URL lookup, image pipeline, brochures | Done. Brochures are the **finder** (no allowlist, `finder-1.3`), with a **European English-language fallback** |
+| 4 Web app | Core screens built; runs locally only, **not yet served from the production Worker** |
+| 5 Graph draft / Copy for Outlook | Copy-for-Outlook done and is the only send path; Graph draft parked (IT Entra app) |
 | 6 Redirects, click logging, stats | Done |
-| 7 Template admin, approval, register, suppression | **Done** — template admin + self-approve, promotions register (in-app + CSV), suppression register (in-app + CSV) |
+| 7 Template admin, approval, register, suppression | Done |
 | 8 Stubs + `docs/evolution.md` | Not started (low value) |
 
-## 4. What was built in session 3 (16 Sept) — full detail in `docs/status-2026-09-16.md`
+## 4. The thing to understand before touching the email
 
-All committed & pushed. Highlights:
+**The send path is: Copy for Outlook → paste into a New Outlook message → send. Outlook rewrites what is pasted.**
+Scope is **Gmail (web + app) and New Outlook (desktop + mobile)** only, for now (Matt, 21 Sept). From his real sends:
 
-- **Rep-facing UI**: signature **secondary contact links**, the offer-button **CTA selector** + editable label, **portrait photo** + saved/editable sender details (persisted per rep).
-- **PII plan completed** (items 1–4): recipient PII **not persisted** (stripped at save) and the greeting kept **off the public hosted page**; a daily **retention Cron** (safe by default — campaigns purged only under `RETENTION_CAMPAIGN_DAYS`); the **suppression register** (plain text, auditable, admin-gated removal, CSV).
-- **Step 7 completed**: **role gate** (`roles.ts` + `config/admins.json` → admin/salesperson); **template admin** (create/edit drafts, publish = self-approve, approved templates **locked**, retire) — API + a **Templates** tab (admins only); the **Suppressions** tab (all staff).
-- **UX pass (later, 16 Sept)**: PCH cards always show the **£299.99 processing fee**; a multi-offer email shows **matched, even stat-tile counts** across cards; the preview is **kept-and-flagged stale** on a chip change instead of blanking; the **first offer auto-renders the preview**; the **Add button** stays enabled and relabels "Add offer" / "Add another offer".
-- **Decisions**: two roles only (approver parked, master admin self-approves); approved templates immutable (new version to edit); suppression list stored **plain text** not hashed ("lowest friction = least perceived risk"); rep contact details are **business data**, not customer PII; PCH processing fee forced (first stage — BCH/salsac TBD).
-- Earlier session-2 work (audience/salsac, brochure UI, Firecrawl `rawBase64`, interim allowlist fixes) is in `docs/status-2026-09-15.md`. The `rawBase64` download is load-bearing — keep it.
+- **Survives the paste:** tables, widths and `max-width`, `display:inline-block`, backgrounds, borders, radius, bold,
+  letter-spacing, link colours, images.
+- **Lost:** the `<style>` block (so no media query, no forced-light overrides), the conditional comments (no ghost
+  tables), a float's clearing spacer.
+- **OPEN, not fixed:** **text colour and font size arrive flattened** — the 28px red price and red make name arrive
+  black and body-sized, in Gmail and Outlook alike; white badge text arrives black. Leading suspect: Outlook's
+  "merge formatting" paste option. **Blocked on evidence Matt has been asked for three times:** the as-received
+  source (Gmail → ⋮ → Show original → Download original) and which paste option Outlook used. Ask again, or ask for
+  his OK to pull it from his Gmail in Chrome. Do not guess a fix.
 
-## 5. THE NEXT MAJOR TASK — brochure discovery redesign (for Fable)
+So **nothing may depend on the media query or on `[if mso]`**. What was changed for that (all in `main`): fluid
+wrapper (100% up to 600px); inline-block badge pills instead of floats; a calc()-fluid image column in the stack
+card; auto layout 1 → single, 2+ → stack; layout picker removed. Matt's verdict on the re-test: "100% better".
 
-**Read `docs/brochure-finder-brief.md` in full.** Summary:
+## 5. Open items, in the order I would take them
 
-- **Problem:** brochure discovery is gated on a hand-maintained static allowlist of OEM UK domains. It is structurally unmaintainable — OEMs use global domains (kia.com, denza.com/uk) with unpredictable paths, domains move, new brands arrive monthly. Stale entries fail **silently and customer-facing** (dead "Request a brochure" links).
-- **Decision:** replace the allowlist gate with **"the machine finds, the rep confirms"** — Firecrawl returns ranked candidate brochures (junk aggregators denylisted), the rep picks the right one, we download via `rawBase64` and host it. The human confirming is simpler *and* a stronger compliance trail. Zero per-brand maintenance.
-- **Status: NOT started. Fable (the intended implementer) is unavailable until Thursday.** The brief is written and ready to hand to Fable. Do not start building the redesign yourself unless Matt says so; if he does, the brief is the spec. The brief's §9 has three open questions for Matt (ranking preference, per-rep cache, denylist contents).
+1. **Flattened colour / size on the paste path** (§4) — needs the as-received source first.
+2. **Small print order on a phone** — in the stack card it sits under the image, so on a phone it reads before the
+   car's name and price. Proposed: move it below the button. **Matt has not answered; do not build unasked.**
+3. **Delete the dormant grid code** (`halfCard`, `compactCard`, `match.ts`, `measure.ts`, the grid tests) once Matt
+   confirms the stacked layout in Gmail and Outlook mobile. He has not been asked since "100% better".
+4. **Brochure finder reliability — Matt: "It's not set up properly… must be resolved."** Three defects were fixed
+   on 21 Sept (`status-2026-09-21.md` §8: Renault 4, Geely EX2), but they surfaced only because he searched those
+   cars. **Proposed and awaiting his yes:** one sweep across every make DreamLease sells (~25 models, ~250–300
+   Firecrawl credits), fix each failure class, record every run as a permanent replay test. When he reports a miss:
+   read the stored trace first (production D1 `brochure_searches`, by `vehicle_key`) — it says exactly where the
+   document was lost. Also four calls Matt can overturn (`status-2026-09-21.md` §5): brochures only in the
+   fallback; a euro-priced European brochure is attached and flagged; an unmarked-market document is refused; a
+   European edition keeps the 90-day life. Test more brands; failures show as traces.
+5. **Badge control** — a decision first: fixed approved list (what `CLAUDE.md` rule 3, the brief and the schema all
+   say today) or free-text-but-logged. Earlier notes "recommended" free text; that would mean rewriting rule 3, so it
+   is Matt's call, not a default.
+6. BCH / salary-sacrifice processing fee (PCH forces £299.99; the other two undecided). Step 8 stubs (low value).
+7. Rendering assurance (`architecture.md` A5: certify per markup version on real clients, certify the send path,
+   pre-send check in the tool) — proposed, deliberately parked by Matt in favour of agile test sends.
 
-## 6. Still owed by others (not buildable here)
+## 6. Blocks go-live (owed by others)
 
-- **IT:** Cloudflare Access (unblocks prod `/api`; today it 503s) + a **Cloudflare-served subdomain** — **`mailer.` is already occupied** (resolves to an unrelated Apache host; `offers.` is free; DNS is at GoDaddy), so a free subdomain is needed (proposed `offer-mailer.` / `offers.`); see `status-2026-09-16.md` §7 and the project memory `custom-domain-setup-parked`. Plus the Graph Entra app (for "Create draft in Outlook").
-- **Emma:** the real approved compliance wording for the three contract types (PCH/BCH/salary sacrifice) — the templates currently carry placeholders; publish it via the new **Template admin**. Also the **retention period** for `RETENTION_CAMPAIGN_DAYS`.
-- **Matt:** confirm the prod Firecrawl secret; Workers Paid plan; the three open questions in the brochure brief.
+- **IT:** Cloudflare Access (unblocks production `/api`) + a **Cloudflare-served subdomain**. `mailer.dreamlease.co.uk`
+  is **already taken** by an unrelated host; `offers.` is free; DNS is at GoDaddy (project memory
+  `custom-domain-setup-parked`). Plus the Graph Entra app. A one-page IT runbook was offered, never written.
+- **Serve the web app from the production Worker** — not built.
+- **Emma:** approved compliance wording for PCH / BCH / salary sacrifice (the live template is a placeholder);
+  the brochure small print including the new European-edition sentence; the campaign retention period.
+- **Matt:** the production Firecrawl secret; confirm the Workers Paid plan (not verifiable from the repo).
 
-## 7. Known-good facts & gotchas (so you don't re-derive them)
+## 7. Known-good facts & gotchas
 
-- Initial-payment calc is correct (`initial-months × monthly`); a "1-month" offer showing `initial == monthly` is config, not a bug.
-- The car image renders on **black only in local `wrangler dev`** (the local Images binding ignores the white fill); production renders white.
-- Preview links (`/r/<slug>/...`) only resolve for a **created** campaign; clicking a link inside a *preview* iframe 404s ("Link not found.") — expected, not a bug.
-- Firecrawl `rawBase64` fetches a PDF's bytes past Akamai (~2 credits); a fresh brochure harvest takes ~15–25s.
-- **"View offer" already deep-links with the rep's configured terms** (`offerUrl` = `canonicalOfferUrl(...)`); the live site honours them (verified). No change needed.
-- **Template admin needs all three audience blocks** (PCH/BCH/salsac) — `z.record(ContractType, ComplianceBlock)` requires each; the seeded default template is a **placeholder, not Emma-approved**.
-- The four rules (CLAUDE.md) are load-bearing: **CAP IDs never stored; three layers no leaks (`render()` is the only HTML producer); compliance locked; drafts only.**
+- Initial payment is `initial-months × monthly`; a "1-month" offer showing `initial == monthly` is config, not a bug.
+- The car image renders on black only in plain local `wrangler dev`; production (and `dev:live`) render white.
+- Links inside a *preview* iframe 404 ("Link not found.") — expected; only a created campaign has links.
+- "View offer" already deep-links with the rep's configured terms. No change needed.
+- Template admin needs all three audience blocks; the seeded default template is a **placeholder, not Emma-approved**,
+  and seeds itself into an empty database on first use.
+- A brochure "nothing found" is remembered 7 days, but not across a finder rules change (`FINDER_VERSION`).
+- Windows shell: a long heredoc with backticks and apostrophes can fail in the Bash tool; write the script to a
+  file and run it. Line endings: `model.ts` is CRLF in the working copy (autocrlf), which is normal.
+- The four rules (`CLAUDE.md`) are load-bearing: **CAP IDs never stored; three layers no leaks (`render()` is the
+  only HTML producer); compliance locked; drafts only.**
 
 ## 8. Start
 
-Confirm in a few lines that you've read the docs above, state the git + test + live state as you find them (`git log`, `pnpm test`, `/health`), then confirm which of the **queued items from the 16 Sept UX pass** (see `status-2026-09-16.md` §6 / `architecture.md` §B9) Matt wants:
-- **(a) Badge control** — rep-editable badge/tags on the offer card. **Decide the fork first: fixed approved list vs free text** (recommended: free-text-but-logged, an optional claim-word denylist). This is the most likely next task; it touches rule 3, so surface the decision before building.
-- **(b) Email cross-client validation** — build natively: caniemail CSS check in the tests + mobile/dark preview toggles; Litmus/Email on Acid (paid) is the only real Outlook-desktop option.
-- **(c) Equal-height columns / button alignment** — the hard email-layout diagnostic (Outlook + mobile check).
-- **(d) BCH/salsac processing-fee** handling; **(e) step 8** stubs; **(f) deploy / custom-domain runbook**; or wait for **Fable** on the brochure redesign (Thursday).
-
-Steps 1–7 and the PII plan are **done**; the tool is feature-complete for a rep's day-to-day pending Emma's wording and IT's Access + subdomain. Also mind the **email-template working method** (§0 / CLAUDE.md): don't change the v5 markup off a single screenshot — build a diagnostic `.eml` and have Matt check it in Outlook + on his phone. Propose nothing else until he answers.
+Confirm in a few lines that you have read the docs above; state the git, test and live state as you find them
+(`git status`, `git log --oneline -5`, `pnpm test`, `/health`); then ask Matt which of §5 he wants, leading with the
+two things only he can unblock: the as-received Gmail source (§5.1) and the small-print decision (§5.2). Propose
+nothing else until he answers.
