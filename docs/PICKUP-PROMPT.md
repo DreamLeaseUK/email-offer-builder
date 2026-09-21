@@ -29,8 +29,9 @@ web page. It is an FCA-regulated financial-promotions tool (compliance matters).
 
 1. `CLAUDE.md` — the four rules that never bend, the current rendering scope, the working agreement, commands.
 2. **This file.**
-3. **`docs/architecture.md`** — the authoritative Solution Design & System Architecture. **A5 (the real send path)
-   and B7 (rendering and the deviations from the v5 reference) are the parts that changed most recently.**
+3. **`docs/architecture.md`** — the authoritative Solution Design & System Architecture. **A5 (the real send path),
+   B7 (rendering and the deviations from the v5 reference) and B7b (the brochure finder, in one place) are the parts
+   that changed most recently.**
 4. **`docs/status-2026-09-21.md`** — the current build log. §0 is the summary; §1–§6 the brochure fallback; §7 the
    test sends and the one-offer-per-row change. Older status files are history.
 5. `docs/brochure-finder-brief.md` — the brochure finder's design and evidence (read its status banner first).

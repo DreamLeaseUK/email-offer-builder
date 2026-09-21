@@ -25,7 +25,9 @@ Three audiences / lease products, each with its own compliance wording and terms
 ## A2. Core flows
 1. **Look up a vehicle.** Rep pastes a vehicle URL → normalise → HTMLRewriter page parse (identity/stats/
    image) → the site's own pricing JSON prices the chosen term/mileage/initial → returns an `Offer` plus the
-   configuration options (the "chips"). Cached 24 h. Prices are not in the page HTML. The **configured terms
+   configuration options (the "chips"). Cached 24 h. Prices are not in the page HTML. The site HTML-encodes text
+   even inside its script block ("Techno &#x2B; Comfort Range"), so names, stats and spec lines are entity-decoded;
+   a cached result that still carries an entity is treated as stale. The **configured terms
    are encoded into the offer URL**, so "View offer" opens the site pre-set to exactly what was quoted.
 2. **Configure & assemble.** Rep picks the audience and up to six offers, writes the intro/subject, picks
    the green-button CTA + optional secondary contact links, optionally attaches a brochure, previews live.
@@ -52,15 +54,12 @@ Three audiences / lease products, each with its own compliance wording and terms
   signature, separate from the primary button, pruned to methods whose field is present.
 - **Rep profile (persisted)**: portrait photo (upload/replace/remove) + editable contact details, remembered
   per rep and prefilled next time.
-- **Brochures**: the finder searches, verifies and attaches by itself — the manufacturer's UK PDF (hosted by us),
-  or its own web brochure / price & spec page as a link; no allowlist, no picking. When nothing verifies the rep sees
-  what was checked and can upload, paste a link, accept the official page, or send without. **Two tiers
-  (21 Sept):** the UK edition is the target; when none verifies, the manufacturer's own **European brochure in
-  English** is **offered, never attached by itself** (Matt): the rep uses it, puts their own in its place, or sends
-  without; accepted, it is fetched and stored with `market: 'eu'`, titled "European edition", and a copy another rep
-  accepted arrives unticked
-  (never a European price guide, never the rest of the world). **finder-1.4 (21 Sept)** rebuilt discovery on Firecrawl's own strengths: Map finds the model's page and the site's brochure pages, the model's page is opened first and OPERATED in one 1-credit scrape (rendered links, pressed controls, the files they fetch — `operate.ts`), the page a document came from is carried as evidence, and the strict checks run only once a document is in hand; what the maker's own site serves today is its current edition (up to 36 months, flagged `older_edition`); a search that never reached the official site is held a day, not a week. Rules and the 17-car sweep: `status-2026-09-21.md` §9. finder-1.3 before it also reads the PDFs a page offers through a button (addresses held only in the page’s own data), opens a numeric model’s file when the name leaves the make out ("R4-eBrochure.pdf"), and keeps "linked from the official site" when the search had already found the same file. See `brochure-finder-brief.md`,
-  `status-2026-09-18.md` and `status-2026-09-21.md` §3.
+- **Brochures** (design in **B7b**): the finder searches, understands the manufacturer's site, operates the model's
+  page and verifies what it finds; a verified **UK** brochure, price & spec guide or web brochure attaches by
+  itself (our hosted PDF, or a link). No allowlist, no picking from a list. A manufacturer's **European brochure in
+  English** is only ever **offered**: the rep uses it, puts their own in its place, or sends without. An official
+  page that holds a protected file, a price-list hub and a request-a-brochure form are offered for one click too.
+  When nothing is found the rep sees what was checked and can upload, paste a link, or send without.
 - **European-edition small print**: when the attached brochure is a European edition the card's small print says
   so ("This is the manufacturer's European brochure; specification, equipment and prices may differ from UK
   models."); grid3's shared footnote has a variant. Wording is Matt's; Emma has not approved it yet.
@@ -162,7 +161,7 @@ memory); a free Cloudflare-served subdomain is needed — proposed `offer-mailer
 | Package | Responsibility |
 |---|---|
 | `packages/schema` | Zod offer model + `assertNoCapId`. The shared contract. |
-| `packages/adapters` | Source & output adapters, pure: URL lookup (normalise → parse → pricing → buildOffer), Firecrawl client, brochure finder / harvest (which also holds the manual upload-or-paste path) / ensure. No adapter imports another. |
+| `packages/adapters` | Source & output adapters, pure: URL lookup (normalise → parse → pricing → buildOffer), Firecrawl client (search, map, scrape with page actions, raw file fetch), brochure finder / operate (the in-page script) / harvest (which also holds the manual upload-or-paste path and the accept paths) / ensure; `scripts/finder-sweep.mts` (live proof runs). No adapter imports another. |
 | `packages/render` | `render(campaign, template)` — the sole HTML producer. v5 markup as template functions (`cards.ts`, `render.ts`), with the recorded deviations of B7; four layouts, two of them offered; `match.ts` + `measure.ts` (row height matching); `diff-reference.ts` fidelity check; `MARKUP_VERSION`. |
 | `packages/design-system` | Vendored DreamLease design system (`dl-*` React components, tokens, Sofia Pro), consumed as source. |
 | `apps/api` | The Cloudflare Worker (Hono): API, hosted pages, redirects, files, static assets, the retention Cron. |
@@ -196,7 +195,7 @@ whichever is on 8787. Production `/api` itself stays 503 until Access is configu
 | `offers` | Saved offer library | rep email |
 | `templates` | Compliance templates (blocks, footer, markup/version, status, approvedBy/At) | approver email |
 | `brochures` | Brochure metadata (PDF bytes are in R2) | rep email (`createdBy`) |
-| `brochure_searches` | Latest completed brochure search per vehicle: outcome + what was checked. A "nothing found" is remembered 7 days, but never a failed search and never one made under an older `FINDER_VERSION` (a rules change re-runs, and re-pays for, those searches) | rep email |
+| `brochure_searches` | Latest completed brochure search per vehicle: outcome, market, edition, and the trace (queries, pages opened, every document with how it was discovered, the action taken and why it was kept or dropped). Also what `/brochures/accept` acts on: an official page, a request form, or an offered European edition. A "nothing found" is remembered 7 days; a search that never reached a page of the official site (`exhausted: false`) only 1 day; never a failed search, and never one made under an older `FINDER_VERSION` (a rules change re-runs, and re-pays for, those searches) | rep email |
 | `senders` | Rep profile (name/phone/WhatsApp/booking/secondary + headshot URL), keyed by email | rep business data |
 | `clicks` | Click/view log: coarse uaClass + timestamp | **none — no IP/UA** |
 | `suppressions` | Opt-out **emails (plain text)** + addedBy/at/note | recipient email (lawful basis; admin-removable) |
@@ -275,11 +274,91 @@ and `min-height` only. `measure.ts` estimates where Arial text wraps without a b
 with Chrome). Like-for-like cards reserve nothing and render the reference exactly. With one offer per row this
 is dormant; the grid code and it are candidates for deletion once the stacked layout is confirmed in both clients.
 
+## B7b. Brochure discovery — the finder (`finder-1.4`, 21 Sept 2026)
+Code: `packages/adapters/src/brochure/` — `finder.ts` (pure; Firecrawl and a plain GET are injected), `operate.ts`
+(the script that runs inside the page), `harvest.ts` (retrieve, store, record, accept), `ensure.ts` (stored / fresh
+/ stale / none). History and evidence: `brochure-finder-brief.md`, `status-2026-09-18.md`, `status-2026-09-21.md`
+§3, §8–§10.
+
+**Principle** (Matt, 21 Sept: "you are not leveraging Firecrawl capability to its optimum"): *search discovers, Map
+and Scrape understand the site, the page is operated, and strict validation happens only once a document is in
+hand.* The earlier versions judged documents from search metadata and threw the right ones away unopened.
+
+**When it runs** (`ensure.ts`): one current brochure per make/model, shared by every rep. A stored copy inside its
+90 days and its edition limit is reused for nothing. Otherwise a remembered result is returned (7 days for "nothing
+found", 1 day for a search that never reached the official site, never a failed search, never one from an older
+`FINDER_VERSION`), or the finder runs. "Search again" forces it.
+
+**Pipeline**
+1. **Search** twice at once, UK-located: `"<make> <model>" UK official brochure PDF` (web) and
+   `<make> <model> brochure` (PDFs). Every PDF hit is a candidate.
+2. **Identify the official UK site** from the hits. The host is the make, optionally with a generic word after it
+   (cars, auto, motors, automobiles, motorcars, uk, gb, global…), a known word before it (saic…) or the model after
+   it (ineosgrenadier); any subdomain counts; `.ie` counts (Ireland is the likeliest English European source). UK =
+   a `.uk` host, a `/uk/`-style path, or a result that describes itself as UK. Dealers and press offices fail.
+3. **Map** the site (`<model> brochure`) for this model's page and its brochure / download / price pages. Fixed
+   paths and a `site:` search are only the fallback when Map returns nothing.
+4. **Open the model's own page first**, chosen properly: any spelling the variants allow ("E-208" / "208"), never a
+   fleet, Motability, offers, news or tutorial page, never another model's, the base page rather than a trim's.
+   Brochure / download pages are opened only if the model's page gave no brochure.
+5. **Operate the page** (`operate.ts`): one Scrape with `actions`. In Firecrawl's browser the script hooks
+   `window.open`, `a.click()`, `fetch`, XHR and link clicks, dismisses a cookie banner, notes the rendered links,
+   presses the controls labelled brochure / download / specification / price list one at a time, and reports each
+   file with HOW it was reached and the LABEL that led to it. It never presses a request, test-drive or configurator
+   control and never fills in or submits anything. The page's markdown links (a bare "Download" is read by the
+   heading above it and the words before it) and the PDF addresses held only in the page's own data are read too.
+6. **Queue the candidates.** Dropped on sight: aggregator / file-sharing hosts, rest-of-world addresses, archive and
+   used-car addresses, and anything that is not sales literature (manuals, warranty, accessories, press packs,
+   Motability guides, offer terms, company reports). A European address is kept for the fallback tier only.
+   Provenance gates what is opened (official host, or linked from the official site); the score only ORDERS the
+   queue: brochures before price guides, a file that names exactly this model before a generic redirect. Another
+   model's document is refused by name ("c-hr-plus.pdf" is not the C-HR's), also after a link has been resolved.
+7. **Read and validate** (first four pages; at most 4 documents, 25 credits): make and model in the text (the
+   model's own page vouches for the model); the type established; an edition date (text, address, CMS file name,
+   else the `Last-Modified` header) inside the limit — 12 months for a brochure and 6 for a price guide, or **36 / 12
+   when the manufacturer's own site is serving it today**, flagged `older_edition`, and the search carries on for a
+   newer one; at least 2 of 5 UK signals (UK path on the official host, linked from the official site, reached from
+   a UK page, £ / OTR, UK wording); not euro-only.
+8. **Outcomes, in this order:** UK PDF → UK web brochure (a page that is really a form becomes a request) →
+   **European English-language brochure** (brochure only, English by a function-word test, says it is European,
+   never a price guide, never dollar-priced) → official page only (protected file, image-only file, price-list hub)
+   → request-a-brochure form → search failed (everything opened failed; never remembered) → nothing verified.
+
+| Status | Attaches by itself? | What the rep gets |
+|---|---|---|
+| `verified_pdf` / `verified_web_brochure`, market `uk` | **Yes** | Our hosted PDF, or a link to the manufacturer's web brochure |
+| the same with market `eu` (flag `european_offer`) | **No — offered** | Use it · open it first · use my own · search again · send without |
+| `official_page_only`, `brochure_request` | No — offered | One click to link the official page / request form |
+| `not_verified`, `search_failed` | No | What was checked; upload / paste; retry when it failed |
+
+**After a find** (`harvest.ts`): the PDF is fetched directly, then through Firecrawl; it must be a real PDF of 40 MB or
+less; stored under its own hash; a file its host will not release is downgraded to "official page only" and never
+worked around. An accepted European edition is fetched and stored only at that moment, is titled "(European
+edition)", and a copy another rep accepted arrives **unticked**. Manual upload / paste always works and becomes the
+stored copy for everyone. Replaced copies keep serving sent emails; a daily job retires linked pages that now 404.
+
+**The trace** (`BrochureSearch`): queries, pages opened, why the site was taken to be official, whether the search
+really looked (`exhausted`), and per document: every way it was discovered, the action taken
+(`pressed "Download Geely EX2 Brochure"`), its evidence, and why it was kept or dropped. **A reported miss is
+diagnosed from this row** (production D1 `brochure_searches`, by `vehicle_key`), not by guessing.
+
+**Proving a change:** `packages/adapters/scripts/finder-sweep.mts` runs the finder LIVE over a list of cars and
+prints the traces. The first finder-1.4 sweep found three WRONG attachments that 200 tests had not. 18 recorded
+manufacturer sites replay at zero credits in the test suite. Sweep of 21 Sept, 17 cars: 13 right attachments, 3
+correct one-click offers, 1 correct nothing.
+
+**Known weak spots:** a brochure that only appears after a model is chosen in a form (Kia UK); price-list hubs are
+offered as a page rather than followed to the model's file (Peugeot, Volvo); a variant can be taken for the model
+(Puma Gen-E); the rest of DreamLease's range has not been swept; production has no Firecrawl secret, so the finder
+only runs through `pnpm dev` / `dev:live` today.
+
 ## B8. External dependencies
 - **Firecrawl** — the only metered/external service. Two jobs: the **fallback HTML fetch for the vehicle lookup**
   when the direct fetch fails (so it also sees dreamlease.co.uk offer URLs; wired only when the key is set, so
-  inactive in production today), and brochure discovery/fetch (`fetchFile` via `rawBase64`
-  past bot protection). Sees the URLs we scrape transiently; brochure PDFs land in our R2. **No customer PII.**
+  inactive in production today), and **brochure discovery** (B7b), which uses four of its endpoints: **Search**
+  (2 credits), **Map** (1), **Scrape with page `actions`** to operate a page in Firecrawl's own browser (1), Scrape
+  with the PDF parser to read a document's first four pages (4), and `fetchFile` via `rawBase64` to retrieve a file
+  past bot protection (about 2). Typical search: 10–12 credits; cap 25. Sees the URLs we scrape transiently; brochure PDFs land in our R2. **No customer PII.**
 - **Microsoft Entra / 365** — identity only. Graph draft parked.
 - **Parked/deferred:** Tawk.to webchat (renewals-only stage one; parked in `status-2026-09-16.md` §7, design in
   `status-2026-09-15.md` §7); the custom-domain/prod-URL setup (`mailer.` occupied — `status-2026-09-16.md` §7 / memory); Graph draft (IT Entra app); Google Sheets register export.
