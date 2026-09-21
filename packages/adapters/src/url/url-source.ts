@@ -86,7 +86,9 @@ export class UrlOfferSource implements OfferSource<LookupInput> {
     const url = parseOfferUrl(input.url);
     const now = this.d.now?.() ?? new Date();
 
-    const hit = await this.d.cache?.get(url.canonical);
+    const cachedHit = await this.d.cache?.get(url.canonical);
+    // a result cached by an older parser may still carry an undecoded entity ("Techno &#x2B; Comfort"): look again
+    const hit = cachedHit && /&(#x?[0-9a-f]{1,7}|[a-z][a-z0-9]{1,9});/i.test(JSON.stringify(cachedHit.offer.vehicle)) ? undefined : cachedHit;
     if (hit) {
       return { ...hit, offer: { ...hit.offer, createdBy: input.createdBy }, cached: true };
     }

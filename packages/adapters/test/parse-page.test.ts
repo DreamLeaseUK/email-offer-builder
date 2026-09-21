@@ -3,6 +3,15 @@ import { OfferPageError, parseOfferPage } from '../src/index.js';
 import { Rewriter, fixture } from './helpers.js';
 
 describe('parseOfferPage', () => {
+  it('decodes the HTML entities the site leaves in a name: a Renault 5 "Techno + Comfort Range" is not shown as "&#x2B;"', async () => {
+    const html = fixture('offer-page-personal.html').replaceAll('390kW Excellence AWD 83kWh 4dr Auto', '110kW Techno &#x2B; Comfort Range 52kWh 5dr Auto').replace("motorleaseInit.model = 'Seal'", "motorleaseInit.model = 'Citro&euml;n &amp; Co &#39;5&#39;'");
+    const page = await parseOfferPage(html, Rewriter);
+    expect(page.derivative).toBe('110kW Techno + Comfort Range 52kWh 5dr Auto');
+    expect(page.derivative).not.toMatch(/&#|&[a-z]+;/i);
+    // the slugs go back to the site's own API: they are never rewritten
+    expect(page.slugs.derivative).toBe('390kw-excellence-awd-83kwh-4dr-auto');
+  });
+
   it('reads identity, slugs, defaults, fees, stats and the image from a personal EV page', async () => {
     const page = await parseOfferPage(fixture('offer-page-personal.html'), Rewriter);
     expect(page.make).toBe('BYD');

@@ -72,7 +72,18 @@ interface ElementHandlers {
 
 const FUEL_WORDS = ['electric', 'petrol', 'diesel', 'hybrid', 'plug-in hybrid', 'mild hybrid', 'hydrogen'];
 
-const decodeEntities = (s: string) => s.replace(/&amp;/g, '&').replace(/&#39;/g, "'").replace(/&quot;/g, '"').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+/**
+ * The site HTML-encodes text even inside its script block: a Renault 5 "Techno + Comfort Range" arrives as
+ * "Techno &#x2B; Comfort Range" and was shown to the customer like that (Matt, 21 Sept 2026). Every numeric
+ * entity and the named ones a vehicle name or spec can carry are decoded; an unknown name is left as it is.
+ */
+const NAMED_ENTITIES: Record<string, string> = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ', ndash: '–', mdash: '—', plus: '+', deg: '°', pound: '£', euro: '€', eacute: 'é', egrave: 'è', euml: 'ë', ecirc: 'ê', aacute: 'á', agrave: 'à', auml: 'ä', ouml: 'ö', uuml: 'ü', scaron: 'š', ccedil: 'ç', ntilde: 'ñ', sup2: '²', frac12: '½', times: '×', reg: '', trade: '' };
+const fromCodePoint = (n: number, raw: string): string => (Number.isInteger(n) && n > 0 && n <= 0x10ffff && !(n >= 0xd800 && n <= 0xdfff) ? String.fromCodePoint(n) : raw);
+export const decodeEntities = (s: string): string =>
+  s
+    .replace(/&#x([0-9a-f]{1,6});/gi, (raw, hex: string) => fromCodePoint(parseInt(hex, 16), raw))
+    .replace(/&#(\d{1,7});/g, (raw, dec: string) => fromCodePoint(Number(dec), raw))
+    .replace(/&([a-z][a-z0-9]{1,9});/gi, (raw, name: string) => NAMED_ENTITIES[name] ?? NAMED_ENTITIES[name.toLowerCase()] ?? raw);
 
 /** window.motorleaseInit.<key> = <value>; — strings, numbers, booleans. */
 function parseInitBlock(js: string): Record<string, string | number | boolean> {
@@ -163,7 +174,12 @@ export async function parseOfferPage(html: string, HTMLRewriter: HtmlRewriterCto
   const initScript = scripts.find((s) => s.text.includes('window.motorleaseInit.manufacturerSlug'));
   if (!initScript) throw new OfferPageError('This page does not look like a DreamLease offer page (no vehicle data found).');
   const init = parseInitBlock(initScript.text);
-  const str = (k: string): string | undefined => (typeof init[k] === 'string' && (init[k] as string).trim() !== '' ? (init[k] as string).trim() : undefined);
+  const raw = (k: string): string | undefined => (typeof init[k] === 'string' && (init[k] as string).trim() !== '' ? (init[k] as string).trim() : undefined);
+  // what a person reads is decoded; the slugs below go back to the site's API exactly as it wrote them
+  const str = (k: string): string | undefined => {
+    const v = raw(k);
+    return v === undefined ? undefined : decodeEntities(v).replace(/\s+/g, ' ').trim();
+  };
   const num = (k: string): number | undefined => {
     const v = init[k];
     const n = typeof v === 'number' ? v : typeof v === 'string' ? Number(v) : NaN;
@@ -173,7 +189,7 @@ export async function parseOfferPage(html: string, HTMLRewriter: HtmlRewriterCto
   const make = str('manufacturer');
   const model = str('model');
   const derivative = str('derivative');
-  const slugs = { manufacturer: str('manufacturerSlug'), model: str('modelSlug'), bodyStyle: str('bodyStyleSlug'), derivative: str('derivativeSlug') };
+  const slugs = { manufacturer: raw('manufacturerSlug'), model: raw('modelSlug'), bodyStyle: raw('bodyStyleSlug'), derivative: raw('derivativeSlug') };
   if (!make || !model || !derivative || !slugs.manufacturer || !slugs.model || !slugs.bodyStyle || !slugs.derivative) {
     throw new OfferPageError('The offer page is missing vehicle details; the site may have changed.');
   }
@@ -186,10 +202,10 @@ export async function parseOfferPage(html: string, HTMLRewriter: HtmlRewriterCto
   if (lp) ldPrice = Number(lp[1]);
 
   const cleanStats = stats
-    .map((s) => ({ value: s.value.replace(s.unit, '').replace(/\s+/g, ' ').trim(), unit: s.unit.replace(/\s+/g, ' ').trim(), label: s.label.replace(/\s+/g, ' ').trim() }))
+    .map((s) => ({ value: decodeEntities(s.value.replace(s.unit, '')).replace(/\s+/g, ' ').trim(), unit: decodeEntities(s.unit).replace(/\s+/g, ' ').trim(), label: decodeEntities(s.label).replace(/\s+/g, ' ').trim() }))
     .filter((s) => s.value && s.label);
 
-  const specItems = quickSpec.map((s) => s.replace(/\s+/g, ' ').trim()).filter(Boolean);
+  const specItems = quickSpec.map((s) => decodeEntities(s).replace(/\s+/g, ' ').trim()).filter(Boolean);
   const fuelType = specItems.find((s) => FUEL_WORDS.includes(s.toLowerCase()));
   const tags = (str('tags') ?? '')
     .split(',')
