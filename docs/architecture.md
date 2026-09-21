@@ -57,7 +57,7 @@ Three audiences / lease products, each with its own compliance wording and terms
   what was checked and can upload, paste a link, accept the official page, or send without. **Two tiers
   (21 Sept):** the UK edition is the target; when none verifies, the manufacturer's own **European brochure in
   English** is attached instead, stored with `market: 'eu'`, titled "European edition" and flagged to the rep
-  (never a European price guide, never the rest of the world). **finder-1.3 (21 Sept)** also reads the PDFs a page offers through a button (addresses held only in the page’s own data), opens a numeric model’s file when the name leaves the make out ("R4-eBrochure.pdf"), and keeps "linked from the official site" when the search had already found the same file. See `brochure-finder-brief.md`,
+  (never a European price guide, never the rest of the world). **finder-1.4 (21 Sept)** rebuilt discovery on Firecrawl's own strengths: Map finds the model's page and the site's brochure pages, the model's page is opened first and OPERATED in one 1-credit scrape (rendered links, pressed controls, the files they fetch — `operate.ts`), the page a document came from is carried as evidence, and the strict checks run only once a document is in hand; what the maker's own site serves today is its current edition (up to 36 months, flagged `older_edition`); a search that never reached the official site is held a day, not a week. Rules and the 17-car sweep: `status-2026-09-21.md` §9. finder-1.3 before it also reads the PDFs a page offers through a button (addresses held only in the page’s own data), opens a numeric model’s file when the name leaves the make out ("R4-eBrochure.pdf"), and keeps "linked from the official site" when the search had already found the same file. See `brochure-finder-brief.md`,
   `status-2026-09-18.md` and `status-2026-09-21.md` §3.
 - **European-edition small print**: when the attached brochure is a European edition the card's small print says
   so ("This is the manufacturer's European brochure; specification, equipment and prices may differ from UK
@@ -328,9 +328,11 @@ IT — Access + a Cloudflare-served subdomain (parked; `mailer.` occupied) + the
 secret + confirming the Workers Paid plan; Tawk webchat (parked, renewals-only stage one).
 
 ## B10. Testing & verification
-- `pnpm test` — **194 tests**: schema 18, render 37, adapters 80, api 59. The adapter suite replays 15 recorded
+- `pnpm test` — **204 tests**: schema 18, render 37, adapters 90, api 59. The adapter suite replays 18 recorded
   manufacturer sites through the brochure finder at zero credits (added 21 Sept: Polestar 2, the European fallback;
-  Renault 4 and Geely EX2, the two misses of that afternoon). `apps/api` runs inside workerd with
+  Renault 4 and Geely EX2, the two misses of that afternoon; Toyota C-HR, Škoda Kodiaq and Hyundai Kona from the
+  finder-1.4 sweep). `packages/adapters/scripts/finder-sweep.mts` runs the finder LIVE over a list of cars (real
+  credits) and is how a change to the finder is proven. `apps/api` runs inside workerd with
   real local D1/R2/Images; adapter tests use the wasm HTMLRewriter.
 - `pnpm typecheck` clean (incl. `apps/web`); `apps/web` builds. `packages/render/scripts/diff-reference.ts` guards markup
   fidelity. The test suites assert no CAP-ID leak (there is no CI pipeline yet). `.dev.vars` is git-ignored and must never be committed.
@@ -338,7 +340,7 @@ secret + confirming the Workers Paid plan; Tawk webchat (parked, renewals-only s
 ## B11. Key files index
 - Model & guard: `packages/schema/src/model.ts`, `capid.ts`
 - Rendering: `packages/render/src/render.ts`, `cards.ts`, `viewmodel.ts`, `layout.ts`, `links.ts`, `match.ts`, `measure.ts`
-- Adapters: `packages/adapters/src/url/*`, `firecrawl/`, `brochure/`
+- Adapters: `packages/adapters/src/url/*`, `firecrawl/`, `brochure/` (`finder.ts`, `operate.ts`, `harvest.ts`, `ensure.ts`), `scripts/finder-sweep.mts`
 - Worker: `apps/api/src/index.ts` (routes + Cron), `campaigns.ts`, `profile.ts`, `templates.ts`,
   `suppressions.ts`, `retention.ts`, `roles.ts`, `files.ts`, `brochures.ts`, `lookup.ts`, `library.ts`,
   `hosted.ts`, `tracking.ts`, `middleware/access.ts`, `db/schema.ts`

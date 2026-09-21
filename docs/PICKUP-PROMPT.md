@@ -44,7 +44,7 @@ web page. It is an FCA-regulated financial-promotions tool (compliance matters).
 - **Git [verified 21 Sept]:** branch `main`, pushed to `origin` = `https://github.com/DreamLeaseUK/email-offer-builder`
   (private). `git push` works through the stored credential. The `brochure-finder` branch is fully merged and can be
   deleted. Run `git log --oneline -12` for the session-5 commits.
-- **Tests [verified 21 Sept]:** `pnpm test` → **194 pass** (schema 18, render 37, adapters 80, api 59);
+- **Tests [verified 21 Sept]:** `pnpm test` → **204 pass** (schema 18, render 37, adapters 90, api 59);
   `pnpm typecheck` clean. There is **no CI**: the tests are the only gate. `diff-reference` reports **22** differing
   lines: 8 pre-date 21 Sept (2 the logo width, 6 the third hero pill), 14 are the inline-block pills (10) and the
   stack card's image column (4); the fluid wrapper is outside the sections it compares. All are recorded in the
@@ -60,8 +60,8 @@ web page. It is an FCA-regulated financial-promotions tool (compliance matters).
   used for an email that will be sent**: its images, hosted page and tracked links point at production, which does
   not have them (all 404). `dev:live` writes real production data: test campaigns are in the production promotions
   register and should be wiped before go-live. Dev servers do not survive a session.
-- **Firecrawl [verified 21 Sept]:** key in `apps/api/.dev.vars` (git-ignored); 4,021 of 5,000 credits left, period
-  ends 9 Oct. A brochure search costs about 10–16 credits.
+- **Firecrawl [verified 21 Sept]:** key in `apps/api/.dev.vars` (git-ignored); 3,238 of 5,000 credits left, period
+  ends 9 Oct. A brochure search costs about 10–12 credits (22–24 when several documents are opened).
 - **Roles:** `matt.wilson@dreamlease.co.uk` is the master admin (`config/admins.json`); any other `DEV_USER_EMAIL`
   is a salesperson.
 
@@ -71,7 +71,7 @@ web page. It is an FCA-regulated financial-promotions tool (compliance matters).
 |---|---|
 | 1 Scaffold, schema, D1, Worker, Access middleware, deploy | Done, deployed |
 | 2 `render()`, layouts, hosted page | Done. **One offer per row since 21 Sept** (1 → hero, 2+ → stacked rows); grids dormant |
-| 3 URL lookup, image pipeline, brochures | Done. Brochures are the **finder** (no allowlist, `finder-1.3`), with a **European English-language fallback** |
+| 3 URL lookup, image pipeline, brochures | Done. Brochures are the **finder** (no allowlist, `finder-1.4`: Map + the model's page operated inside Firecrawl), with a **European English-language fallback** |
 | 4 Web app | Core screens built; runs locally only, **not yet served from the production Worker** |
 | 5 Graph draft / Copy for Outlook | Copy-for-Outlook done and is the only send path; Graph draft parked (IT Entra app) |
 | 6 Redirects, click logging, stats | Done |
@@ -104,10 +104,13 @@ card; auto layout 1 → single, 2+ → stack; layout picker removed. Matt's verd
    car's name and price. Proposed: move it below the button. **Matt has not answered; do not build unasked.**
 3. **Delete the dormant grid code** (`halfCard`, `compactCard`, `match.ts`, `measure.ts`, the grid tests) once Matt
    confirms the stacked layout in Gmail and Outlook mobile. He has not been asked since "100% better".
-4. **Brochure finder reliability — Matt: "It's not set up properly… must be resolved."** Three defects were fixed
-   on 21 Sept (`status-2026-09-21.md` §8: Renault 4, Geely EX2), but they surfaced only because he searched those
-   cars. **Proposed and awaiting his yes:** one sweep across every make DreamLease sells (~25 models, ~250–300
-   Firecrawl credits), fix each failure class, record every run as a permanent replay test. When he reports a miss:
+4. **Brochure finder reliability — Matt: "It's not set up properly… must be resolved", then "You are not leveraging
+   Firecrawl capability to its optimum."** Discovery was rebuilt as finder-1.4 on 21 Sept (`status-2026-09-21.md`
+   §9) and proven on 17 cars: 13 right attachments, 3 correct one-click offers, 1 correct nothing. Known weak spots:
+   a brochure that only appears after a model is chosen in a form (Kia UK), price-list hubs offered as a page
+   (Peugeot, Volvo), a variant taken for the model (Puma Gen-E). The rest of DreamLease's range has not been swept.
+   To prove any finder change run `packages/adapters/scripts/finder-sweep.mts` and READ THE TRACES: the first
+   sweep found three wrong attachments the tests had not. When he reports a miss:
    read the stored trace first (production D1 `brochure_searches`, by `vehicle_key`) — it says exactly where the
    document was lost. Also four calls Matt can overturn (`status-2026-09-21.md` §5): brochures only in the
    fallback; a euro-priced European brochure is attached and flagged; an unmarked-market document is refused; a
