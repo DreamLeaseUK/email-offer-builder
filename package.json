@@ -4,6 +4,7 @@
   "packageManager": "pnpm@12.4.1",
   "scripts": {
     "dev": "pnpm --filter @offer-mailer/api dev",
+    "dev:live": "pnpm --filter @offer-mailer/api dev:live",
     "deploy": "pnpm --filter @offer-mailer/api run deploy",
     "test": "pnpm -r --if-present test",
     "typecheck": "pnpm -r --if-present typecheck",

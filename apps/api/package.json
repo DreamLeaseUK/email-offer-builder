@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "wrangler dev",
+    "dev:live": "wrangler dev --remote",
     "deploy": "wrangler deploy",
     "types": "wrangler types",
     "test": "vitest run",
