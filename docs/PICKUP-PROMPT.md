@@ -23,6 +23,14 @@ web page. It is an FCA-regulated financial-promotions tool (compliance matters).
   Outlook, and sends you screenshots. Diagnose from evidence (the trace, the stored campaign, the as-received HTML),
   fix, and let him re-test. Do not answer a rendering problem with a process proposal.
 - When you claim something works, **prove it** (a live call, a test run, a measurement in a real browser).
+- When he reports a fault, **read the evidence before theorising**: the stored brochure trace, the stored campaign,
+  the page itself. On 21 Sept every finder miss he reported was a specific defect visible in the trace.
+- He sometimes pastes an analysis from elsewhere as the direction to take (he did for finder-1.4). Take it as the
+  brief, say where it has to be adapted to this system (there: Playwright cannot run in the Worker, Firecrawl's page
+  actions can), and build it.
+- **No multi-agent / workflow runs unless he asks** (`CLAUDE.md`). He hit his usage limit mid-session on 21 Sept. One
+  read-only doc audit was run that day because he asked for every design document to be updated; it was worth it
+  (39 stale claims), but it is not the default.
 - Commit only when asked. Report the live system's state plainly after any deploy.
 
 ## 1. Read these, in order
@@ -32,8 +40,10 @@ web page. It is an FCA-regulated financial-promotions tool (compliance matters).
 3. **`docs/architecture.md`** — the authoritative Solution Design & System Architecture. **A5 (the real send path),
    B7 (rendering and the deviations from the v5 reference) and B7b (the brochure finder, in one place) are the parts
    that changed most recently.**
-4. **`docs/status-2026-09-21.md`** — the current build log. §0 is the summary; §1–§6 the brochure fallback; §7 the
-   test sends and the one-offer-per-row change. Older status files are history.
+4. **`docs/status-2026-09-21.md`** — the current build log, one long day in five parts. §0 is the summary; §1–§6 the
+   European brochure fallback; §7 the real test sends and one offer per row; §8 the first finder misses (Renault 4,
+   Geely EX2); §9 finder-1.4 and the 17-car sweep; §10 the European edition becoming an OFFER, and the name-entity
+   fix. Older status files are history.
 5. `docs/brochure-finder-brief.md` — the brochure finder's design and evidence (read its status banner first).
 6. `docs/dreamlease-offer-mailer-brief.md` — the product brief (v1.1); §5 is the shared contract, **§9a is the
    as-built log** (where the build has left the brief).
@@ -44,7 +54,8 @@ web page. It is an FCA-regulated financial-promotions tool (compliance matters).
 
 - **Git [verified 21 Sept]:** branch `main`, pushed to `origin` = `https://github.com/DreamLeaseUK/email-offer-builder`
   (private). `git push` works through the stored credential. The `brochure-finder` branch is fully merged and can be
-  deleted. Run `git log --oneline -12` for the session-5 commits.
+  deleted. Working tree clean at the end of session 5 (HEAD is the commit that last touched this file). Run
+  `git log --oneline -20` for the session-5 commits.
 - **Tests [verified 21 Sept]:** `pnpm test` → **207 pass** (schema 18, render 37, adapters 92, api 60);
   `pnpm typecheck` clean. There is **no CI**: the tests are the only gate. `diff-reference` reports **22** differing
   lines: 8 pre-date 21 Sept (2 the logo width, 6 the third hero pill), 14 are the inline-block pills (10) and the
@@ -61,8 +72,15 @@ web page. It is an FCA-regulated financial-promotions tool (compliance matters).
   used for an email that will be sent**: its images, hosted page and tracked links point at production, which does
   not have them (all 404). `dev:live` writes real production data: test campaigns are in the production promotions
   register and should be wiped before go-live. Dev servers do not survive a session.
-- **Firecrawl [verified 21 Sept]:** key in `apps/api/.dev.vars` (git-ignored); 3,238 of 5,000 credits left, period
-  ends 9 Oct. A brochure search costs about 10–12 credits (22–24 when several documents are opened).
+- **Firecrawl [verified 21 Sept]:** key in `apps/api/.dev.vars` (git-ignored); 3,218 of 5,000 credits left, period
+  ends 9 Oct (about 780 were spent on 21 Sept, half of it on the sweeps). A brochure search costs about 10–12
+  credits (22–24 when several documents are opened). Check the balance for free:
+  `GET https://api.firecrawl.dev/v2/team/credit-usage` with the key as a bearer token.
+- **What is in production storage [verified 21 Sept]** (all written through `dev:live`, none of it real customer
+  data): 3 test campaigns (in the promotions register: wipe before go-live), 3 library offers, the seeded
+  placeholder template, no saved sender, and 8 current brochures — Geely EX2, Jaecoo 8, Kia EV2, Nissan Micra,
+  Polestar 2 (the European edition, accepted by Matt), Renault 4, Renault 5, Toyota C-HR. Matt's own searches since
+  finder-1.4 (Micra, Jaecoo 8, Kia EV2, Renault 5) all found the document.
 - **Roles:** `matt.wilson@dreamlease.co.uk` is the master admin (`config/admins.json`); any other `DEV_USER_EMAIL`
   is a salesperson.
 
@@ -105,17 +123,22 @@ card; auto layout 1 → single, 2+ → stack; layout picker removed. Matt's verd
    car's name and price. Proposed: move it below the button. **Matt has not answered; do not build unasked.**
 3. **Delete the dormant grid code** (`halfCard`, `compactCard`, `match.ts`, `measure.ts`, the grid tests) once Matt
    confirms the stacked layout in Gmail and Outlook mobile. He has not been asked since "100% better".
-4. **Brochure finder reliability — Matt: "It's not set up properly… must be resolved", then "You are not leveraging
-   Firecrawl capability to its optimum."** Discovery was rebuilt as finder-1.4 on 21 Sept (`status-2026-09-21.md`
-   §9) and proven on 17 cars: 13 right attachments, 3 correct one-click offers, 1 correct nothing. Known weak spots:
-   a brochure that only appears after a model is chosen in a form (Kia UK), price-list hubs offered as a page
-   (Peugeot, Volvo), a variant taken for the model (Puma Gen-E). The rest of DreamLease's range has not been swept.
-   To prove any finder change run `packages/adapters/scripts/finder-sweep.mts` and READ THE TRACES: the first
-   sweep found three wrong attachments the tests had not. When he reports a miss:
-   read the stored trace first (production D1 `brochure_searches`, by `vehicle_key`) — it says exactly where the
-   document was lost. Matt has ruled on one of the morning's calls: a European edition is OFFERED, never attached by itself
-   (`status-2026-09-21.md` §10). Three calls he can still overturn (`status-2026-09-21.md` §5): brochures only in the
-   fallback; a euro-priced European brochure is still offered (flagged); an unmarked-market document is refused. Test more brands; failures show as traces.
+4. **Brochure finder** — Matt: "It's not set up properly… must be resolved", then "You are not leveraging Firecrawl
+   capability to its optimum." Discovery was rebuilt as **finder-1.4** (design in `architecture.md` B7b; the day's
+   story in `status-2026-09-21.md` §8–§10) and proven on 17 cars: 13 right attachments, 3 correct one-click offers,
+   1 correct nothing. **He has not said it is resolved.** What to know:
+   - **A reported miss: read the stored trace first** — production D1 `brochure_searches`, by `vehicle_key`. It
+     records the queries, the pages opened, and for every document how it was discovered, the action taken and why
+     it was dropped.
+   - **Prove any change with the live sweep** (`packages/adapters/scripts/finder-sweep.mts`, about 10 credits a car)
+     **and read the traces, not the score**: the first sweep found three WRONG attachments 200 tests had not.
+   - **Known weak spots:** a brochure that only appears after a model is chosen in a form (Kia UK); price-list hubs
+     offered as a page rather than followed to the model's file (Peugeot, Volvo); a variant taken for the model
+     (Puma Gen-E). Most of DreamLease's range has not been swept.
+   - **Matt's ruling (final):** a European English-language edition is **offered, never attached by itself**; a copy
+     another rep accepted arrives unticked. Three calls from that morning he can still overturn: brochures only in
+     the fallback; a euro-priced European brochure is still offered, flagged; a document that does not say its
+     market is refused.
 5. **Badge control** — a decision first: fixed approved list (what `CLAUDE.md` rule 3, the brief and the schema all
    say today) or free-text-but-logged. Earlier notes "recommended" free text; that would mean rewriting rule 3, so it
    is Matt's call, not a default.
@@ -141,7 +164,13 @@ card; auto layout 1 → single, 2+ → stack; layout picker removed. Matt's verd
 - "View offer" already deep-links with the rep's configured terms. No change needed.
 - Template admin needs all three audience blocks; the seeded default template is a **placeholder, not Emma-approved**,
   and seeds itself into an empty database on first use.
-- A brochure "nothing found" is remembered 7 days, but not across a finder rules change (`FINDER_VERSION`).
+- A brochure "nothing found" is remembered 7 days; a search that never reached the official site only 1 day; a
+  failed search never; and nothing is remembered across a finder rules change (`FINDER_VERSION`), so bumping it
+  re-runs, and re-pays for, every remembered miss.
+- The site HTML-encodes text inside its own script block ("Techno &#x2B; Comfort"): the lookup decodes it, and a
+  cached lookup that still carries an entity refreshes itself. If a name shows `&…;`, that is where to look.
+- The page-operating script (`brochure/operate.ts`) runs inside Firecrawl's browser in ONE scrape with `actions`
+  (1 credit). It must never press request / test-drive / configurator controls or submit anything.
 - Windows shell: a long heredoc with backticks and apostrophes can fail in the Bash tool; write the script to a
   file and run it. Line endings: `model.ts` is CRLF in the working copy (autocrlf), which is normal.
 - The four rules (`CLAUDE.md`) are load-bearing: **CAP IDs never stored; three layers no leaks (`render()` is the
