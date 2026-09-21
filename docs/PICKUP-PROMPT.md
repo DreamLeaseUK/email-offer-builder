@@ -5,6 +5,11 @@
 > merged to `main`. The design changed: no rep picking, web brochures accepted, six outcomes + `documentType`.
 > Tests are 172, not 157. The HEAD, "Fable unavailable" and "NOT started" statements below are stale. The
 > brochure-library skill is parked until after launch.
+>
+> **UPDATE 21 Sept 2026 (session 5) — read `docs/status-2026-09-21.md` first; it supersedes the note above.** The
+> finder now has a European English-language fallback (finder-1.1) and the email's small print says so when one is
+> attached (184 tests). `brochure-finder` is pushed to GitHub but NOT merged to `main` and NOT deployed. §8(a)'s "free text" badge recommendation contradicts `CLAUDE.md`
+> rule 3 (fixed list) — that is a decision for Matt, not a default. Emma still has to approve the European-brochure small print.
 
 Paste everything below the line into a new Claude Code session opened in `C:\Users\MatthewWilson\email-offer-builder`. **Rewritten 16 September 2026 (end of session 3).** It supersedes all earlier pickup prompts. Read it top to bottom before doing anything.
 

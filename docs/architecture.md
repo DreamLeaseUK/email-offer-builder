@@ -50,8 +50,11 @@ Three audiences / lease products, each with its own compliance wording and terms
   per rep and prefilled next time.
 - **Brochures**: the finder searches, verifies and attaches by itself — the manufacturer's UK PDF (hosted by us),
   or its own web brochure / price & spec page as a link; no allowlist, no picking. When nothing verifies the rep sees
-  what was checked and can upload, paste a link, accept the official page, or send without. See
-  `brochure-finder-brief.md` and `status-2026-09-18.md`.
+  what was checked and can upload, paste a link, accept the official page, or send without. **Two tiers
+  (21 Sept):** the UK edition is the target; when none verifies, the manufacturer's own **European brochure in
+  English** is attached instead, stored with `market: 'eu'`, titled "European edition" and flagged to the rep
+  (never a European price guide, never the rest of the world). See `brochure-finder-brief.md`,
+  `status-2026-09-18.md` and `status-2026-09-21.md` §3.
 - **Offer library**; **Campaigns** (list + per-campaign stats); **Promotions register** (master table + CSV).
 - **Template admin (master-admin only)**: author the Emma-approved compliance templates, publish (self-
   approve), lock approved, new-version/retire. See A4 / B6.
@@ -197,7 +200,9 @@ Two data-side display rules live in the viewmodel (not markup, so the reference 
 (personal) cards always show the standard £299.99 processing fee** even when the site returned none (BCH/salsac
 unchanged — first stage); and **every card in a multi-offer campaign shows the same, even number of stat
 tiles** (the common count across the offers, floored to even) so the cards read as a matched set — a single
-hero keeps its natural count.
+hero keeps its natural count. A third (21 Sept): when the attached brochure is the manufacturer's **European
+edition** (`Brochure.market === 'eu'`), the small print adds "This is the manufacturer's European brochure;
+specification, equipment and prices may differ from UK models." (grid3: a shared-footnote variant).
 
 ## B8. External dependencies
 - **Firecrawl** — the only metered/external service (brochure discovery/fetch; `fetchFile` via `rawBase64`
@@ -243,8 +248,8 @@ IT — Access + a Cloudflare-served subdomain (parked; `mailer.` occupied) + the
 secret + Workers Paid plan; the prod deploy; Tawk webchat (parked, renewals-only stage one).
 
 ## B10. Testing & verification
-- `pnpm test` — **172 tests**: schema 18, render 31, adapters 64, api 59. The adapter suite replays 12 recorded
-  manufacturer sites through the brochure finder at zero credits. `apps/api` runs inside workerd with
+- `pnpm test` — **184 tests**: schema 18, render 32, adapters 75, api 59. The adapter suite replays 13 recorded
+  manufacturer sites through the brochure finder at zero credits (Polestar 2, the European-fallback case, added 21 Sept). `apps/api` runs inside workerd with
   real local D1/R2/Images; adapter tests use the wasm HTMLRewriter.
 - `pnpm typecheck` clean (incl. `apps/web`); `apps/web` builds. `scripts/diff-reference.ts` guards markup
   fidelity. CI greps for CAP-ID leaks. `.dev.vars` is git-ignored and must never be committed.
