@@ -20,8 +20,10 @@ import {
   isRestOfWorld,
   labelledLinks,
   manualBrochure,
+  modelHint,
   modelMatcher,
   modelVariants,
+  pdfUrlsInHtml,
   ukMarker,
   ukPathOnOfficial,
   urlDate,
@@ -74,6 +76,31 @@ describe('finder rules', () => {
     const links = labelledLinks(md, 'https://www.hyundai.com/uk/en/models/ioniq5/downloads.html');
     expect(links.map((l) => l.own)).toEqual(['Brochure', 'Tech and Spec Guide']);
     expect(docType(links[1]?.own ?? '')).toBe('spec');
+  });
+
+  it('decides what is worth opening more loosely than it judges the document: a numeric model may stand alone or behind the make’s initial', () => {
+    // Renault files the Renault 4 brochure as "R4-eBrochure.pdf", under a title that never names the car
+    const r4 = 'https://cdn.group.renault.com/ren/gb/transversal-assets/brochures/car-ebrochures/R4-eBrochure.pdf.asset.pdf/e75ad659a3.pdf';
+    expect(modelMatcher('Renault', '4')(r4)).toBe(false);
+    expect(modelHint('Renault', '4')(`[PDF] 1 July 2026 - Renault Group ${r4}`)).toBe(true);
+    expect(modelHint('Peugeot', '208')('https://www.peugeot.co.uk/content/dam/peugeot/uk/brochures/208-brochure.pdf')).toBe(true);
+    // but never another model's number, a year, or a number buried in a word
+    expect(modelHint('Renault', '4')('https://cdn.group.renault.com/ren/gb/brochures/Renault-5-eBrochure.pdf.asset.pdf/01b54430c6.pdf')).toBe(false);
+    expect(modelHint('Renault', '5')('https://cdn.group.renault.com/ren/gb/brochures/clio-brochure-2025.pdf')).toBe(false);
+    expect(modelHint('Renault', '4')('https://cdn.group.renault.com/ren/gb/brochures/e75ad654a3.pdf')).toBe(false);
+    // a named model is the strict matcher, unchanged
+    expect(modelHint('Kia', 'EV3')('ev3-brochure.pdf')).toBe(true);
+    expect(modelHint('Kia', 'EV3')('ev6-brochure.pdf')).toBe(false);
+  });
+
+  it('finds the PDFs a page offers through a button: addresses that only its embedded data carries, slashes escaped', () => {
+    const html = '<button><span>Download Geely EX2 Brochure</span></button><script>{"file":{"value":{"src":"\\u002F-\\u002Fmedia\\u002Fportal-site\\u002Ffile\\u002Fgeely-ex2\\u002Fgeely_ex2_brochure.pdf"}},"other":"https:\\/\\/cdn.example.com\\/a\\/spec-sheet.pdf?v=2","img":"/x/photo.png"}</script><a href="/docs/warranty.pdf">w</a>';
+    expect(pdfUrlsInHtml(html, 'https://www.geelyauto.co.uk/models/geely-ex2')).toEqual([
+      'https://www.geelyauto.co.uk/-/media/portal-site/file/geely-ex2/geely_ex2_brochure.pdf',
+      'https://cdn.example.com/a/spec-sheet.pdf',
+      'https://www.geelyauto.co.uk/docs/warranty.pdf',
+    ]);
+    expect(pdfUrlsInHtml('no documents here', 'https://example.com/')).toEqual([]);
   });
 
   it('tells a European market (the fallback tier) from the rest of the world (never a source)', () => {
@@ -133,7 +160,7 @@ describe('finder rules', () => {
 interface Recorded {
   path: string;
   body: { query?: string; url?: string; categories?: string[]; parsers?: unknown[] };
-  response: { data?: { web?: { url: string; title?: string; description?: string }[]; markdown?: string; metadata?: { statusCode?: number; totalPages?: number } } };
+  response: { data?: { web?: { url: string; title?: string; description?: string }[]; markdown?: string; rawHtml?: string; metadata?: { statusCode?: number; totalPages?: number } } };
 }
 const FIXTURE_DIR = new URL('./fixtures/finder/', import.meta.url);
 const recorded: Recorded[] = readdirSync(FIXTURE_DIR).map((f) => JSON.parse(readFileSync(new URL(f, FIXTURE_DIR), 'utf8')) as Recorded);
@@ -147,7 +174,7 @@ function replayClient(): FirecrawlClient {
     async scrape(url, opts) {
       const hit = recorded.find((r) => r.path === '/scrape' && r.body.url === url && !!r.body.parsers === !!opts?.pdfMaxPages);
       if (!hit) throw new Error(`no recorded scrape for: ${url}`);      const d = hit.response.data ?? {};
-      return { ...(d.markdown !== undefined ? { markdown: d.markdown } : {}), ...(d.metadata?.statusCode ? { statusCode: d.metadata.statusCode } : {}), ...(d.metadata?.totalPages ? { totalPages: d.metadata.totalPages } : {}), creditsUsed: opts?.pdfMaxPages ? 4 : 1 };
+      return { ...(d.markdown !== undefined ? { markdown: d.markdown } : {}), ...(d.rawHtml !== undefined ? { rawHtml: d.rawHtml } : {}), ...(d.metadata?.statusCode ? { statusCode: d.metadata.statusCode } : {}), ...(d.metadata?.totalPages ? { totalPages: d.metadata.totalPages } : {}), creditsUsed: opts?.pdfMaxPages ? 4 : 1 };
     },
     async map() {
       return { links: [], creditsUsed: 1 };
@@ -251,6 +278,25 @@ describe('findBrochure (replayed against recorded manufacturer sites)', () => {
     // the file quotes July 2024 in a footnote: the date in its name is the newer one and wins
     expect(r.candidates[0]?.evidence).toMatchObject({ market: 'eu', english: true, dateFrom: 'url' });
     expect(r.candidates.find((c) => c.url.includes('australia'))?.reasons).toEqual(['another market’s URL']);
+  });
+
+  it('Renault 4 (recorded 21 Sept 2026): opens "R4-eBrochure.pdf" although neither its title nor its address says "Renault 4"', async () => {
+    const r = await findBrochure({ make: 'Renault', model: '4' }, { firecrawl: replayClient(), http: noHttp, now: () => new Date('2026-09-21T11:00:00.000Z') });
+    expect(r).toMatchObject({ status: 'verified_pdf', market: 'uk', documentType: 'brochure', officialSite: 'renault.co.uk', editionDate: '2026-07-01' });
+    expect(r.url).toContain('/ren/gb/transversal-assets/brochures/car-ebrochures/R4-eBrochure.pdf');
+    // the Renault 5 brochure beside it is never mistaken for it, and never opened
+    expect(r.candidates.find((c) => c.url.includes('Renault-5-eBrochure'))?.status).not.toBe('accepted');
+    expect(r.pagesOpened).toEqual(['https://www.renault.co.uk/brochures.html']);
+  });
+
+  it('Geely EX2 (recorded 21 Sept 2026): the UK page offers the brochure through a button, so it is read from the page’s own data', async () => {
+    const r = await findBrochure({ make: 'Geely', model: 'EX2' }, { firecrawl: replayClient(), http: noHttp, now: () => new Date('2026-09-21T11:30:00.000Z') });
+    expect(r).toMatchObject({ status: 'verified_pdf', market: 'uk', documentType: 'brochure', officialSite: 'geelyauto.co.uk', fromPage: 'https://www.geelyauto.co.uk/models/geely-ex2' });
+    expect(r.url).toBe('https://www.geelyauto.co.uk/-/media/portal-site/file/geely-ex2/geely_ex2_brochure.pdf');
+    expect(r.candidates[0]).toMatchObject({ via: 'model-page', status: 'accepted', evidence: { linkedFromOfficial: true, ukDomainOrPath: true } });
+    // the brochure is preferred to the spec sheet offered beside it, and another market's copy on a CDN is never opened
+    expect(r.candidates.find((c) => c.url.includes('spec-sheet'))?.status).not.toBe('accepted');
+    expect(r.candidates.find((c) => c.url.includes('datocms-assets.com'))?.status).not.toBe('accepted');
   });
 
   it('reports a failed search as search_failed, never as "not found"', async () => {
@@ -364,6 +410,30 @@ function fallbackClient(pdfs: { url: string; title?: string; text: string }[], m
   };
 }
 const find = (fc: FirecrawlClient, make = 'Polestar', model = '2') => findBrochure({ make, model }, { firecrawl: fc, http: noHttp, now: () => REPLAY_NOW });
+
+describe('findBrochure: a document seen twice', () => {
+  it('keeps "linked from the official site" when the search had already turned the same file up on a CDN host', async () => {
+    const cdn = 'https://assets.ctfassets.net/abc123/ev3-brochure-june-2026.pdf';
+    const page = 'https://www.kia.com/uk/new-cars/ev3/brochure/';
+    const fc: FirecrawlClient = {
+      async search(_q, opts) {
+        return { results: opts?.categories ? [{ url: cdn, title: '[PDF] The Kia EV3' }] : [{ url: page, title: 'Kia EV3 brochure | Kia UK' }], creditsUsed: 2 };
+      },
+      async scrape(_url, opts) {
+        return opts?.pdfMaxPages ? { markdown: PDF_TEXT, totalPages: 28, creditsUsed: 4 } : { markdown: `# Brochures\n- [Download the EV3 brochure](${cdn})`, statusCode: 200, creditsUsed: 1 };
+      },
+      async map() {
+        return { links: [], creditsUsed: 1 };
+      },
+      async fetchFile() {
+        return { bytes: new ArrayBuffer(0), contentType: null, ok: false, creditsUsed: 2 };
+      },
+    };
+    const r = await findBrochure({ make: 'Kia', model: 'EV3' }, { firecrawl: fc, http: noHttp, now: () => REPLAY_NOW });
+    expect(r).toMatchObject({ status: 'verified_pdf', market: 'uk', url: cdn, fromPage: page });
+    expect(r.candidates[0]).toMatchObject({ via: 'official-page', status: 'accepted', linkText: 'Download the EV3 brochure' });
+  });
+});
 
 describe('findBrochure: the European English-language fallback', () => {
   it('Polestar 2: no UK edition, so the manufacturer’s current European brochure in English is attached and marked as one', async () => {

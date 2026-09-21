@@ -28,7 +28,7 @@ import type { BrochureCandidateTrace, BrochureDocumentType, BrochureFinderStatus
 import type { FirecrawlClient, FirecrawlSearchHit } from '../firecrawl/client.js';
 
 /** Bumped when the rules change: a remembered "nothing found" from an older version is searched again. */
-export const FINDER_VERSION = 'finder-1.1';
+export const FINDER_VERSION = 'finder-1.3';
 
 /** A plain GET that follows redirects. Resolves undefined when the request could not be made at all. */
 export type FinderHttp = (url: string) => Promise<{ status: number; contentType: string; finalUrl: string; text(): Promise<string> } | undefined>;
@@ -250,6 +250,26 @@ export function labelledLinks(md: string, baseUrl: string): LabelledLink[] {
   return out;
 }
 
+/**
+ * PDF addresses in a page's raw HTML, including the ones only its embedded data carries. Geely's UK model page
+ * offers "Download Geely EX2 Brochure" as a BUTTON, not a link: the markdown has no link to read, and the file's
+ * address sits in the page's JSON with its slashes escaped ("\u002F-\u002Fmedia\u002F…brochure.pdf"). A rep found
+ * it in 30 seconds; the finder, reading links only, saw nothing (Matt, 21 Sept 2026).
+ */
+export function pdfUrlsInHtml(html: string, baseUrl: string): string[] {
+  const text = html.replace(/\\u002[fF]/g, '/').replace(/\\\//g, '/').replace(/&amp;/g, '&');
+  const out = new Set<string>();
+  for (const m of text.matchAll(/["'(=]((?:https?:\/\/|\/)[^"'\s<>\\]{1,300}?\.pdf)(?=["'?#)\\]|$)/gi)) {
+    try {
+      out.add(new URL(m[1] ?? '', baseUrl).href);
+    } catch {
+      // not an address after all
+    }
+    if (out.size >= 40) break;
+  }
+  return [...out];
+}
+
 /** Controlled model-name variants: "E-3008" also tries "3008", "Q4 e-tron" also "Q4". The full name always goes first. */
 export function modelVariants(model: string): string[] {
   const base = model.replace(/^(all[- ]new|new)\s+/i, '').replace(/^e[- ]/i, '').replace(/\s+(e-tron|electric|hybrid|ev)$/i, '').trim();
@@ -265,6 +285,23 @@ export function modelMatcher(make: string, model: string): (s: string) => boolea
     return (s) => re.test(fold(s)) || norm(s).includes(norm(make) + nm);
   }
   return (s) => norm(s).includes(nm);
+}
+
+/**
+ * A looser test, used ONLY to decide what is worth opening: a search title, a link's own text, a file name. On
+ * the manufacturer's own site the make goes without saying, so Renault files its Renault 4 brochure as
+ * "R4-eBrochure.pdf" and Peugeot its 208 as "208-brochure.pdf"; the strict matcher wants "renault4" and threw
+ * the right document away unopened (Matt's Renault 4 search, 21 Sept 2026). For a numeric model the hint also
+ * takes the number standing alone, or behind the make's initial. Every other model is the strict matcher.
+ * The DOCUMENT is still held to modelMatcher once it has been read, so a wrong guess costs a read, never a
+ * wrong attachment.
+ */
+export function modelHint(make: string, model: string): (s: string) => boolean {
+  const strict = modelMatcher(make, model);
+  const nm = norm(model);
+  if (!/^\d+$/.test(nm)) return strict;
+  const alone = new RegExp(`(^|[^a-z0-9])${fold(make).charAt(0)}?${nm}([^a-z0-9]|$)`);
+  return (s) => strict(s) || alone.test(fold(s));
 }
 
 // ---------- the finder ----------
@@ -309,7 +346,10 @@ export async function findBrochure(vehicle: Pick<Vehicle, 'make' | 'model'>, dep
   const out: FinderResult = { status: 'not_verified', flags: [], queries: [], pagesOpened: [], candidates: [], credits: 0, durationMs: 0 };
   const cands: Cand[] = [];
   const variants = modelVariants(model);
+  /** Strict: the document's own text, and the text around a link. */
   let modelIn = modelMatcher(make, model);
+  /** Loose: what is worth opening (titles, link text, file names). See modelHint. */
+  let hintIn = modelHint(make, model);
   let webBrochure: WebCand | undefined;
   let pricePage: WebCand | undefined;
   let requestForm: WebCand | undefined;
@@ -323,7 +363,26 @@ export async function findBrochure(vehicle: Pick<Vehicle, 'make' | 'model'>, dep
   };
 
   const addCand = (url: string, o: { via: Cand['via']; linkText?: string; context?: string; fromPage?: string; fallbackOnly?: boolean }) => {
-    if (cands.some((c) => c.url === url)) return;
+    const seen = cands.find((c) => c.url === url);
+    if (seen) {
+      // Found by the search first, then again ON the official site: "linked from the official pages" is the
+      // stronger provenance and must not be lost, or an official brochure on a CDN host is refused as unlinked.
+      const linkedNow = o.via === 'official-page' || o.via === 'model-page';
+      if (linkedNow && seen.via !== 'official-page' && seen.via !== 'model-page') {
+        seen.via = o.via;
+        seen.score += 3;
+        if (o.fromPage) seen.fromPage = o.fromPage;
+        if (o.context) seen.context = o.context;
+        const better = docType(`${o.linkText ?? ''} ${url.split('/').pop() ?? ''}`);
+        if (seen.rawType === 'unknown' && better !== 'unknown' && better !== 'manual') {
+          seen.rawType = better;
+          seen.docType = better;
+          seen.score += better === 'brochure' ? 3 : 1;
+        }
+        if (o.linkText) seen.linkText = o.linkText.slice(0, 120);
+      }
+      return;
+    }
     const typeText = o.via === 'search' || o.via === 'site-search' ? `${o.linkText ?? ''} ${url}` : `${o.linkText ?? ''} ${url.split('/').pop() ?? ''}`;
     const rawType = docType(typeText);
     const c: Cand = { url, via: o.via, docType: rawType, rawType, score: 0, status: 'not_checked', reasons: [] };
@@ -361,10 +420,12 @@ export async function findBrochure(vehicle: Pick<Vehicle, 'make' | 'model'>, dep
     const readPage = async (p: { url: string; title?: string }, isModelPage: boolean) => {
       if (!afford(1)) return;
       let md: string;
+      let rawHtml: string;
       try {
-        const page = await deps.firecrawl.scrape(p.url, { formats: ['markdown'], waitFor: 3000 });
+        const page = await deps.firecrawl.scrape(p.url, { formats: ['markdown', 'rawHtml'], waitFor: 3000 });
         credits += page.creditsUsed;
         md = page.markdown ?? '';
+        rawHtml = page.rawHtml ?? '';
       } catch {
         return;
       }
@@ -376,7 +437,7 @@ export async function findBrochure(vehicle: Pick<Vehicle, 'make' | 'model'>, dep
       for (const l of labelledLinks(md, p.url)) {
         const both = `${l.own} ${l.url}`;
         if (NOT_A_DOCUMENT.test(both) || OLD.test(both) || l.url.includes('#') || /^(mailto|tel):/.test(l.url)) continue;
-        const aboutModel = isModelPage || modelIn(l.own) || modelIn(l.url) || modelIn(l.context.slice(-80));
+        const aboutModel = isModelPage || hintIn(l.own) || hintIn(l.url) || modelIn(l.context.slice(-80));
         if (REQUESTY.test(both)) {
           // a brochure request needs BOTH words: "Request an appointment" is nothing
           if (aboutModel && /brochure/i.test(both) && /request|order/i.test(both)) requestForm ??= { url: l.url, linkText: l.own, fromPage: p.url, why: 'request-a-brochure link' };
@@ -397,6 +458,21 @@ export async function findBrochure(vehicle: Pick<Vehicle, 'make' | 'model'>, dep
           // a bare model-name link counts only on an official brochures page, to an off-site target named for the model
           webBrochure ??= { url: l.url, linkText: l.own, fromPage: p.url, why: 'model-name link on the official brochures page' };
         }
+      }
+      // documents the page offers through a button or a script rather than a link. With no link text to go by,
+      // the file has to name the model and say what it is; site-wide menus carry every model's files.
+      for (const u of pdfUrlsInHtml(rawHtml, p.url)) {
+        let name = u.split('/').pop() ?? '';
+        try {
+          name = decodeURIComponent(name);
+        } catch {
+          // keep the raw name
+        }
+        name = name.replace(/\.pdf$/i, '').replace(/[-_+.]+/g, ' ').trim();
+        if (NOT_A_DOCUMENT.test(u) || OLD.test(u) || !(hintIn(name) || hintIn(u))) continue;
+        const dt = docType(name);
+        if (dt === 'manual' || dt === 'unknown') continue;
+        addCand(u, { via: isModelPage ? 'model-page' : 'official-page', linkText: name, fromPage: p.url });
       }
       if (!isModelPage && modelIn(pageText) && /brochure/i.test(pageText) && (hasForm || /request|rfi|form/i.test(p.url))) requestForm ??= { url: p.url, ...(p.title ? { linkText: p.title } : {}), fromPage: p.url, why: 'brochure request page' };
     };
@@ -426,7 +502,7 @@ export async function findBrochure(vehicle: Pick<Vehicle, 'make' | 'model'>, dep
       // nothing from the brochure pages: the model's own UK page often carries the leaflet link
       const haveOfficial = cands.some((c) => c.status !== 'rejected' && (c.via === 'official-page' || ukPathOnOfficial(c.url, make)));
       if (!haveOfficial && !webBrochure) {
-        const modelPage = [...hits, ...siteHits].filter((h) => usable(h) && ukMarker(h.url) && modelIn(h.url) && !/manual|owner|review|news|press/i.test(h.url)).sort((a, b) => a.url.length - b.url.length)[0];
+        const modelPage = [...hits, ...siteHits].filter((h) => usable(h) && ukMarker(h.url) && hintIn(h.url) && !/manual|owner|review|news|press/i.test(h.url)).sort((a, b) => a.url.length - b.url.length)[0];
         if (modelPage) await readPage(modelPage, true);
       }
     }
@@ -469,7 +545,7 @@ export async function findBrochure(vehicle: Pick<Vehicle, 'make' | 'model'>, dep
         c.reasons.push(why);
       };
       if (!onOfficial && !linked) { reject('not on the official site and not linked from its UK pages'); return false; }
-      if (!linked && !modelIn(`${c.linkText ?? ''} ${c.url}`)) { reject('range-wide or unrelated document: the model is not in its title or URL'); return false; }
+      if (!linked && !hintIn(`${c.linkText ?? ''} ${c.url}`)) { reject('range-wide or unrelated document: the model is not in its title or URL'); return false; }
       if (c.score < 4) { reject('too weak a match to be worth opening'); return false; }
 
       let target = c.url;
@@ -486,7 +562,7 @@ export async function findBrochure(vehicle: Pick<Vehicle, 'make' | 'model'>, dep
         else if (r.status === 401 || r.status === 403) { c.status = 'fetch_failed'; c.reasons.push(`the site answered ${r.status}`); c.assetUrl = c.url; fetchFailed++; return false; }
         else if (/html/i.test(r.contentType)) {
           const html = await r.text();
-          const inner = [...new Set(html.match(/https?:[^"'\s<>\\]+?\.pdf/gi) ?? [])].filter((u) => modelIn(u.split('/').pop() ?? '')).sort((a, b) => a.length - b.length)[0];
+          const inner = [...new Set(html.match(/https?:[^"'\s<>\\]+?\.pdf/gi) ?? [])].filter((u) => hintIn(u.split('/').pop() ?? '')).sort((a, b) => a.length - b.length)[0];
           if (inner) target = inner;
           else {
             c.status = 'is_web_page';
@@ -518,7 +594,7 @@ export async function findBrochure(vehicle: Pick<Vehicle, 'make' | 'model'>, dep
       const d = editionDate(text, target, now);
       const date = d?.date.toISOString().slice(0, 10);
       const uk = {
-        ukDomainOrPath: (linked || modelIn(`${c.linkText ?? ''} ${target}`)) && (ukPathOnOfficial(c.url, make) || ukPathOnOfficial(target, make)),
+        ukDomainOrPath: (linked || hintIn(`${c.linkText ?? ''} ${target}`)) && (ukPathOnOfficial(c.url, make) || ukPathOnOfficial(target, make)),
         linkedFromOfficial: linked,
         poundPricing: /£|\bOTR\b|on the road/i.test(text),
         ukWording: /(UK spec|United Kingdom|\bUK\b Limited|\(UK\)|\.co\.uk|UK model|UK customers)/i.test(text),
@@ -558,8 +634,10 @@ export async function findBrochure(vehicle: Pick<Vehicle, 'make' | 'model'>, dep
       const inTier = (c: Cand) => (tier === 'eu') === !!c.fallbackOnly;
       for (const v of variants) {
         modelIn = modelMatcher(make, v);
+        hintIn = modelHint(make, v);
         if (v !== model) for (const c of cands) if (inTier(c) && c.status === 'rejected' && c.reasons.length === 1 && /model is not in/.test(c.reasons[0] ?? '')) Object.assign(c, { status: 'not_checked', reasons: [] });
-        const ranked = cands.filter((c) => c.status === 'not_checked' && inTier(c)).sort((a, b) => b.score - a.score || (urlDate(b.url, now)?.getTime() ?? 0) - (urlDate(a.url, now)?.getTime() ?? 0));
+        const named = (c: Cand) => (modelIn(`${c.linkText ?? ''} ${c.url}`) ? 1 : 0);
+        const ranked = cands.filter((c) => c.status === 'not_checked' && inTier(c)).sort((a, b) => named(b) - named(a) || b.score - a.score || (urlDate(b.url, now)?.getTime() ?? 0) - (urlDate(a.url, now)?.getTime() ?? 0));
         for (const c of ranked) {
           if (verified - startedAt >= maxReads) return undefined;
           if (await verify(c, v, tier)) return c;
@@ -598,6 +676,7 @@ export async function findBrochure(vehicle: Pick<Vehicle, 'make' | 'model'>, dep
 
     const accepted = await runPass('uk', 4);
     modelIn = modelMatcher(make, model);
+    hintIn = modelHint(make, model);
 
     // 4. the outcome: a UK PDF, then a UK web brochure, then the European fallback, then the things the rep can accept
     if (accepted) pdfOutcome(accepted);
@@ -617,7 +696,7 @@ export async function findBrochure(vehicle: Pick<Vehicle, 'make' | 'model'>, dep
           live = 0;
         }
         const wd = textDate(md, now);
-        const match = variants.some((v) => modelMatcher(make, v)(md) || modelMatcher(make, v)(w.url));
+        const match = variants.some((v) => modelMatcher(make, v)(md) || modelHint(make, v)(w.url));
         const notUk = 'nothing on the page says UK';
         const bad: string[] = [];
         if (!(live >= 200 && live < 400)) bad.push(`the page returned ${live || 'nothing'}`);
@@ -642,6 +721,7 @@ export async function findBrochure(vehicle: Pick<Vehicle, 'make' | 'model'>, dep
       if (out.status === 'not_verified') {
         const european = await europeanFallback();
         modelIn = modelMatcher(make, model);
+        hintIn = modelHint(make, model);
         if (european) pdfOutcome(european);
         else webAsEuropean?.();
       }
