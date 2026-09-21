@@ -4,15 +4,16 @@
  *                                                        { state, brochure?, search?, remembered? }:
  *                                                        state 'none' means nothing attached — `search` says
  *                                                        what was checked and the UI offers the manual paths.
- *   POST /api/brochures/accept { make, model }         the rep accepts an official page / request form the
- *                                                        finder would not attach by itself (URL from the stored search)
+ *   POST /api/brochures/accept { make, model }         the rep accepts what the finder would not attach by itself:
+ *                                                        an official page / request form, or the European
+ *                                                        English-language edition it offered (URL from the stored search)
  *   POST /api/brochures/manual { make, model, url } | multipart pdf   the manual path
  *   GET  /api/brochures/current?make=&model=           the stored copy without triggering a search
  *   GET  /b/:id                                        recipient link: serves our PDF, or redirects to the
  *                                                      manufacturer's page for a web brochure / request form
  * Superseded brochures keep serving: a campaign that used one must not break.
  */
-import { FirecrawlBrochureSource, ManualBrochureError, acceptSearchOutcome, createFirecrawlClient, ensureBrochure, manualBrochure } from '@offer-mailer/adapters';
+import { FirecrawlBrochureSource, ManualBrochureError, acceptEuropeanOffer, acceptSearchOutcome, createFirecrawlClient, ensureBrochure, isEuropeanOffer, manualBrochure } from '@offer-mailer/adapters';
 import type { BrochureRepo, Downloaded, FinderHttp } from '@offer-mailer/adapters';
 import { Brochure, BrochureSearch, assertNoCapId, vehicleKey } from '@offer-mailer/schema';
 import type { Brochure as BrochureT, BrochureSearch as BrochureSearchT } from '@offer-mailer/schema';
@@ -99,7 +100,14 @@ brochuresApi.post('/brochures/accept', async (c) => {
   if (!vehicle) return c.json({ error: 'make and model are required' }, 400);
   const repo = d1BrochureRepo(c.env);
   const search = await repo.findSearch(vehicleKey(vehicle));
-  const b = search ? acceptSearchOutcome(search, { vehicle, createdBy: c.get('user').email }) : undefined;
+  const createdBy = c.get('user').email;
+  const key = c.env.FIRECRAWL_API_KEY;
+  // the European edition the finder offered is only fetched and stored now, because the rep asked for it
+  const b = !search
+    ? undefined
+    : isEuropeanOffer(search)
+      ? await acceptEuropeanOffer(search, { vehicle, createdBy, download: downloadFile, store: brochureStore(c.env), ...(key ? { firecrawl: createFirecrawlClient(key) } : {}) })
+      : acceptSearchOutcome(search, { vehicle, createdBy });
   if (!b) return c.json({ error: 'There is no official page or request form on record for this vehicle. Search again, or upload / paste a link.' }, 404);
   const current = await repo.findCurrent(b.vehicleKey);
   await repo.save(b);

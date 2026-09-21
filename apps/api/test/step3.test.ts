@@ -262,6 +262,29 @@ describe('brochures', () => {
     expect(await env.DB.prepare('select count(*) as n from brochure_searches where vehicle_key = ?').bind('lotus/eletre').first<{ n: number }>()).toEqual({ n: 0 });
   });
 
+  it('offers a European edition without attaching it, and fetches and stores it only when the rep accepts', async () => {
+    const car = { make: 'Polestar', model: '2' };
+    const pdfUrl = 'https://www.polestar.com/dato-assets/11286/1775572382-fleet_polestar-2_brochure_my27_eu_260402.pdf';
+    const offer: BrochureSearch = { vehicleKey: 'polestar/2', vehicle: 'Polestar 2', status: 'verified_pdf', documentType: 'brochure', market: 'eu', editionDate: '2026-04-07', url: pdfUrl, assetUrl: pdfUrl, flags: ['european_edition', 'european_offer'], queries: ['q'], pagesOpened: ['https://www.polestar.com/uk/polestar-2/'], candidates: [], credits: 11, durationMs: 6000, finderVersion: 'finder-1.4', searchedAt: new Date().toISOString(), searchedBy: USER, reason: 'offered' };
+    await env.DB.prepare('insert into brochure_searches (vehicle_key, status, searched_at, data) values (?, ?, ?, ?)').bind(offer.vehicleKey, offer.status, offer.searchedAt, JSON.stringify(offer)).run();
+
+    // nothing is attached by the offer itself
+    expect((await app.request('/api/brochures/current?make=Polestar&model=2', {}, authed())).status).toBe(404);
+
+    // the rep presses "Use the European edition": only now is the file fetched and stored
+    on('https://www.polestar.com', '/dato-assets/11286/1775572382-fleet_polestar-2_brochure_my27_eu_260402.pdf', () => new Response(PDF, { status: 200, headers: { 'content-type': 'application/pdf' } }));
+    const accepted = (await (await app.request('/api/brochures/accept', post(car), authed())).json()) as { brochure: Brochure };
+    expect(accepted.brochure).toMatchObject({ kind: 'pdf', market: 'eu', title: 'Polestar 2 brochure (European edition)', editionDate: '2026-04-07', sourceUrl: pdfUrl, ukVerified: { by: 'user' }, createdBy: USER });
+    expect(accepted.brochure.finder?.flags).toEqual(['european_edition']);
+    const served = await app.request(`/b/${accepted.brochure.id}`, {}, env);
+    expect(served.status).toBe(200);
+    expect(served.headers.get('content-type')).toBe('application/pdf');
+    expect(served.headers.get('content-disposition')).toContain('European edition');
+    // it is now the stored copy for the model (the interface shows it unticked to the next rep)
+    const current = (await (await app.request('/api/brochures/current?make=Polestar&model=2', {}, authed())).json()) as { brochure: Brochure };
+    expect(current.brochure.id).toBe(accepted.brochure.id);
+  });
+
   it('lets the rep accept an official page from the stored search, and drops a linked brochure once its page is gone', async () => {
     const car = { make: 'Leapmotor', model: 'C10' };
     const search: BrochureSearch = { vehicleKey: 'leapmotor/c10', vehicle: 'Leapmotor C10', status: 'official_page_only', documentType: 'price_spec_guide', url: 'https://www.leapmotor.net/uk/price-guides', assetRetrievable: false, flags: [], queries: ['q'], pagesOpened: [], candidates: [], credits: 7, durationMs: 800, finderVersion: 'finder-1.0', searchedAt: new Date().toISOString(), searchedBy: USER };

@@ -144,7 +144,7 @@ const SEARCH_STAGES = ['Searching for the official UK brochure…', 'Opening the
  * without. A search that FAILED is shown differently from one that found nothing, and offers a retry.
  * The offer stores only { brochureId, include }; the full record rides on the tray Item for display.
  */
-function BrochureControl({ item, onAttach, onToggle, onRemove }: { item: Item; onAttach: (b: Brochure) => void; onToggle: (include: boolean) => void; onRemove: () => void }) {
+function BrochureControl({ item, onAttach, onToggle, onRemove }: { item: Item; onAttach: (b: Brochure, include?: boolean) => void; onToggle: (include: boolean) => void; onRemove: () => void }) {
   const o = item.offer;
   const attached = item.brochure;
   const included = o.brochure?.include ?? false;
@@ -177,9 +177,11 @@ function BrochureControl({ item, onAttach, onToggle, onRemove }: { item: Item; o
       setSearch(res.search);
       setRemembered(!!res.remembered);
       if (res.brochure) {
-        onAttach(res.brochure);
+        // a European edition someone accepted earlier is shown, but NOT included until this rep ticks it
+        const european = res.brochure.market === 'eu';
+        onAttach(res.brochure, !european);
         setManual(false);
-        setNote(res.state === 'fresh' ? 'Found and checked just now.' : res.state === 'stale' ? `Kept the stored copy — the new search found nothing (${res.error ?? 'no reason given'}). Replace it if it looks out of date.` : (res.warning ?? 'Attached the stored copy.'));
+        setNote(european ? 'This is the stored European edition for this model. It is NOT in the email until you tick “Include in the email”.' : res.state === 'fresh' ? 'Found and checked just now.' : res.state === 'stale' ? `Kept the stored copy — the new search found nothing (${res.error ?? 'no reason given'}). Replace it if it looks out of date.` : (res.warning ?? 'Attached the stored copy.'));
       }
     } catch (e) {
       setErr(errMsg(e));
@@ -195,7 +197,7 @@ function BrochureControl({ item, onAttach, onToggle, onRemove }: { item: Item; o
     try {
       const res = await api.acceptBrochure(o.vehicle.make, o.vehicle.model);
       onAttach(res.brochure);
-      setNote('Linked the manufacturer’s page.');
+      setNote(res.brochure.market === 'eu' ? 'European edition added. The email’s small print tells the recipient it is not the UK brochure.' : 'Linked the manufacturer’s page.');
     } catch (e) {
       setErr(errMsg(e));
     } finally {
@@ -270,7 +272,7 @@ function BrochureControl({ item, onAttach, onToggle, onRemove }: { item: Item; o
         )}
         {attached.market === 'eu' && (
           <span className="dl-small brochure__eu">
-            <strong>European edition.</strong> No UK brochure could be verified, so this is the manufacturer’s own European brochure, in English. Specification, equipment and any prices in it are not the UK’s
+            <strong>European edition{included ? '' : ' — not in the email yet'}.</strong> No UK brochure could be verified; this is the manufacturer’s own European brochure, in English. Specification, equipment and any prices in it are not the UK’s
             {attached.finder?.flags?.includes('euro_pricing') ? ' (it shows euro prices)' : ''}. The email’s small print tells the recipient so. Open it to check, or replace it if you have the UK one.
           </span>
         )}
@@ -290,27 +292,34 @@ function BrochureControl({ item, onAttach, onToggle, onRemove }: { item: Item; o
 
   if (search && !skipped) {
     const failed = search.status === 'search_failed';
-    const canAccept = (search.status === 'official_page_only' || search.status === 'brochure_request') && !!search.url;
+    const europeanOffer = search.market === 'eu' && (search.status === 'verified_pdf' || search.status === 'verified_web_brochure') && !!search.url;
+    const canAccept = ((search.status === 'official_page_only' || search.status === 'brochure_request') && !!search.url) || europeanOffer;
     const vehicle = `${o.vehicle.make} ${o.vehicle.model}`;
     const google = `https://www.google.com/search?q=${encodeURIComponent(`${vehicle} brochure UK filetype:pdf`)}`;
     return (
       <div className={`brochure brochure__panel ${failed ? 'brochure__panel--failed' : 'brochure__panel--none'}`}>
-        <strong>{failed ? SEARCH_HEADLINE.search_failed : `No brochure attached for ${vehicle}.`}</strong>
-        {!failed && <span className="dl-small">{SEARCH_HEADLINE[search.status]}</span>}
-        {search.reason && <span className="dl-small app__muted">{search.reason}</span>}
+        <strong>{failed ? SEARCH_HEADLINE.search_failed : europeanOffer ? `No UK brochure found for ${vehicle}. A European edition is available.` : `No brochure attached for ${vehicle}.`}</strong>
+        {!failed && (
+          <span className="dl-small">
+            {europeanOffer
+              ? `It is the manufacturer’s own European brochure, in English${search.editionDate ? ` (edition ${search.editionDate.slice(0, 7)})` : ''}, found and checked. Specification, equipment and any prices in it are not the UK’s${search.flags.includes('euro_pricing') ? ' (it shows euro prices)' : ''}. Nothing is in the email unless you choose: use it, put your own in its place, or send without a brochure.`
+              : SEARCH_HEADLINE[search.status]}
+          </span>
+        )}
+        {search.reason && !europeanOffer && <span className="dl-small app__muted">{search.reason}</span>}
         {remembered && <span className="dl-small app__muted">This is the result of a search on {new Date(search.searchedAt).toLocaleDateString('en-GB')}; it is re-run automatically after 7 days.</span>}
         {manual ? manualForm : (
           <div className="brochure__btns">
             {failed && <Button size="sm" onClick={() => doEnsure(true)}>Try again</Button>}
             {canAccept && (
               <Button size="sm" onClick={doAccept}>
-                {search.status === 'brochure_request' ? 'Add a “Request a brochure” link' : search.documentType === 'price_spec_guide' ? 'Link the official price & spec page' : 'Link the official brochure page'}
+                {europeanOffer ? 'Use the European edition' : search.status === 'brochure_request' ? 'Add a “Request a brochure” link' : search.documentType === 'price_spec_guide' ? 'Link the official price & spec page' : 'Link the official brochure page'}
               </Button>
             )}
             {canAccept && search.url && <a className="dl-small" href={search.url} target="_blank" rel="noreferrer">Open it first ↗</a>}
             {!failed && <a className="dl-btn dl-btn--outline dl-btn--sm" href={google} target="_blank" rel="noreferrer">Search the web for it ↗</a>}
             {!failed && search.officialSite && <a className="dl-small" href={`https://${search.officialSite}`} target="_blank" rel="noreferrer">Go to {search.officialSite} ↗</a>}
-            <Button variant="outline" size="sm" onClick={() => { setManual(true); setErr(''); }}>Upload a PDF / paste a link</Button>
+            <Button variant="outline" size="sm" onClick={() => { setManual(true); setErr(''); }}>{europeanOffer ? 'Use my own instead (upload / paste)' : 'Upload a PDF / paste a link'}</Button>
             {!failed && <Button variant="ghost" size="sm" onClick={() => doEnsure(true)}>Search again</Button>}
             <Button variant="ghost" size="sm" onClick={() => setSkipped(true)}>Send without a brochure</Button>
           </div>
@@ -639,8 +648,8 @@ export function Compose({ email, base, items, setItems }: { email: string; base:
   };
 
   /** Attach a resolved brochure to one offer (id + include on the offer; full record on the Item for display). */
-  function attachBrochure(i: number, brochure: Brochure) {
-    setItems((it) => it.map((x, k) => (k === i ? { ...x, brochure, offer: { ...x.offer, brochure: { brochureId: brochure.id, include: true } } } : x)));
+  function attachBrochure(i: number, brochure: Brochure, include = true) {
+    setItems((it) => it.map((x, k) => (k === i ? { ...x, brochure, offer: { ...x.offer, brochure: { brochureId: brochure.id, include } } } : x)));
     clearOutput();
   }
   function toggleBrochure(i: number, include: boolean) {
@@ -812,7 +821,7 @@ export function Compose({ email, base, items, setItems }: { email: string; base:
                   {!isSalsac(o) && <ChipRow label="Initial" options={options.initialRental} current={o.pricing.initialMonths} disabled={reloading !== null} format={(v) => `${v} mo`} onPick={(v) => reLook(i, 'initialRental', v)} />}
                 </div>
               )}
-              <BrochureControl item={{ offer: o, options, brochure }} onAttach={(b) => attachBrochure(i, b)} onToggle={(inc) => toggleBrochure(i, inc)} onRemove={() => removeBrochure(i)} />
+              <BrochureControl item={{ offer: o, options, brochure }} onAttach={(b, include) => attachBrochure(i, b, include)} onToggle={(inc) => toggleBrochure(i, inc)} onRemove={() => removeBrochure(i)} />
               <div className="offers__btns">
                 <Button variant="outline" size="sm" onClick={() => saveToLibrary(o)} disabled={saving === o.id || savedIds.has(o.id)}>{savedIds.has(o.id) ? 'Saved ✓' : saving === o.id ? 'Saving…' : 'Save to library'}</Button>
                 <Button variant="ghost" size="sm" onClick={() => removeOffer(i)} disabled={reloading === i}>Remove</Button>

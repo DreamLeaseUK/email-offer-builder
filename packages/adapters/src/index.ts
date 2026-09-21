@@ -22,6 +22,9 @@ export type { FinderDeps, FinderHttp, FinderResult, LabelledLink, RawDocType } f
 export {
   FirecrawlBrochureSource,
   acceptSearchOutcome,
+  acceptEuropeanOffer,
+  isEuropeanOffer,
+  EUROPEAN_OFFER,
   toSearchRecord,
   retrievePdf,
   manualBrochure,

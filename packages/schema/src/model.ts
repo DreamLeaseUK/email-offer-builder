@@ -257,6 +257,8 @@ export const BrochureSearch = z.object({
   documentType: BrochureDocumentType.or(z.literal('brochure_request_form')).optional(),
   /** Set when something verified: uk, or eu for the European English-language fallback. */
   market: BrochureMarket.optional(),
+  /** The edition date read from the verified document (YYYY-MM-DD). */
+  editionDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   /** The page or document the outcome points at (absent for not_verified / search_failed). */
   url: z.string().optional(),
   assetUrl: z.string().optional(),

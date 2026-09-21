@@ -6,6 +6,7 @@ import {
   FINDER_VERSION,
   FirecrawlBrochureSource,
   ManualBrochureError,
+  acceptEuropeanOffer,
   acceptSearchOutcome,
   brochureExpiresAt,
   docType,
@@ -16,6 +17,7 @@ import {
   isEditionTooOld,
   isEnglish,
   isEuropeanMarket,
+  isEuropeanOffer,
   isOfficialHost,
   isRestOfWorld,
   labelledLinks,
@@ -583,13 +585,45 @@ describe('findBrochure: the European English-language fallback', () => {
     expect(priced.read).toEqual([plain]); // re-judged from the first reading: the document is never paid for twice
   });
 
-  it('records a European edition as what it is: titled, marked and noted, never "(UK)"', async () => {
-    const { brochure: b, search } = await source(fallbackClient([{ url: EU_PDF, text: EU_TEXT }]), directOk).find({ make: 'Polestar', model: '2' });
-    expect(b && Brochure.parse(b)).toEqual(b);
-    expect(b).toMatchObject({ kind: 'pdf', market: 'eu', title: 'Polestar 2 brochure (European edition)', sourceUrl: EU_PDF, finder: { version: FINDER_VERSION, status: 'verified_pdf', flags: ['european_edition'] } });
-    expect(b?.ukVerified.note).toMatch(/European English-language edition: no UK edition verified/);
+  it('OFFERS the European edition and attaches nothing: it is the rep’s to use, replace or leave out', async () => {
+    const { brochure, search } = await source(fallbackClient([{ url: EU_PDF, text: EU_TEXT }]), directOk).find({ make: 'Polestar', model: '2' });
+    expect(brochure).toBeUndefined(); // found and checked, but never attached by itself (Matt, 21 Sept 2026)
     expect(BrochureSearch.parse(search)).toEqual(search);
-    expect(search.market).toBe('eu');
+    expect(search).toMatchObject({ status: 'verified_pdf', market: 'eu', url: EU_PDF, editionDate: '2026-04-07', documentType: 'brochure' });
+    expect(search.flags).toEqual(expect.arrayContaining(['european_edition', 'european_offer']));
+    expect(search.reason).toMatch(/use it, replace it, or send without/);
+    expect(isEuropeanOffer(search)).toBe(true);
+    // it is not an "official page" to link either: only acceptEuropeanOffer turns it into a brochure
+    expect(acceptSearchOutcome(search, { vehicle: { make: 'Polestar', model: '2' }, createdBy: BY })).toBeUndefined();
+
+    // the offer stands for the week without being searched (or paid for) again
+    const find = vi.fn(async () => ({ search }));
+    const repo = memoryRepo();
+    const polestar = { make: 'Polestar', model: '2' };
+    expect(await ensureBrochure(polestar, { repo, harvester: { kind: 'firecrawl', find }, now: () => NOW })).toMatchObject({ state: 'none', search: { market: 'eu' } });
+    expect(await ensureBrochure(polestar, { repo, harvester: { kind: 'firecrawl', find }, now: () => NOW })).toMatchObject({ state: 'none', remembered: true, search: { market: 'eu' } });
+    expect(find).toHaveBeenCalledTimes(1);
+  });
+
+  it('fetches and stores the European edition only when the rep accepts it, and records it as what it is, never "(UK)"', async () => {
+    const { search } = await source(fallbackClient([{ url: EU_PDF, text: EU_TEXT }]), directOk).find({ make: 'Polestar', model: '2' });
+    const download = vi.fn(directOk);
+    const b = await acceptEuropeanOffer(search, { vehicle: { make: 'Polestar', model: '2' }, createdBy: BY, download, store, now: () => NOW, newId: () => 'b0000000-0000-4000-8000-000000000011' });
+    expect(download).toHaveBeenCalledWith(EU_PDF);
+    expect(b && Brochure.parse(b)).toEqual(b);
+    expect(b).toMatchObject({ kind: 'pdf', market: 'eu', title: 'Polestar 2 brochure (European edition)', sourceUrl: EU_PDF, editionDate: '2026-04-07', documentType: 'brochure', ukVerified: { by: 'user' }, createdBy: BY });
+    expect(b?.finder?.flags).toEqual(['european_edition']); // no longer an offer
+    expect(b?.ukVerified.note).toMatch(/accepted by the rep: no UK edition verified/);
+
+    // a file its host will not release is linked, never worked around
+    const linked = await acceptEuropeanOffer(search, { vehicle: { make: 'Polestar', model: '2' }, createdBy: BY, download: directBlocked, store });
+    expect(linked).toMatchObject({ kind: 'web', market: 'eu', sourceUrl: EU_PDF });
+    expect(linked?.file).toBeUndefined();
+
+    // only a European offer can be accepted this way
+    const uk = await source(scriptedClient(), directOk).find({ make: 'Kia', model: 'EV3' });
+    expect(uk.brochure?.market).toBe('uk');
+    expect(await acceptEuropeanOffer(uk.search, { vehicle: { make: 'Kia', model: 'EV3' }, createdBy: BY, download: directOk, store })).toBeUndefined();
   });
 });
 
