@@ -218,6 +218,12 @@ body {
   border-color: var(--dl-ignition-red, #e30613);
   background: #fdecee;
 }
+/* an attached European edition: not a fault, but the rep must see it is not the UK brochure */
+.brochure__eu {
+  padding: 6px 10px;
+  border-left: 3px solid var(--dl-flashpoint-orange, #ff8811);
+  background: var(--dl-orange-tint, #fff3e5);
+}
 .brochure__progress {
   display: flex;
   align-items: center;

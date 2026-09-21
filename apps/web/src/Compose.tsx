@@ -97,7 +97,7 @@ const SEARCH_HEADLINE: Record<BrochureSearch['status'], string> = {
   verified_web_brochure: 'The manufacturer publishes this brochure as a web page; it has been checked and linked.',
   official_page_only: 'We found the manufacturer’s official page, but not a document we can attach for you.',
   brochure_request: 'The manufacturer only offers a request-a-brochure form for this model.',
-  not_verified: 'We searched for an official UK brochure but could not verify one.',
+  not_verified: 'We searched for an official UK brochure, then for the manufacturer’s European edition in English, and could not verify either.',
   search_failed: 'The brochure search could not be completed. No conclusion was made.',
 };
 
@@ -126,7 +126,7 @@ function SearchTrace({ search }: { search: BrochureSearch }) {
             <span aria-hidden>{mark(c.status)}</span>{' '}
             <a href={c.url} target="_blank" rel="noreferrer">{hostOfUrl(c.url)}{c.linkText ? ` — ${c.linkText}` : ''}</a>
             {c.reasons.length > 0 && <span className="app__muted"> — {c.reasons.join('; ')}</span>}
-            {c.status === 'accepted' && <span className="app__muted"> — passed every check</span>}
+            {c.status === 'accepted' && <span className="app__muted"> — {c.evidence?.['market'] === 'eu' ? 'no UK edition verified; accepted as the manufacturer’s European edition, in English' : 'passed every check'}</span>}
           </li>
         ))}
         {search.candidates.length === 0 && <li className="app__muted">No documents turned up at all.</li>}
@@ -135,7 +135,7 @@ function SearchTrace({ search }: { search: BrochureSearch }) {
   );
 }
 
-const SEARCH_STAGES = ['Searching for the official UK brochure…', 'Opening the manufacturer’s site…', 'Reading the documents it links…', 'Checking the model, the market and the date…', 'Still checking — some manufacturer sites are slow…'];
+const SEARCH_STAGES = ['Searching for the official UK brochure…', 'Opening the manufacturer’s site…', 'Reading the documents it links…', 'Checking the model, the market and the date…', 'Still checking — if there is no UK edition, looking for the European one in English…'];
 
 /**
  * Brief §5.8 "Include brochure". The finder searches, verifies and attaches by itself; the rep never picks
@@ -263,6 +263,12 @@ function BrochureControl({ item, onAttach, onToggle, onRemove }: { item: Item; o
           {/* our copy is opened same-origin (/b/:id): file.url carries PUBLIC_BASE_URL, which in local dev is the production host that does not hold this file */}
           <a href={attached.kind === 'pdf' ? `/b/${attached.id}` : attached.sourceUrl} target="_blank" rel="noreferrer">Open it to check</a>
         </span>
+        {attached.market === 'eu' && (
+          <span className="dl-small brochure__eu">
+            <strong>European edition.</strong> No UK brochure could be verified, so this is the manufacturer’s own European brochure, in English. Specification, equipment and any prices in it are not the UK’s
+            {attached.finder?.flags?.includes('euro_pricing') ? ' (it shows euro prices)' : ''}. The email’s small print tells the recipient so. Open it to check, or replace it if you have the UK one.
+          </span>
+        )}
         {manual ? manualForm : (
           <div className="brochure__btns">
             <Button variant="ghost" size="sm" onClick={() => { setManual(true); setErr(''); }}>Wrong? Replace it</Button>
