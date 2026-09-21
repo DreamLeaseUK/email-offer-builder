@@ -215,8 +215,20 @@ export type Brochure = z.infer<typeof Brochure>;
 export const BROCHURE_TTL_DAYS = 90;
 /** A search that found nothing is re-run sooner than a found brochure is refreshed. */
 export const BROCHURE_NEGATIVE_TTL_DAYS = 7;
+/**
+ * …but a search that never reached a page of the official site (BrochureSearch.exhausted === false) has not shown
+ * that the car has no brochure: it is only held for a day, so a click does not pay for the same miss twice.
+ */
+export const BROCHURE_DISCOVERY_MISS_TTL_DAYS = 1;
 /** Oldest acceptable edition, in months: price/spec guides carry prices and go stale faster than brochures. */
 export const BROCHURE_MAX_AGE_MONTHS: Record<BrochureDocumentType, number> = { brochure: 12, price_spec_guide: 6 };
+/**
+ * …unless the manufacturer's own UK site is serving it today (on its host, or linked from its pages): that IS its
+ * current edition, however long ago it was printed. Toyota's C-HR brochure and Kia's EV3 brochure were both about
+ * two years old and the only ones their makers offered (sweep of 21 Sept 2026). Such a record carries the flag
+ * 'older_edition' once it is past the ordinary limit, and the rep is told.
+ */
+export const BROCHURE_MAX_AGE_MONTHS_OFFICIAL: Record<BrochureDocumentType, number> = { brochure: 36, price_spec_guide: 12 };
 
 // ---------- Brochure search trace ----------
 
@@ -231,6 +243,10 @@ export const BrochureCandidateTrace = z.object({
   status: z.enum(['accepted', 'rejected', 'fetch_failed', 'is_web_page', 'not_checked']),
   reasons: z.array(z.string()),
   evidence: z.record(z.string(), z.union([z.string(), z.number(), z.boolean()])).optional(),
+  /** Every way this document turned up: search, site-search, map, a link on a page, a control that was pressed. */
+  discoveredBy: z.array(z.string()).optional(),
+  /** What was done to reach it, in the rep's words: 'pressed "Download Geely EX2 Brochure"'. */
+  action: z.string().optional(),
 });
 export type BrochureCandidateTrace = z.infer<typeof BrochureCandidateTrace>;
 
@@ -248,6 +264,13 @@ export const BrochureSearch = z.object({
   reason: z.string().optional(),
   flags: z.array(z.string()),
   officialSite: z.string().optional(),
+  /** Why that site was taken to be the manufacturer's. */
+  officialWhy: z.array(z.string()).optional(),
+  /**
+   * False when the search never got as far as looking: no official site was identified, or none of its pages
+   * could be opened. That is a discovery miss, not "this car has no brochure", and is NOT remembered for 7 days.
+   */
+  exhausted: z.boolean().optional(),
   queries: z.array(z.string()),
   pagesOpened: z.array(z.string()),
   candidates: z.array(BrochureCandidateTrace),

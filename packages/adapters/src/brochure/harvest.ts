@@ -165,6 +165,8 @@ export function toSearchRecord(vehicle: Pick<Vehicle, 'make' | 'model'>, r: Find
   if (r.assetRetrievable !== undefined) s.assetRetrievable = r.assetRetrievable;
   if (r.reason) s.reason = r.reason;
   if (r.officialSite) s.officialSite = r.officialSite;
+  if (r.officialWhy) s.officialWhy = r.officialWhy;
+  if (r.exhausted !== undefined) s.exhausted = r.exhausted;
   return s;
 }
 

@@ -60,7 +60,8 @@ export function d1BrochureRepo(env: Env): BrochureRepo & { findById(id: string):
 export const finderHttp: FinderHttp = async (url) => {
   try {
     const res = await fetch(url, { headers: { 'user-agent': BROWSER_UA, accept: 'text/html,application/pdf;q=0.9,*/*;q=0.8', 'accept-language': 'en-GB,en;q=0.9' }, redirect: 'follow', signal: AbortSignal.timeout(15_000) });
-    return { status: res.status, contentType: res.headers.get('content-type') ?? '', finalUrl: res.url || url, text: () => res.text() };
+    const lastModified = res.headers.get('last-modified');
+    return { status: res.status, contentType: res.headers.get('content-type') ?? '', finalUrl: res.url || url, ...(lastModified ? { lastModified } : {}), text: () => res.text() };
   } catch {
     return undefined;
   }

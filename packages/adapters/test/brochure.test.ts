@@ -23,12 +23,14 @@ import {
   modelHint,
   modelMatcher,
   modelVariants,
+  namesAnotherModel,
   pdfUrlsInHtml,
   ukMarker,
   ukPathOnOfficial,
   urlDate,
 } from '../src/index.js';
 import type { BrochureRepo, BrochureStore, Downloaded, FinderHttp, FirecrawlClient } from '../src/index.js';
+import { OPERATE_ACTIONS, parseOperated } from '../src/brochure/operate.js';
 import { BY, NOW, pdfBytes } from './helpers.js';
 
 // ---------- the finder's rules ----------
@@ -71,6 +73,14 @@ describe('finder rules', () => {
     expect(editionDate('no dates here', 'https://example.com/a.pdf', now)).toBeUndefined();
   });
 
+  it('reads a bare "Download" by the heading above it and the words before it (Škoda’s brochure page)', () => {
+    const md = '## Download Karoq brochures\nCompact SUV. Brochures & pricelist pdf (8 MB) [Download](https://www.skoda.co.uk/_doc/aaa "Download")\n## Download Kodiaq brochures\nDiscover a new kind of space. Brochures & pricelist pdf (9 MB) [Download](https://www.skoda.co.uk/_doc/bbb "Download") Kodiaq Accessories pdf (9.9 MB) [Download](https://www.skoda.co.uk/_doc/ccc "Download")';
+    const links = labelledLinks(md, 'https://www.skoda.co.uk/discover/download-a-brochure');
+    expect(links.map((l) => l.heading)).toEqual(['Download Karoq brochures', 'Download Kodiaq brochures', 'Download Kodiaq brochures']);
+    expect(docType(`${links[1]?.lead} ${links[1]?.own}`)).toBe('price-guide');
+    expect(docType(`${links[2]?.lead} ${links[2]?.own}`)).toBe('manual'); // accessories
+  });
+
   it("keeps a link's own text apart from its neighbours", () => {
     const md = '- [Brochure](https://dmassets.hyundai.com/IONIQ_5_Brochurepdf)\n- [Tech and Spec Guide](https://dmassets.hyundai.com/IONIQ_5_Tech_and_Spec_Guidepdf)';
     const links = labelledLinks(md, 'https://www.hyundai.com/uk/en/models/ioniq5/downloads.html');
@@ -101,6 +111,60 @@ describe('finder rules', () => {
       'https://www.geelyauto.co.uk/docs/warranty.pdf',
     ]);
     expect(pdfUrlsInHtml('no documents here', 'https://example.com/')).toEqual([]);
+  });
+
+  it('reads what operating a page gave up: rendered links, and the files its controls fetched when pressed', () => {
+    const report = JSON.stringify({
+      finds: [
+        { url: 'https://www.geelyauto.co.uk/-/media/file/geely_ex2_brochure.pdf', how: 'press', label: 'Download Geely EX2 Brochure' },
+        { url: 'https://cdn.group.renault.com/ren/gb/R4-eBrochure.pdf', how: 'link', label: 'download the brochure' },
+        { url: 'javascript:void(0)', how: 'press', label: 'x' },
+        'nonsense',
+      ],
+      pressed: ['Download Geely EX2 Brochure'],
+      request: { url: 'https://www.kia.com/uk/utility/request-a-brochure/', label: 'Request a brochure' },
+    });
+    // Firecrawl hands each script's return back as { type, value }; the last JSON one is the report
+    const page = parseOperated([{ type: 'string', value: 'armed:5' }, { type: 'string', value: report }]);
+    expect(page.finds).toEqual([
+      { url: 'https://www.geelyauto.co.uk/-/media/file/geely_ex2_brochure.pdf', how: 'press', label: 'Download Geely EX2 Brochure' },
+      { url: 'https://cdn.group.renault.com/ren/gb/R4-eBrochure.pdf', how: 'link', label: 'download the brochure' },
+    ]);
+    expect(page.pressed).toEqual(['Download Geely EX2 Brochure']);
+    expect(page.request?.url).toContain('request-a-brochure');
+    expect(parseOperated(undefined)).toEqual({ finds: [], pressed: [] });
+    expect(parseOperated(['not json', 42])).toEqual({ finds: [], pressed: [] });
+    // never fills in or submits anything: only waits and two scripts
+    expect(OPERATE_ACTIONS.map((a) => (a as { type: string }).type)).toEqual(['wait', 'executeJavascript', 'wait', 'executeJavascript']);
+    const scripts = JSON.stringify(OPERATE_ACTIONS);
+    expect(scripts).toMatch(/request\|test drive\|configur/); // controls it must never press
+    expect(scripts).not.toMatch(/\.submit\(|type: 'write'/);
+  });
+
+  it('knows another model’s document by its name: "c-hr-plus" is not the C-HR', () => {
+    expect(namesAnotherModel('https://www.toyota.co.uk/content/dam/toyota/brochure/c-hr-plus.pdf', 'C-HR')).toBe(true);
+    expect(namesAnotherModel('Toyota C-HR+ brochure', 'C-HR')).toBe(true);
+    expect(namesAnotherModel('yaris-cross-brochure.pdf', 'Yaris')).toBe(true);
+    expect(namesAnotherModel('q4-sportback-e-tron.pdf', 'Q4')).toBe(true);
+    expect(namesAnotherModel('https://www.toyota.co.uk/content/dam/toyota/brochure/c-hr.pdf', 'C-HR')).toBe(false);
+    expect(namesAnotherModel('yaris-cross-brochure.pdf', 'Yaris Cross')).toBe(false); // it IS the model asked for
+    expect(namesAnotherModel('ev3-brochure-plus-price-list.pdf', 'EV3')).toBe(false); // "plus" not straight after the model
+    // a '+' between words is a space in an address, not a name: Hyundai's "KONA+Brochurepdf" is the Kona's
+    expect(namesAnotherModel('https://dmassets.hyundai.com/is/content/hyundaiautoever/KONA+Brochurepdf', 'Kona')).toBe(false);
+  });
+
+  it('drops what a model page links that is not sales literature: scheme guides, offer terms, company reports', () => {
+    for (const t of ['motability price spec guide', 'electrified savings terms', 'Toyota Customer LCV Offer TCs q326', 'Toyota HomeCharge TandC Q4', 'Gender Pay Gap', 'Peugeot Accessibility', 'peugeot care uk terms', 'New Customer Terms and Conditions']) expect(docType(t), t).toBe('manual');
+    expect(docType('208 price spec guide')).toBe('price-guide');
+    expect(docType('all new toyota c-hr brochure')).toBe('brochure');
+  });
+
+  it('takes a marque’s own site whatever generic word it trades under, and still refuses dealers and press offices', () => {
+    for (const [url, make, model] of [
+      ['https://www.dsautomobiles.co.uk/ds-models/ds-3.html', 'DS', undefined], ['https://www.rolls-roycemotorcars.com/en_GB/showroom/spectre.html', 'Rolls-Royce', undefined],
+      ['https://www.saicmaxus.co.uk/vehicles/mifa-9', 'Maxus', undefined], ['https://ineosgrenadier.com/en/gb/', 'Ineos', 'Grenadier'], ['https://offers.kia.com/uk/ev3', 'Kia', undefined],
+    ] as const) expect(isOfficialHost(url, make, model), url).toBe(true);
+    for (const [url, make] of [['https://www.kiapressoffice.com/models/ev3', 'Kia'], ['https://www.berrycroydonbmw.co.uk/cars/ix1/', 'BMW'], ['https://www.volkswagen-vans.co.uk/en.html', 'Volkswagen'], ['https://www.frankkeanevolkswagen.ie/id4', 'Volkswagen']] as const) expect(isOfficialHost(url, make), url).toBe(false);
   });
 
   it('tells a European market (the fallback tier) from the rest of the world (never a source)', () => {
@@ -159,8 +223,8 @@ describe('finder rules', () => {
 
 interface Recorded {
   path: string;
-  body: { query?: string; url?: string; categories?: string[]; parsers?: unknown[] };
-  response: { data?: { web?: { url: string; title?: string; description?: string }[]; markdown?: string; rawHtml?: string; metadata?: { statusCode?: number; totalPages?: number } } };
+  body: { query?: string; url?: string; search?: string; categories?: string[]; parsers?: unknown[]; actions?: unknown[] };
+  response: { links?: (string | { url?: string })[]; data?: { web?: { url: string; title?: string; description?: string }[]; markdown?: string; rawHtml?: string; actions?: { javascriptReturns?: unknown[] }; metadata?: { statusCode?: number; totalPages?: number } } };
 }
 const FIXTURE_DIR = new URL('./fixtures/finder/', import.meta.url);
 const recorded: Recorded[] = readdirSync(FIXTURE_DIR).map((f) => JSON.parse(readFileSync(new URL(f, FIXTURE_DIR), 'utf8')) as Recorded);
@@ -172,12 +236,16 @@ function replayClient(): FirecrawlClient {
       if (!hit) throw new Error(`no recorded search for: ${q}`);      return { results: (hit.response.data?.web ?? []).map((w) => ({ url: w.url, ...(w.title ? { title: w.title } : {}) })), creditsUsed: 2 };
     },
     async scrape(url, opts) {
-      const hit = recorded.find((r) => r.path === '/scrape' && r.body.url === url && !!r.body.parsers === !!opts?.pdfMaxPages);
+      const same = recorded.filter((r) => r.path === '/scrape' && r.body.url === url && !!r.body.parsers === !!opts?.pdfMaxPages);
+      // a page recorded both ways (read, and operated): the recording made the way it is being asked for wins
+      const hit = same.find((r) => !!r.body.actions === !!opts?.actions) ?? same[0];
       if (!hit) throw new Error(`no recorded scrape for: ${url}`);      const d = hit.response.data ?? {};
-      return { ...(d.markdown !== undefined ? { markdown: d.markdown } : {}), ...(d.rawHtml !== undefined ? { rawHtml: d.rawHtml } : {}), ...(d.metadata?.statusCode ? { statusCode: d.metadata.statusCode } : {}), ...(d.metadata?.totalPages ? { totalPages: d.metadata.totalPages } : {}), creditsUsed: opts?.pdfMaxPages ? 4 : 1 };
+      return { ...(d.markdown !== undefined ? { markdown: d.markdown } : {}), ...(d.rawHtml !== undefined ? { rawHtml: d.rawHtml } : {}), ...(d.actions?.javascriptReturns ? { actionReturns: d.actions.javascriptReturns } : {}), ...(d.metadata?.statusCode ? { statusCode: d.metadata.statusCode } : {}), ...(d.metadata?.totalPages ? { totalPages: d.metadata.totalPages } : {}), creditsUsed: opts?.pdfMaxPages ? 4 : 1 };
     },
-    async map() {
-      return { links: [], creditsUsed: 1 };
+    async map(url, opts) {
+      // sites recorded before finder-1.4 have no map: the finder then falls back to the old ways of finding pages
+      const hit = recorded.find((r) => r.path === '/map' && r.body.url === url && r.body.search === opts?.search);
+      return { links: (hit?.response.links ?? []).map((l) => (typeof l === 'string' ? l : (l.url ?? ''))).filter(Boolean), creditsUsed: 1 };
     },
     async fetchFile() {
       return { bytes: new ArrayBuffer(0), contentType: null, ok: false, creditsUsed: 2 };
@@ -297,6 +365,33 @@ describe('findBrochure (replayed against recorded manufacturer sites)', () => {
     // the brochure is preferred to the spec sheet offered beside it, and another market's copy on a CDN is never opened
     expect(r.candidates.find((c) => c.url.includes('spec-sheet'))?.status).not.toBe('accepted');
     expect(r.candidates.find((c) => c.url.includes('datocms-assets.com'))?.status).not.toBe('accepted');
+  });
+
+  // Three cars from the finder-1.4 sweep of 21 Sept 2026, each a fault the sweep found and fixed.
+  it('Toyota C-HR (recorded 21 Sept 2026): not the C-HR+ brochure, and the two-year-old edition Toyota still serves is its current one', async () => {
+    const r = await findBrochure({ make: 'Toyota', model: 'C-HR' }, { firecrawl: replayClient(), http: noHttp, now: () => new Date('2026-09-21T12:00:00.000Z') });
+    expect(r).toMatchObject({ status: 'verified_pdf', market: 'uk', documentType: 'brochure', editionDate: '2024-09-01' });
+    expect(r.url).toBe('https://www.toyota.co.uk/content/dam/toyota/nmsc/united-kingdom/brochure/c-hr.pdf');
+    expect(r.flags).toContain('older_edition');
+    expect(r.candidates.find((c) => c.url.endsWith('/c-hr-plus.pdf'))?.status).not.toBe('accepted');
+    // the model's own page was opened first, and Toyota's "order a brochure" page was never taken for a brochure
+    expect(r.pagesOpened[0]).toBe('https://www.toyota.co.uk/new-cars/c-hr');
+    expect(r.exhausted).toBe(true);
+  });
+
+  it('Škoda Kodiaq (recorded 21 Sept 2026): the links only say "Download"; the heading says Kodiaq and the words before say brochure & pricelist', async () => {
+    const http: FinderHttp = async (url) => (/skoda\.co\.uk\/_doc\//.test(url) ? { status: 200, contentType: 'application/pdf', finalUrl: url, text: async () => '' } : undefined);
+    const r = await findBrochure({ make: 'Skoda', model: 'Kodiaq' }, { firecrawl: replayClient(), http, now: () => new Date('2026-09-21T12:00:00.000Z') });
+    expect(r).toMatchObject({ status: 'verified_pdf', market: 'uk', documentType: 'price_spec_guide', fromPage: 'https://www.skoda.co.uk/discover/download-a-brochure' });
+    expect(r.url).toContain('https://www.skoda.co.uk/_doc/');
+    // the model's page is the range page, not the fleet page or a news story (both were opened before the fix)
+    expect(r.pagesOpened.join()).not.toMatch(/fleet|news/);
+  });
+
+  it('Hyundai Kona (recorded 21 Sept 2026): the brochure, not the spec guide the model page offers first', async () => {
+    const r = await findBrochure({ make: 'Hyundai', model: 'Kona' }, { firecrawl: replayClient(), http: noHttp, now: () => new Date('2026-09-21T12:00:00.000Z') });
+    expect(r).toMatchObject({ status: 'verified_pdf', market: 'uk', documentType: 'brochure' });
+    expect(r.url).toContain('KONA+Brochure');
   });
 
   it('reports a failed search as search_failed, never as "not found"', async () => {
@@ -431,7 +526,9 @@ describe('findBrochure: a document seen twice', () => {
     };
     const r = await findBrochure({ make: 'Kia', model: 'EV3' }, { firecrawl: fc, http: noHttp, now: () => REPLAY_NOW });
     expect(r).toMatchObject({ status: 'verified_pdf', market: 'uk', url: cdn, fromPage: page });
-    expect(r.candidates[0]).toMatchObject({ via: 'official-page', status: 'accepted', linkText: 'Download the EV3 brochure' });
+    // the brochure page of the model is the model's own page: the strongest place to have found it
+    expect(r.candidates[0]).toMatchObject({ via: 'model-page', status: 'accepted', linkText: 'Download the EV3 brochure' });
+    expect(r.candidates[0]?.discoveredBy).toEqual(expect.arrayContaining(['search', 'page link']));
   });
 });
 
@@ -600,6 +697,13 @@ describe('ensureBrochure', () => {
     expect(repo.rows[0]?.status).toBe('current');
   });
 
+  it('holds an older edition the maker’s own site was serving to the longer limit afterwards too', () => {
+    const served = stored('2026-09-01T00:00:00.000Z', undefined, { editionDate: '2024-09-01', documentType: 'brochure', finder: { version: FINDER_VERSION, status: 'verified_pdf', flags: ['older_edition'] } });
+    expect(isEditionTooOld(served, NOW)).toBe(false); // 24 months: inside the 36 for what the manufacturer serves
+    expect(isEditionTooOld({ ...served, finder: { version: FINDER_VERSION, status: 'verified_pdf' } }, NOW)).toBe(true); // an ordinary find: 12
+    expect(isEditionTooOld({ ...served, editionDate: '2023-01-01' }, NOW)).toBe(true); // past even the longer limit
+  });
+
   it('does not send a document whose edition has aged past the limit since it was found', async () => {
     const aged = stored('2026-08-20T00:00:00.000Z', undefined, { documentType: 'price_spec_guide', editionDate: '2026-02-01' });
     expect(isEditionTooOld(aged, NOW)).toBe(true);
@@ -627,6 +731,16 @@ describe('ensureBrochure', () => {
     await ensureBrochure(EV3, { repo: repo2, harvester: { kind: 'firecrawl', find: failing }, now: () => NOW });
     expect(failing).toHaveBeenCalledTimes(2);
     expect(repo2.searches).toHaveLength(0);
+  });
+
+  it('holds a search that never got as far as looking for a day, not a week: no page of the official site was opened', async () => {
+    const miss: BrochureSearchT = { ...searchRecord('not_verified'), exhausted: false };
+    const find = vi.fn(async () => ({ search: miss }));
+    const repo = memoryRepo();
+    await ensureBrochure(EV3, { repo, harvester: { kind: 'firecrawl', find }, now: () => NOW });
+    expect(await ensureBrochure(EV3, { repo, harvester: { kind: 'firecrawl', find }, now: () => NOW })).toMatchObject({ remembered: true }); // the same click twice is not paid for twice
+    await ensureBrochure(EV3, { repo, harvester: { kind: 'firecrawl', find }, now: () => new Date(NOW.getTime() + 2 * 864e5) });
+    expect(find).toHaveBeenCalledTimes(2); // two days on it looks again, where a real "nothing found" waits seven
   });
 
   it('searches again when the remembered "nothing found" was reached under older rules', async () => {
