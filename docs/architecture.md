@@ -56,7 +56,9 @@ Three audiences / lease products, each with its own compliance wording and terms
   or its own web brochure / price & spec page as a link; no allowlist, no picking. When nothing verifies the rep sees
   what was checked and can upload, paste a link, accept the official page, or send without. **Two tiers
   (21 Sept):** the UK edition is the target; when none verifies, the manufacturer's own **European brochure in
-  English** is attached instead, stored with `market: 'eu'`, titled "European edition" and flagged to the rep
+  English** is **offered, never attached by itself** (Matt): the rep uses it, puts their own in its place, or sends
+  without; accepted, it is fetched and stored with `market: 'eu'`, titled "European edition", and a copy another rep
+  accepted arrives unticked
   (never a European price guide, never the rest of the world). **finder-1.4 (21 Sept)** rebuilt discovery on Firecrawl's own strengths: Map finds the model's page and the site's brochure pages, the model's page is opened first and OPERATED in one 1-credit scrape (rendered links, pressed controls, the files they fetch — `operate.ts`), the page a document came from is carried as evidence, and the strict checks run only once a document is in hand; what the maker's own site serves today is its current edition (up to 36 months, flagged `older_edition`); a search that never reached the official site is held a day, not a week. Rules and the 17-car sweep: `status-2026-09-21.md` §9. finder-1.3 before it also reads the PDFs a page offers through a button (addresses held only in the page’s own data), opens a numeric model’s file when the name leaves the make out ("R4-eBrochure.pdf"), and keeps "linked from the official site" when the search had already found the same file. See `brochure-finder-brief.md`,
   `status-2026-09-18.md` and `status-2026-09-21.md` §3.
 - **European-edition small print**: when the attached brochure is a European edition the card's small print says
@@ -216,7 +218,7 @@ whichever is on 8787. Production `/api` itself stays 503 until Access is configu
 ## B5. Routing surface (`apps/api/src/index.ts`)
 **Public (no login):** `/health` · `/c/:slug` · `/f/*` · `/b/:id` · `/r/:slug/:link` · `/a/*`.
 **Behind Access (`/api/*`):** `/me`, `/me/photo`, `/me/sender` · `/offers/lookup`, `/offers/library` ·
-`/brochures/ensure`, `/brochures/accept`, `/brochures/manual`, `/brochures/current` (the stored copy, no search) · `/campaigns*`, `/register`, `/register.csv` ·
+`/brochures/ensure`, `/brochures/accept` (an official page, a request form, or the European edition the finder offered), `/brochures/manual`, `/brochures/current` (the stored copy, no search) · `/campaigns*`, `/register`, `/register.csv` ·
 `/templates*` **(admin)** · `/suppressions`, `/suppressions.csv`, `/suppressions/check`,
 `/suppressions/remove` **(remove = admin)** · `/dev/*`.
 **Cron:** `scheduled()` → `runRetention()` + `recheckLinkedBrochures()` (a web / request brochure whose page is now 404/410 is superseded).
@@ -328,7 +330,7 @@ IT — Access + a Cloudflare-served subdomain (parked; `mailer.` occupied) + the
 secret + confirming the Workers Paid plan; Tawk webchat (parked, renewals-only stage one).
 
 ## B10. Testing & verification
-- `pnpm test` — **204 tests**: schema 18, render 37, adapters 90, api 59. The adapter suite replays 18 recorded
+- `pnpm test` — **207 tests**: schema 18, render 37, adapters 92, api 60. The adapter suite replays 18 recorded
   manufacturer sites through the brochure finder at zero credits (added 21 Sept: Polestar 2, the European fallback;
   Renault 4 and Geely EX2, the two misses of that afternoon; Toyota C-HR, Škoda Kodiaq and Hyundai Kona from the
   finder-1.4 sweep). `packages/adapters/scripts/finder-sweep.mts` runs the finder LIVE over a list of cars (real

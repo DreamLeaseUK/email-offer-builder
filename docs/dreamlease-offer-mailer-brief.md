@@ -422,8 +422,9 @@ Where the implementation has departed from this brief, and why. `docs/status-202
   §8; `docs/brochure-finder-brief.md` holds the problem statement and the ORIGINAL design (rep picks from a list),
   which was dropped — read its banner first.
 - **A European English-language brochure is the fallback** (21 Sept) when no UK edition verifies: same official
-  source, brochure only (never a European price guide, never the rest of the world), in English. It is stored with
-  `market: 'eu'`, titled "European edition", flagged to the rep, and the card's small print tells the recipient
+  source, brochure only (never a European price guide, never the rest of the world), in English. It is **offered to
+  the rep, never attached by itself**: they use it, put their own in its place, or send without. Accepted, it is
+  stored with `market: 'eu'`, titled "European edition", and the card's small print tells the recipient
   ("This is the manufacturer's European brochure; specification, equipment and prices may differ from UK models.").
   That sentence extends §5.8 step 9 and is Emma's to approve.
 - **One offer per row** (21 Sept). §5.1's `layout` and §7.1's four layouts stand in the schema, but the tool sends a

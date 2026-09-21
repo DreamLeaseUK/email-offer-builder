@@ -44,7 +44,7 @@ web page. It is an FCA-regulated financial-promotions tool (compliance matters).
 - **Git [verified 21 Sept]:** branch `main`, pushed to `origin` = `https://github.com/DreamLeaseUK/email-offer-builder`
   (private). `git push` works through the stored credential. The `brochure-finder` branch is fully merged and can be
   deleted. Run `git log --oneline -12` for the session-5 commits.
-- **Tests [verified 21 Sept]:** `pnpm test` → **204 pass** (schema 18, render 37, adapters 90, api 59);
+- **Tests [verified 21 Sept]:** `pnpm test` → **207 pass** (schema 18, render 37, adapters 92, api 60);
   `pnpm typecheck` clean. There is **no CI**: the tests are the only gate. `diff-reference` reports **22** differing
   lines: 8 pre-date 21 Sept (2 the logo width, 6 the third hero pill), 14 are the inline-block pills (10) and the
   stack card's image column (4); the fluid wrapper is outside the sections it compares. All are recorded in the
@@ -71,7 +71,7 @@ web page. It is an FCA-regulated financial-promotions tool (compliance matters).
 |---|---|
 | 1 Scaffold, schema, D1, Worker, Access middleware, deploy | Done, deployed |
 | 2 `render()`, layouts, hosted page | Done. **One offer per row since 21 Sept** (1 → hero, 2+ → stacked rows); grids dormant |
-| 3 URL lookup, image pipeline, brochures | Done. Brochures are the **finder** (no allowlist, `finder-1.4`: Map + the model's page operated inside Firecrawl), with a **European English-language fallback** |
+| 3 URL lookup, image pipeline, brochures | Done. Brochures are the **finder** (no allowlist, `finder-1.4`: Map + the model's page operated inside Firecrawl), with a **European English-language fallback that is only ever OFFERED to the rep** |
 | 4 Web app | Core screens built; runs locally only, **not yet served from the production Worker** |
 | 5 Graph draft / Copy for Outlook | Copy-for-Outlook done and is the only send path; Graph draft parked (IT Entra app) |
 | 6 Redirects, click logging, stats | Done |
@@ -112,9 +112,9 @@ card; auto layout 1 → single, 2+ → stack; layout picker removed. Matt's verd
    To prove any finder change run `packages/adapters/scripts/finder-sweep.mts` and READ THE TRACES: the first
    sweep found three wrong attachments the tests had not. When he reports a miss:
    read the stored trace first (production D1 `brochure_searches`, by `vehicle_key`) — it says exactly where the
-   document was lost. Also four calls Matt can overturn (`status-2026-09-21.md` §5): brochures only in the
-   fallback; a euro-priced European brochure is attached and flagged; an unmarked-market document is refused; a
-   European edition keeps the 90-day life. Test more brands; failures show as traces.
+   document was lost. Matt has ruled on one of the morning's calls: a European edition is OFFERED, never attached by itself
+   (`status-2026-09-21.md` §10). Three calls he can still overturn (`status-2026-09-21.md` §5): brochures only in the
+   fallback; a euro-priced European brochure is still offered (flagged); an unmarked-market document is refused. Test more brands; failures show as traces.
 5. **Badge control** — a decision first: fixed approved list (what `CLAUDE.md` rule 3, the brief and the schema all
    say today) or free-text-but-logged. Earlier notes "recommended" free text; that would mean rewriting rule 3, so it
    is Matt's call, not a default.

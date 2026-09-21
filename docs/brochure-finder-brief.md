@@ -15,7 +15,9 @@
 > `finder.ts`.
 >
 > **UPDATE 21 Sept 2026 — the UK-only rule was loosened (Matt).** The UK edition is still the target, but when none
-> verifies the finder now falls back to the manufacturer's own **European brochure in English** (`market: 'eu'`).
+> verifies the finder now falls back to the manufacturer's own **European brochure in English** (`market: 'eu'`),
+> which is **offered to the rep and never attached by itself** (`status-2026-09-21.md` §10). Discovery itself was
+> rebuilt the same day as finder-1.4 (Map, the model's page operated inside Firecrawl, validation last): §9.
 > §4's "Non-UK leakage" concern is handled by marking, not refusing: the record is titled "European edition" and the
 > rep is told. Rules and live evidence (Polestar 2): `status-2026-09-21.md` §2–§4. **The same afternoon (finder-1.3)**
 > three defects that made it miss brochures a rep finds in 30 seconds were fixed — a numeric model filed without its
