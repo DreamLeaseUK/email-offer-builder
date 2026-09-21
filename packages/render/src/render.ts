@@ -11,7 +11,7 @@ import { compactCard, ghostGrid, halfCard, heroCard, rowCard } from './cards.js'
 import { C, FF, FONT, LH, esc, mso, paragraphs, table } from './html.js';
 import { EMAIL_WIDTH, GRID2_CELL, GRID3_CELL, GRID_PAD, HEADSHOT, LOGO_H, LOGO_W, SIDE } from './layout.js';
 import { Links } from './links.js';
-import { RenderError, buildCards, type CardVM } from './viewmodel.js';
+import { EUROPEAN_BROCHURE_NOTE_SHARED, RenderError, buildCards, type CardVM } from './viewmodel.js';
 
 export { RenderError };
 
@@ -265,6 +265,7 @@ ${greeting}${paragraphs(campaign.intro, `margin:0 0 14px 0; font-size:16px; line
     case 'grid3': {
       const feeParts = ['All offers: processing fee £299.99 inc VAT.'];
       if (cards.some((c) => c.brochure)) feeParts.push("Brochure figures are the manufacturer's and may differ from this offer.");
+      if (cards.some((c) => c.brochure?.european)) feeParts.push(EUROPEAN_BROCHURE_NOTE_SHARED);
       offersHtml = `<tr>\n<td style="padding:12px ${GRID_PAD}px 0 ${GRID_PAD}px; font-size:0; text-align:center;">\n${ghostGrid(cards.map(compactCard), 3, GRID3_CELL)}\n</td>\n</tr>
 <tr>\n<td class="gutter" style="padding:0 ${SIDE}px 8px ${SIDE}px;">\n${bodyP(esc(feeParts.join(' ')), 11, 16, '0', FF + ' ')}\n</td>\n</tr>`;
       break;

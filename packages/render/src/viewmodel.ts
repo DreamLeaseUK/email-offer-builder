@@ -42,7 +42,7 @@ export interface CardVM {
   /** Present when the CTA is not view_offer: the offer page must stay one click away. */
   viewHref?: string;
   /** label for hero/stack/grid2, shortLabel for grid3; iconUrl is the 14px glyph on our origin. */
-  brochure?: { href: string; label: string; shortLabel: string; alt: string; kind: 'pdf' | 'gated'; iconUrl: string };
+  brochure?: { href: string; label: string; shortLabel: string; alt: string; kind: 'pdf' | 'gated'; iconUrl: string; european?: boolean };
   smallPrint: string;
   validityLine: string;
   validUntil: string;
@@ -56,6 +56,14 @@ export interface VmOptions {
 
 /** DreamLease's standard PCH processing fee (£, inc VAT). Must match the compliance block wording. */
 const PCH_PROCESSING_FEE = 299.99;
+/**
+ * Small print added when the attached brochure is the manufacturer's European edition (Brochure.market 'eu':
+ * the finder found no UK edition). Data-side text, like the sentence it follows, so the v5 markup is untouched.
+ * Wording agreed with Matt 21 Sept 2026; Emma approves it with the template block (brief §5.8 step 9).
+ */
+export const EUROPEAN_BROCHURE_NOTE = "This is the manufacturer's European brochure; specification, equipment and prices may differ from UK models.";
+/** The same point for grid3's one shared footnote, where it may apply to some of the cards only. */
+export const EUROPEAN_BROCHURE_NOTE_SHARED = "Where a brochure is the manufacturer's European edition, specification, equipment and prices may differ from UK models.";
 
 function ctaFor(offer: Offer, sender: Sender, index: number, links: Links, offerUrlWithUtm: string): CardVM['cta'] {
   const cta = offer.cta ?? { kind: 'view_offer' as const };
@@ -148,6 +156,8 @@ export function buildCards(campaign: Campaign, opts: VmOptions): CardVM[] {
               ? { href, label: 'View price & spec guide', shortLabel: 'Price & spec guide', ...ext }
               : { href, label: 'View brochure', shortLabel: 'View brochure', ...ext }
             : { href, label: 'Request a brochure', shortLabel: 'Request brochure', ...ext };
+      // the finder's fallback (no UK edition verified): the recipient is told it is not the UK brochure
+      if (b.market === 'eu') brochure.european = true;
     }
 
     const smallPrintParts = [];
@@ -157,7 +167,7 @@ export function buildCards(campaign: Campaign, opts: VmOptions): CardVM[] {
     const processingFee = offer.contractType === 'personal' ? PCH_PROCESSING_FEE : p.processingFee;
     if (processingFee !== undefined) smallPrintParts.push(`Processing fee ${gbpPence(processingFee)} inc VAT`);
     smallPrintParts.push(`Offer valid until ${longDate(offer.validUntil)}`);
-    if (brochure) smallPrintParts.push("Brochure figures are the manufacturer's and may differ from this offer.");
+    if (brochure) smallPrintParts.push(`Brochure figures are the manufacturer's and may differ from this offer.${brochure.european ? ` ${EUROPEAN_BROCHURE_NOTE}` : ''}`);
 
     const vm: CardVM = {
       id: offer.id,

@@ -128,6 +128,23 @@ describe('render()', () => {
     expect(r({ offerCount: 1 }).out.html).not.toMatch(/brochure/i);
   });
 
+  it('tells the recipient when the brochure is the manufacturer’s European edition, and only then', () => {
+    const european = (layout: 'single' | 'grid3') => {
+      const { campaign, brochures } = fixtureCampaign({ offerCount: layout === 'grid3' ? 3 : 1, layout, brochure: 'pdf' });
+      const id = Object.keys(brochures)[0]!;
+      return render(campaign, fixtureTemplate, { publicBaseUrl: BASE, brochures: { [id]: { ...brochures[id]!, market: 'eu' } } });
+    };
+    const card = european('single');
+    expect(card.html).toContain('may differ from this offer. This is the manufacturer&#39;s European brochure; specification, equipment and prices may differ from UK models.');
+    expect(card.text).toContain("This is the manufacturer's European brochure; specification, equipment and prices may differ from UK models.");
+    expect(card.html).toContain('Download brochure (PDF)'); // the link itself is unchanged
+    // grid3 has one shared footnote for every card
+    expect(european('grid3').html).toContain('Where a brochure is the manufacturer&#39;s European edition, specification, equipment and prices may differ from UK models.');
+    // a UK brochure (market absent or 'uk') says nothing of the kind
+    expect(r({ offerCount: 1, brochure: 'pdf' }).out.html).not.toMatch(/European/);
+    expect(r({ offerCount: 3, layout: 'grid3', brochure: 'pdf' }).out.html).not.toMatch(/European/);
+  });
+
   it("labels a web brochure and a price & spec guide as what they are, in the reference's external-link construction", () => {
     const withBrochure = (patch: Partial<Brochure>, layout: 'single' | 'grid3' = 'single') => {
       const { campaign, brochures } = fixtureCampaign({ offerCount: layout === 'grid3' ? 3 : 1, layout, brochure: 'gated' });
