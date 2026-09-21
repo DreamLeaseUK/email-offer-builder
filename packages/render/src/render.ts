@@ -11,6 +11,7 @@ import { compactCard, ghostGrid, halfCard, heroCard, rowCard } from './cards.js'
 import { C, FF, FONT, LH, esc, mso, paragraphs, table } from './html.js';
 import { EMAIL_WIDTH, GRID2_CELL, GRID3_CELL, GRID_PAD, HEADSHOT, LOGO_H, LOGO_W, SIDE } from './layout.js';
 import { Links } from './links.js';
+import { matchRows } from './match.js';
 import { EUROPEAN_BROCHURE_NOTE_SHARED, RenderError, buildCards, type CardVM } from './viewmodel.js';
 
 export { RenderError };
@@ -33,14 +34,13 @@ export interface RenderOptions {
 }
 
 /**
- * auto: 1 → single, 2 → grid2, 3 → stack (full-width rows read better than three narrow cards),
- * 4+ → grid2. grid3 is only used when chosen explicitly; the first client review found it small.
+ * auto: 1 → single, 2 or more → stack: one offer per row (Matt, 21 Sept 2026). Side-by-side cards crowded
+ * the email and were the hard part to get right in every client: Outlook mobile kept two columns, and the
+ * rows came out uneven. The grids still render when a campaign names one, but the tool no longer offers them.
  */
 export function resolveLayout(layout: Campaign['layout'], offerCount: number): TemplateLayout {
   if (layout !== 'auto') return layout;
-  if (offerCount === 1) return 'single';
-  if (offerCount === 3) return 'stack';
-  return 'grid2';
+  return offerCount === 1 ? 'single' : 'stack';
 }
 
 export function render(campaign: Campaign, template: Template, opts: RenderOptions): Rendered {
@@ -260,13 +260,13 @@ ${greeting}${paragraphs(campaign.intro, `margin:0 0 14px 0; font-size:16px; line
       offersHtml = `<tr>\n<td class="gutter" style="padding:12px ${SIDE}px 0 ${SIDE}px;">\n${cards.map(rowCard).join('\n')}\n</td>\n</tr>`;
       break;
     case 'grid2':
-      offersHtml = `<tr>\n<td style="padding:12px ${GRID_PAD}px 0 ${GRID_PAD}px; font-size:0; text-align:center;">\n${ghostGrid(cards.map(halfCard), 2, GRID2_CELL)}\n</td>\n</tr>`;
+      offersHtml = `<tr>\n<td style="padding:12px ${GRID_PAD}px 0 ${GRID_PAD}px; font-size:0; text-align:center;">\n${ghostGrid(cards.map((c, i) => halfCard(c, matchRows(cards, 'grid2')[i])), 2, GRID2_CELL)}\n</td>\n</tr>`;
       break;
     case 'grid3': {
       const feeParts = ['All offers: processing fee £299.99 inc VAT.'];
       if (cards.some((c) => c.brochure)) feeParts.push("Brochure figures are the manufacturer's and may differ from this offer.");
       if (cards.some((c) => c.brochure?.european)) feeParts.push(EUROPEAN_BROCHURE_NOTE_SHARED);
-      offersHtml = `<tr>\n<td style="padding:12px ${GRID_PAD}px 0 ${GRID_PAD}px; font-size:0; text-align:center;">\n${ghostGrid(cards.map(compactCard), 3, GRID3_CELL)}\n</td>\n</tr>
+      offersHtml = `<tr>\n<td style="padding:12px ${GRID_PAD}px 0 ${GRID_PAD}px; font-size:0; text-align:center;">\n${ghostGrid(cards.map((c, i) => compactCard(c, matchRows(cards, 'grid3')[i])), 3, GRID3_CELL)}\n</td>\n</tr>
 <tr>\n<td class="gutter" style="padding:0 ${SIDE}px 8px ${SIDE}px;">\n${bodyP(esc(feeParts.join(' ')), 11, 16, '0', FF + ' ')}\n</td>\n</tr>`;
       break;
     }
@@ -358,9 +358,12 @@ ${greeting}${paragraphs(campaign.intro, `margin:0 0 14px 0; font-size:16px; line
     </td>
   </tr>`;
 
-  // Fixed 600px wrapper; the media query makes it fluid on phones as an enhancement.
+  // A FLUID wrapper: full width up to 600px. The reference fixed it at 600px and left the media query to make
+  // it fluid on phones, but the style block does not survive the New Outlook paste, so Outlook mobile shrank
+  // the whole 600px layout to fit instead of reflowing it (Matt's test of 21 Sept: two columns on a phone).
+  // Classic Outlook still gets its 600px from the ghost table around this one.
   return `<!-- ================= EMAIL WRAPPER ${EMAIL_WIDTH} ================= -->
-<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="${EMAIL_WIDTH}" class="wrapper lock-bg" style="width:${EMAIL_WIDTH}px; max-width:${EMAIL_WIDTH}px; background-color:${C.white}; ${FF} color:${C.graphite};">
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" class="wrapper lock-bg" style="width:100%; max-width:${EMAIL_WIDTH}px; background-color:${C.white}; ${FF} color:${C.graphite};">
 
 ${header}
 

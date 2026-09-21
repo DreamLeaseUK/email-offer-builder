@@ -76,7 +76,7 @@ exports[`render() > matches the snapshot for the default fixture 1`] = `
 <![endif]-->
 
 <!-- ================= EMAIL WRAPPER 600 ================= -->
-<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" class="wrapper lock-bg" style="width:600px; max-width:600px; background-color:#FFFFFF; font-family:Arial, Helvetica, sans-serif; color:#787580;">
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" class="wrapper lock-bg" style="width:100%; max-width:600px; background-color:#FFFFFF; font-family:Arial, Helvetica, sans-serif; color:#787580;">
 
   <!-- Header -->
   <tr>
@@ -114,9 +114,9 @@ exports[`render() > matches the snapshot for the default fixture 1`] = `
 </tr>
 <tr>
 <td style="padding:20px 20px 22px 20px; font-family:Arial, Helvetica, sans-serif;">
-<table role="presentation" cellpadding="0" cellspacing="0" border="0" align="left" style="margin:0 6px 8px 0;"><tr><td width="126" align="center" class="lock-white" style="width:126px; background-color:#FF8811; border-radius:999px; padding:4px 12px; font-family:Arial, Helvetica, sans-serif; font-size:12px; line-height:16px; mso-line-height-rule:exactly; font-weight:bold; color:#FFFFFF; white-space:nowrap;">DreamLease exclusive!</td></tr></table>
-<table role="presentation" cellpadding="0" cellspacing="0" border="0" align="left" style="margin:0 6px 8px 0;"><tr><td width="126" align="center" class="lock-white" style="width:126px; background-color:#FF8811; border-radius:999px; padding:4px 12px; font-family:Arial, Helvetica, sans-serif; font-size:12px; line-height:16px; mso-line-height-rule:exactly; font-weight:bold; color:#FFFFFF; white-space:nowrap;">In stock</td></tr></table>
-<table role="presentation" cellpadding="0" cellspacing="0" border="0" align="left" style="margin:0 6px 8px 0;"><tr><td width="126" align="center" class="lock-white" style="width:126px; background-color:#FF8811; border-radius:999px; padding:4px 12px; font-family:Arial, Helvetica, sans-serif; font-size:12px; line-height:16px; mso-line-height-rule:exactly; font-weight:bold; color:#FFFFFF; white-space:nowrap;">Special offer</td></tr></table>
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="display:inline-block; vertical-align:top; margin:0 6px 8px 0;"><tr><td width="126" align="center" class="lock-white" style="width:126px; background-color:#FF8811; border-radius:999px; padding:4px 12px; font-family:Arial, Helvetica, sans-serif; font-size:12px; line-height:16px; mso-line-height-rule:exactly; font-weight:bold; color:#FFFFFF; white-space:nowrap;">DreamLease exclusive!</td></tr></table>
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="display:inline-block; vertical-align:top; margin:0 6px 8px 0;"><tr><td width="126" align="center" class="lock-white" style="width:126px; background-color:#FF8811; border-radius:999px; padding:4px 12px; font-family:Arial, Helvetica, sans-serif; font-size:12px; line-height:16px; mso-line-height-rule:exactly; font-weight:bold; color:#FFFFFF; white-space:nowrap;">In stock</td></tr></table>
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="display:inline-block; vertical-align:top; margin:0 6px 8px 0;"><tr><td width="126" align="center" class="lock-white" style="width:126px; background-color:#FF8811; border-radius:999px; padding:4px 12px; font-family:Arial, Helvetica, sans-serif; font-size:12px; line-height:16px; mso-line-height-rule:exactly; font-weight:bold; color:#FFFFFF; white-space:nowrap;">Special offer</td></tr></table>
 <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%"><tr><td height="8" style="font-size:0; line-height:0; height:8px;">&nbsp;</td></tr></table>
 <p class="lock-red" style="margin:0 0 4px 0; font-size:12px; line-height:16px; mso-line-height-rule:exactly; font-weight:bold; letter-spacing:1px; text-transform:uppercase; color:#E30613;">BYD</p>
 <p class="lock-ink" style="margin:0 0 4px 0; font-size:26px; line-height:32px; mso-line-height-rule:exactly; font-weight:bold; color:#000000;">Seal</p>

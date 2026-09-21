@@ -26,8 +26,21 @@
  * wrapped to a second row and threw the row's card heights out in New Outlook (which also drops
  * vertical-align:top). diff-reference therefore reports a third hero pill the reference lacks
  * (layout-A, intended); stack/grid2/grid3 stay identical to the reference.
+ *
+ * Knowing deviations of 21 Sept 2026 (Matt's tests: HTML pasted into New Outlook, read in Gmail and Outlook
+ * mobile). The paste drops the <style> block and the conditional comments, so nothing may depend on either.
+ * diff-reference reports these (22 lines in all, 8 of them the old logo width):
+ *  a. pills are inline-block tables, not align="left" floats: the clearing spacer did not survive, and the
+ *     make name ran beside the pill and broke in Gmail ("VOLKSWA / GEN").
+ *  b. the row card's image column is calc()-fluid (its desktop width beside the details, the full card width
+ *     once wrapped on a phone) and its image is max-width:100%: that was the media query's job.
+ *  c. the email wrapper (render.ts) is fluid, 100% up to 600px, not fixed at 600px: Outlook mobile shrank the
+ *     fixed layout to fit instead of reflowing it. Classic Outlook keeps its 600px from the ghost table.
+ * And the tool now sends one offer per row (auto: 1 → single, 2+ → stack); grid2 / grid3 are kept for stored
+ * campaigns but no longer offered. Rows are matched in height when a grid is rendered (match.ts).
  */
 import { C, FF, LH, esc, mso, spacer, table } from './html.js';
+import type { Reserve } from './match.js';
 import { GRID2_CELL, GRID2_IMG, GRID2_IMG_H, GRID3_CELL, GRID3_IMG, GRID3_IMG_H, GRID_WIDTH, HERO_IMG, HERO_IMG_H, ICON, PILL_HERO, PILL_SMALL, STACK_CONTENT_COL, STACK_IMG, STACK_IMG_COL, STACK_IMG_H, STACK_INNER } from './layout.js';
 import type { CardVM, Stat } from './viewmodel.js';
 
@@ -37,23 +50,36 @@ import type { CardVM, Stat } from './viewmodel.js';
 const img = (src: string, w: number, h: number, alt: string, radius: string, maxWidth: string) =>
   `<img src="${esc(src)}" width="${w}" height="${h}" alt="${esc(alt)}" class="fluid-img" style="display:block; border:0; width:100%; max-width:${maxWidth}; height:auto; border-radius:${radius};" />`;
 
-/** Badge pill: a one-cell table with the content width on the td (content-box, so outer width minus padding). */
+/**
+ * Badge pill: a one-cell table with the content width on the td (content-box, so outer width minus padding).
+ * An inline-block table, NOT the reference's align="left" float: a float needs the spacer after it to clear,
+ * and that did not survive the New Outlook paste, so in Gmail the make name ran beside the pill and broke
+ * ("VOLKSWA / GEN", Matt's tests of 21 Sept). An inline-block pill needs no clearing: the next block starts
+ * its own line, and several pills still wrap. The card cells are the same construction and did survive.
+ */
+const PILL_BOX = 'display:inline-block; vertical-align:top;';
 const pill = (text: string, width: number, padV: number, padH: number, font: number, lh: number, mb: number) =>
-  table('align="left"', `margin:0 6px ${mb}px 0;`, `<tr><td width="${width}" align="center" class="lock-white" style="width:${width}px; background-color:${C.orange}; border-radius:999px; padding:${padV}px ${padH}px; ${FF} font-size:${font}px; line-height:${lh}px; ${LH}; font-weight:bold; color:${C.white}; white-space:nowrap;">${esc(text)}</td></tr>`);
+  table('', `${PILL_BOX} margin:0 6px ${mb}px 0;`, `<tr><td width="${width}" align="center" class="lock-white" style="width:${width}px; background-color:${C.orange}; border-radius:999px; padding:${padV}px ${padH}px; ${FF} font-size:${font}px; line-height:${lh}px; ${LH}; font-weight:bold; color:${C.white}; white-space:nowrap;">${esc(text)}</td></tr>`);
 
 const badgeList = (vm: CardVM, max: number): string[] => [vm.hot, ...vm.badges].filter((b): b is string => !!b).slice(0, max);
 
-/** Hot badge first, then the rest, capped; the pills float left, so a spacer clears them. */
-function badgeRow(vm: CardVM, max: number, width: number, padV: number, padH: number, font: number, lh: number, mb: number): string {
+/** The same box as a pill with nothing in it: holds the badge row open on a card whose row-mate has a badge (match.ts). */
+const pillGhost = (width: number, padV: number, padH: number, font: number, lh: number, mb: number) =>
+  table('', `${PILL_BOX} margin:0 6px ${mb}px 0;`, `<tr><td width="${width}" style="width:${width}px; padding:${padV}px ${padH}px; font-size:${font}px; line-height:${lh}px; ${LH};">&nbsp;</td></tr>`);
+
+/** Hot badge first, then the rest, capped, then the gap above the make name. */
+function badgeRow(vm: CardVM, max: number, width: number, padV: number, padH: number, font: number, lh: number, mb: number, reserve = false): string {
   const all = badgeList(vm, max);
+  if (all.length === 0 && reserve) return `${pillGhost(width, padV, padH, font, lh, mb)}
+${spacer(8)}`;
   if (all.length === 0) return '';
   return `${all.map((b) => pill(b, width, padV, padH, font, lh, mb)).join('\n')}\n${spacer(8)}`;
 }
 
 const eyebrow = (vm: CardVM, font: number, lh: number, mb: number) =>
   `<p class="lock-red" style="margin:0 0 ${mb}px 0; font-size:${font}px; line-height:${lh}px; ${LH}; font-weight:bold; letter-spacing:1px; text-transform:uppercase; color:${C.red};">${esc(vm.make.toUpperCase())}</p>`;
-const model = (vm: CardVM, font: number, lh: number, mb: number, cls = '') =>
-  `<p class="lock-ink${cls}" style="margin:0 0 ${mb}px 0; font-size:${font}px; line-height:${lh}px; ${LH}; font-weight:bold; color:${C.black};">${esc(vm.model)}</p>`;
+const model = (vm: CardVM, font: number, lh: number, mb: number, cls = '', minHeight = 0) =>
+  `<p class="lock-ink${cls}" style="margin:0 0 ${mb}px 0; font-size:${font}px; line-height:${lh}px; ${LH}; font-weight:bold; color:${C.black};${minHeight ? ` min-height:${minHeight}px;` : ''}">${esc(vm.model)}</p>`;
 const derivative = (vm: CardVM, font: number, lh: number, mb: number, minHeight = 0, cls = '') =>
   `<p class="lock-body${cls}" style="margin:0 0 ${mb}px 0; font-size:${font}px; line-height:${lh}px; ${LH}; color:${C.graphite};${minHeight ? ` min-height:${minHeight}px;` : ''}">${esc(vm.derivative)}</p>`;
 const price = (vm: CardVM, big: number, lh: number, small: number, mb: number) =>
@@ -61,8 +87,8 @@ const price = (vm: CardVM, big: number, lh: number, small: number, mb: number) =
 <span class="lock-red" style="font-size:${big}px; font-weight:bold; color:${C.red};">${esc(vm.price)}</span>
 <span class="lock-body" style="font-size:${small}px; color:${C.graphite};">${esc(vm.vatLabel)}</span>
 </p>`;
-const specP = (text: string, font: number, lh: number, mb: number) =>
-  `<p style="margin:0 0 ${mb}px 0; font-size:${font}px; line-height:${lh}px; ${LH}; color:${C.ink};">${esc(text)}</p>`;
+const specP = (text: string, font: number, lh: number, mb: number, minHeight = 0) =>
+  `<p style="margin:0 0 ${mb}px 0; font-size:${font}px; line-height:${lh}px; ${LH}; color:${C.ink};${minHeight ? ` min-height:${minHeight}px;` : ''}">${esc(text)}</p>`;
 
 /** Salary sacrifice, stack and grid2: both nets stacked. */
 const netPair = (vm: CardVM, big: number, mid: number, small: number, suffix: string) =>
@@ -155,8 +181,11 @@ const brochureStack = (b: Brochure) => table('', 'margin-top:8px;', `<tr>\n${bro
 const brochureCentred = (b: Brochure, label: string, font: number, lh: number, iconGap: number) =>
   table('align="center"', 'margin:8px auto 0 auto;', `<tr>\n${brochureIconTd(b, `0 ${iconGap}px 0 0`)}\n${brochureLinkTd(b, label, font, lh, '')}\n</tr>`);
 
-const smallPrint = (text: string, margin: string, font: number, lh: number, withFont = false) =>
-  `<p class="lock-body" style="margin:${margin}; ${withFont ? FF + ' ' : ''}font-size:${font}px; line-height:${lh}px; ${LH}; color:${C.graphite};">${esc(text)}</p>`;
+const smallPrint = (text: string, margin: string, font: number, lh: number, withFont = false, minHeight = 0) =>
+  `<p class="lock-body" style="margin:${margin}; ${withFont ? FF + ' ' : ''}font-size:${font}px; line-height:${lh}px; ${LH}; color:${C.graphite};${minHeight ? ` min-height:${minHeight}px;` : ''}">${esc(text)}</p>`;
+
+/** The brochure link row held open on a card whose row-mate has a brochure: its 8px top margin plus the taller of text and glyph. */
+const brochureGhost = (lh: number) => spacer(8 + Math.max(lh, ICON));
 
 // ---------- A. Hero (single) — image on top ----------
 
@@ -202,12 +231,17 @@ ${smallPrint(vm.smallPrint, '14px 0 0 0', 12, 18)}
 
 export function rowCard(vm: CardVM): string {
   const priceBlock = vm.isSalsac ? netPair(vm, 28, 22, 12, ' taxpayer') : price(vm, 28, 32, 13, 8);
+  // The image column is STACK_IMG_COL wide beside the details, and the full card width once the columns
+  // have wrapped on a phone. That used to be the media query's job, but the style block does not survive the
+  // New Outlook paste, so it is done inline: below a 480px card the calc() is huge and max-width wins (100%),
+  // above it the calc() is negative and min-width wins. A client without calc() falls back to min-width, which
+  // is the old fixed column. Classic Outlook takes its widths from the ghost table and ignores all of this.
   const imageCol = table(
     'class="stack-col"',
-    `display:inline-block; width:100%; max-width:${STACK_IMG_COL}px; vertical-align:top;`,
+    `display:inline-block; width:calc((480px - 100%) * 480); min-width:${STACK_IMG_COL}px; max-width:100%; vertical-align:top;`,
     `<tr>
 <td style="padding:16px 16px 0 16px; font-size:14px; text-align:left;">
-${img(vm.imageUrl, STACK_IMG, STACK_IMG_H, vm.alt, '10px', `${STACK_IMG}px`)}
+${img(vm.imageUrl, STACK_IMG, STACK_IMG_H, vm.alt, '10px', '100%')}
 ${smallPrint(vm.smallPrint, '12px 0 16px 0', 11, 16, true)}
 </td>
 </tr>`,
@@ -247,7 +281,7 @@ ${mso('</td></tr></table>')}
 
 // ---------- C. Half (grid2) ----------
 
-export function halfCard(vm: CardVM): string {
+export function halfCard(vm: CardVM, r: Reserve = {}): string {
   const priceBlock = vm.isSalsac ? netPair(vm, 28, 22, 12, '') : price(vm, 28, 32, 12, 8);
   const card = table(
     'width="100%"',
@@ -259,17 +293,17 @@ ${img(vm.imageUrl, GRID2_IMG, GRID2_IMG_H, vm.alt, '16px 16px 0 0', '100%')}
 </tr>
 <tr>
 <td style="padding:14px 16px 18px 16px; ${FF}">
-${badgeRow(vm, 1, PILL_SMALL, 3, 10, 11, 14, 6)}
+${badgeRow(vm, 1, PILL_SMALL, 3, 10, 11, 14, 6, r.badge)}
 ${eyebrow(vm, 11, 14, 2)}
-${model(vm, 20, 26, 2)}
-${derivative(vm, 13, 18, 10, 36)}
+${model(vm, 20, 26, 2, '', r.model)}
+${derivative(vm, 13, 18, 10, r.derivative ?? 36)}
 ${priceBlock}
-${specP(vm.specLine, 12, 18, 12)}
+${specP(vm.specLine, 12, 18, 12, r.spec)}
 ${statsPairs(vm.stats, 12)}
 ${button(vm.cta.href, vm.cta.label, 11, 12, 14, 18, { full: true })}
 ${vm.viewHref ? viewLink(vm.viewHref, 13, 18, 8, true) : ''}
-${vm.brochure ? brochureCentred(vm.brochure, vm.brochure.label, 12, 16, 6) : ''}
-${smallPrint(vm.smallPrint, '12px 0 0 0', 11, 16)}
+${vm.brochure ? brochureCentred(vm.brochure, vm.brochure.label, 12, 16, 6) : r.brochure ? brochureGhost(16) : ''}
+${smallPrint(vm.smallPrint, '12px 0 0 0', 11, 16, false, r.smallPrint)}
 </td>
 </tr>`,
   );
@@ -278,11 +312,13 @@ ${smallPrint(vm.smallPrint, '12px 0 0 0', 11, 16)}
 
 // ---------- D. Compact (grid3) ----------
 
-export function compactCard(vm: CardVM): string {
+export function compactCard(vm: CardVM, r: Reserve = {}): string {
   const badge = badgeList(vm, 1)[0];
   const badgeBlock = badge
     ? table('width="100%"', 'margin-bottom:6px;', `<tr><td align="center" class="lock-white" style="background-color:${C.orange}; border-radius:999px; padding:2px 8px; ${FF} font-size:10px; line-height:14px; ${LH}; font-weight:bold; color:${C.white};">${esc(badge)}</td></tr>`)
-    : '';
+    : r.badge
+      ? table('width="100%"', 'margin-bottom:6px;', `<tr><td style="padding:2px 8px; font-size:10px; line-height:14px; ${LH};">&nbsp;</td></tr>`)
+      : '';
   const priceBlock = vm.isSalsac
     ? `<p style="margin:0; line-height:26px; ${LH};"><span class="lock-red compact-price" style="font-size:22px; font-weight:bold; color:${C.red};">${esc(vm.net20 ?? '')}</span></p>
 <p class="lock-body" style="margin:0 0 2px 0; font-size:10px; line-height:14px; ${LH}; color:${C.graphite};">net &middot; 20% taxpayer &middot; ${esc(vm.net40 ?? '')} at 40%</p>`
@@ -300,14 +336,14 @@ ${img(vm.imageUrl, GRID3_IMG, GRID3_IMG_H, vm.alt, '12px 12px 0 0', '100%')}
 <td style="padding:12px 12px 14px 12px; ${FF}">
 ${badgeBlock}
 ${eyebrow(vm, 10, 14, 2)}
-${model(vm, 17, 22, 2, ' compact-model')}
-${derivative(vm, 11, 16, 8, 32, ' compact-deriv')}
+${model(vm, 17, 22, 2, ' compact-model', r.model)}
+${derivative(vm, 11, 16, 8, r.derivative ?? 32, ' compact-deriv')}
 ${priceBlock}
 <p class="lock-body" style="margin:0 0 8px 0; font-size:10px; line-height:14px; ${LH}; color:${C.graphite};">${esc(vm.validityLine)}</p>
-<p class="compact-spec" style="margin:0 0 10px 0; font-size:11px; line-height:16px; ${LH}; color:${C.ink};">${esc(vm.specShort)}</p>
+<p class="compact-spec" style="margin:0 0 10px 0; font-size:11px; line-height:16px; ${LH}; color:${C.ink};${r.spec ? ` min-height:${r.spec}px;` : ''}">${esc(vm.specShort)}</p>
 ${button(vm.cta.href, vm.cta.label, 9, 10, 13, 16, { full: true })}
 ${vm.viewHref ? viewLink(vm.viewHref, 11, 14, 8, true) : ''}
-${vm.brochure ? brochureCentred(vm.brochure, vm.brochure.shortLabel, 11, 14, 5) : ''}
+${vm.brochure ? brochureCentred(vm.brochure, vm.brochure.shortLabel, 11, 14, 5) : r.brochure ? brochureGhost(14) : ''}
 </td>
 </tr>`,
   );

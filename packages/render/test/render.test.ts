@@ -11,12 +11,10 @@ const r = (o: Parameters<typeof fixtureCampaign>[0] = {}) => {
 };
 
 describe('layout resolution', () => {
-  it('auto picks single / grid2 / stack by count and never grid3', () => {
+  it('auto is one offer per row: the hero for one, stacked rows for two or more, never a grid', () => {
     expect(resolveLayout('auto', 1)).toBe('single');
-    expect(resolveLayout('auto', 2)).toBe('grid2');
-    expect(resolveLayout('auto', 3)).toBe('stack');
-    expect(resolveLayout('auto', 4)).toBe('grid2');
-    expect(resolveLayout('auto', 6)).toBe('grid2');
+    for (const n of [2, 3, 4, 6]) expect(resolveLayout('auto', n)).toBe('stack');
+    // a campaign that names a grid still renders as one (stored campaigns), but the tool no longer offers them
     expect(resolveLayout('grid3', 5)).toBe('grid3');
   });
 });
@@ -126,6 +124,41 @@ describe('render()', () => {
     const gated = r({ offerCount: 1, brochure: 'gated' }).out;
     expect(gated.html).toMatch(/Request a brochure/);
     expect(r({ offerCount: 1 }).out.html).not.toMatch(/brochure/i);
+  });
+
+  it('matches the cards in a row: one reserves the badge row, brochure row and extra text lines its row-mate has', () => {
+    const { campaign, brochures } = fixtureCampaign({ offerCount: 2, layout: 'grid2', brochure: 'pdf' });
+    const like = render(campaign, fixtureTemplate, { publicBaseUrl: BASE, brochures }).html;
+    const [a, b] = campaign.offers;
+    if (!a || !b) throw new Error('fixture has two offers');
+    // make the second card unlike the first: no badge, no brochure, and a model name that wraps
+    b.badges = [];
+    delete b.hotBadge;
+    delete b.brochure;
+    a.vehicle.model = 'Q4 e-tron Sportback quattro';
+    const out = render(campaign, fixtureTemplate, { publicBaseUrl: BASE, brochures }).html;
+    const cards = out.split('class="card-cell"').slice(1);
+    expect(cards).toHaveLength(2);
+    const [first, second] = cards as [string, string];
+    // the badge-less card holds the badge row open with an empty pill of the same box (no orange, no text)
+    expect(first).toContain('background-color:#FF8811');
+    expect(second).not.toContain('background-color:#FF8811');
+    expect(second).toContain('<td width="100" style="width:100px; padding:3px 10px; font-size:11px; line-height:14px; mso-line-height-rule:exactly;">&nbsp;</td>');
+    // it holds the brochure link row open too (8px margin + 16px line), and its one-line model takes two lines' height
+    expect(second).toContain('<td height="24" style="font-size:0; line-height:0; height:24px;">&nbsp;</td>');
+    expect(second).toMatch(/font-weight:bold; color:#000000; min-height:52px;/);
+    expect(first).not.toMatch(/color:#000000; min-height/);
+    // like-for-like cards reserve nothing: the markup is exactly the reference's
+    expect(like).not.toMatch(/min-height:52px|height="24"/);
+  });
+
+  it('matches rows, not the whole email: an odd card out on its own row reserves nothing', () => {
+    const { campaign, brochures } = fixtureCampaign({ offerCount: 3, layout: 'grid2' });
+    campaign.offers.forEach((o, i) => { if (i < 2) { o.badges = []; delete o.hotBadge; } });
+    const cards = render(campaign, fixtureTemplate, { publicBaseUrl: BASE, brochures }).html.split('class="card-cell"').slice(1);
+    // row one has no badges at all, row two is a single card: nobody reserves anything
+    for (const c of cards.slice(0, 2)) expect(c).not.toContain('<td width="100" style="width:100px; padding:3px 10px;');
+    expect(cards[2]).toContain('background-color:#FF8811');
   });
 
   it('tells the recipient when the brochure is the manufacturer’s European edition, and only then', () => {
@@ -254,7 +287,7 @@ describe('render()', () => {
     }
   });
 
-  it('fixes the image sizes, the pill widths and the 600px wrapper the reference specifies', () => {
+  it('fixes the image sizes and pill widths the reference specifies, inside a fluid wrapper that tops out at 600px', () => {
     expect(r({ layout: 'single', offerCount: 1 }).out.html).toMatch(/<img [^>]*width="550" height="413"/);
     expect(r({ layout: 'stack', offerCount: 2 }).out.html).toMatch(/<img [^>]*width="218" height="164"/);
     expect(r({ layout: 'grid2', offerCount: 2 }).out.html).toMatch(/<img [^>]*width="262" height="197"/);
@@ -262,7 +295,8 @@ describe('render()', () => {
     expect(r({ layout: 'single', offerCount: 1 }).out.html).toMatch(/<td width="126" align="center" class="lock-white" style="width:126px;/);
     expect(r({ layout: 'grid2', offerCount: 2 }).out.html).toMatch(/<td width="100" align="center" class="lock-white" style="width:100px;/);
     const html = r().out.html;
-    expect(html).toMatch(/width="600" class="wrapper lock-bg" style="width:600px; max-width:600px;/);
+    // fluid, not fixed: Outlook mobile shrank a fixed 600px layout to fit instead of reflowing it (21 Sept 2026)
+    expect(html).toMatch(/width="100%" class="wrapper lock-bg" style="width:100%; max-width:600px;/);
     expect(html).toMatch(/<!--\[if mso\]>\s*<table[^>]*width="600" align="center"><tr><td>/);
     expect(html).toMatch(/<img [^>]*width="56" height="56"/); // headshot
   });
@@ -285,9 +319,13 @@ describe('render()', () => {
     expect(() => render(campaign, { ...fixtureTemplate, markupVersion: 1 }, { publicBaseUrl: BASE })).toThrow(/markup v1/);
   });
 
-  it('keeps the wrapper fixed at 600 and lets the media query make it fluid on phones', () => {
+  it("reflows on a phone without the media query: only classic Outlook's ghost table is 600px wide", () => {
     const { out } = r({ layout: 'grid2', offerCount: 4 });
-    expect(out.html.match(/width="600"/g)?.length).toBe(2); // the ghost wrapper and the real one
+    expect(out.html.match(/width="600"/g)?.length).toBe(1); // the [if mso] ghost wrapper only
+    // the stacked row's image column is its desktop width beside the details and the full card width once wrapped
+    const stacked = r({ layout: 'stack', offerCount: 2 }).out.html;
+    expect(stacked).toContain('display:inline-block; width:calc((480px - 100%) * 480); min-width:250px; max-width:100%; vertical-align:top;');
+    expect(stacked).toMatch(/<img [^>]*width="218" height="164"[^>]*style="display:block; border:0; width:100%; max-width:100%; height:auto;/);
     expect(out.html).toMatch(/\.wrapper \{ width: 100% !important; \}/);
     expect(out.html).toMatch(/\.card-cell \{ max-width: 100% !important; width: 100% !important; \}/);
     expect(out.html).toMatch(/\.stack-col \{ max-width: 100% !important; width: 100% !important; \}/);
@@ -306,7 +344,9 @@ describe('render()', () => {
     const hero = render(campaign, fixtureTemplate, { publicBaseUrl: BASE, brochures }).html;
     expect(pills(hero)).toBe(3);
     expect(hero.indexOf('DreamLease exclusive!')).toBeLessThan(hero.indexOf('>In stock<'));
-    expect(hero.match(/<table role="presentation" cellpadding="0" cellspacing="0" border="0" align="left" style="margin:0 6px 8px 0;">/g)?.length).toBe(3);
+    // inline-block pills, never floated: a float's clearing spacer did not survive the Outlook paste (21 Sept 2026)
+    expect(hero.match(/<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="display:inline-block; vertical-align:top; margin:0 6px 8px 0;">/g)?.length).toBe(3);
+    expect(hero).not.toContain('align="left"');
     campaign.layout = 'stack';
     expect(pills(render(campaign, fixtureTemplate, { publicBaseUrl: BASE, brochures }).html)).toBe(1);
     campaign.layout = 'grid2';
