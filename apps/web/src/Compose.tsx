@@ -263,6 +263,11 @@ function BrochureControl({ item, onAttach, onToggle, onRemove }: { item: Item; o
           {/* our copy is opened same-origin (/b/:id): file.url carries PUBLIC_BASE_URL, which in local dev is the production host that does not hold this file */}
           <a href={attached.kind === 'pdf' ? `/b/${attached.id}` : attached.sourceUrl} target="_blank" rel="noreferrer">Open it to check</a>
         </span>
+        {attached.finder?.flags?.includes('older_edition') && (
+          <span className="dl-small brochure__eu">
+            <strong>Older edition{attached.editionDate ? ` (${attached.editionDate.slice(0, 7)})` : ''}.</strong> It is the one the manufacturer’s own site is serving today, so it is treated as current. Open it to check, or replace it if you have a newer one.
+          </span>
+        )}
         {attached.market === 'eu' && (
           <span className="dl-small brochure__eu">
             <strong>European edition.</strong> No UK brochure could be verified, so this is the manufacturer’s own European brochure, in English. Specification, equipment and any prices in it are not the UK’s
