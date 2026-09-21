@@ -404,7 +404,9 @@ export function Compose({ email, base, items, setItems }: { email: string; base:
   const [subject, setSubject] = useState('The options we talked about');
   const [preheader, setPreheader] = useState('');
   const [intro, setIntro] = useState('Thanks for your time. As promised, here are the options that fit what we discussed.');
-  const [layout, setLayout] = useState<LayoutChoice>('auto');
+  // One offer per row, always (Matt, 21 Sept 2026): a single offer is the hero card, two or more are stacked
+  // rows. The two-up / three-up grids are no longer offered, so there is nothing for the rep to choose.
+  const layout: LayoutChoice = 'auto';
   const [recipientFirst, setRecipientFirst] = useState('');
 
   const [senderName, setSenderName] = useState('');
@@ -720,15 +722,6 @@ export function Compose({ email, base, items, setItems }: { email: string; base:
         <Field label="Preheader" help="Optional preview text after the subject.">{(id) => <Input id={id} value={preheader} onChange={(e) => setPreheader(e.target.value)} />}</Field>
         <Field label="Intro message">{(id) => <Textarea id={id} rows={5} value={intro} onChange={(e) => setIntro(e.target.value)} />}</Field>
         <Field label="Recipient first name" help="Optional greeting.">{(id) => <Input id={id} value={recipientFirst} onChange={(e) => setRecipientFirst(e.target.value)} />}</Field>
-        <Field label="Layout">{(id) => (
-          <Select id={id} value={layout} onChange={(e) => setLayout(e.target.value as LayoutChoice)}>
-            <option value="auto">Auto</option>
-            <option value="single">Single (one hero)</option>
-            <option value="stack">Stack (full-width rows)</option>
-            <option value="grid2">Two-up grid</option>
-            <option value="grid3">Three-up grid</option>
-          </Select>
-        )}</Field>
         <Field label="Offer button (CTA)" help="What the green button on every offer does.">{(id) => (
           <Select id={id} value={ctaKind} onChange={(e) => setCtaKind(e.target.value as CtaKind)}>
             {CTA_OPTIONS.map((o) => (
