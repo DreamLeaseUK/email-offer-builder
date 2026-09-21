@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { Brochure, BrochureSearch } from '@offer-mailer/schema';
 import type { Brochure as BrochureT, BrochureSearch as BrochureSearchT } from '@offer-mailer/schema';
 import {
+  FINDER_VERSION,
   FirecrawlBrochureSource,
   ManualBrochureError,
   acceptSearchOutcome,
@@ -13,13 +14,17 @@ import {
   findBrochure,
   isBrochureExpired,
   isEditionTooOld,
+  isEnglish,
+  isEuropeanMarket,
   isOfficialHost,
+  isRestOfWorld,
   labelledLinks,
   manualBrochure,
   modelMatcher,
   modelVariants,
   ukMarker,
   ukPathOnOfficial,
+  urlDate,
 } from '../src/index.js';
 import type { BrochureRepo, BrochureStore, Downloaded, FinderHttp, FirecrawlClient } from '../src/index.js';
 import { BY, NOW, pdfBytes } from './helpers.js';
@@ -69,6 +74,45 @@ describe('finder rules', () => {
     const links = labelledLinks(md, 'https://www.hyundai.com/uk/en/models/ioniq5/downloads.html');
     expect(links.map((l) => l.own)).toEqual(['Brochure', 'Tech and Spec Guide']);
     expect(docType(links[1]?.own ?? '')).toBe('spec');
+  });
+
+  it('tells a European market (the fallback tier) from the rest of the world (never a source)', () => {
+    for (const u of ['https://www.polestar.com/dato-assets/11286/1775572382-fleet_polestar-2_brochure_my27_eu_260402.pdf', 'https://www.kia.com/eu/new-cars/ev2/', 'https://www.volkswagen.ie/brochures/id4.pdf', 'https://www.bmw.com/de_de/i4.pdf', 'https://www.kia.com/ie/ev3-brochure.pdf']) {
+      expect(isEuropeanMarket(u), u).toBe(true);
+      expect(isRestOfWorld(u), u).toBe(false);
+    }
+    for (const u of ['https://www.polestar.com/dato-assets/11286/1725628156-general_polestar-2_brochure_my25_australia_240905.pdf', 'https://www.kia.com/au/ev3.pdf', 'https://www.bmw.com/en_us/i4.pdf', 'https://www.byd.com/sg/seal.pdf', 'https://www.mg.co.nz/zs.pdf']) {
+      expect(isRestOfWorld(u), u).toBe(true);
+      expect(isEuropeanMarket(u), u).toBe(false);
+    }
+    for (const u of ['https://www.kia.com/content/dam/kwcms/kme/uk/en/ev2.pdf', 'https://media-assets.mazda.eu/raw/upload/mazdauk/x.pdf', 'https://www.mg.co.uk/sites/default/files/2026-01/MG_ZS.pdf']) expect(isEuropeanMarket(u) || isRestOfWorld(u), u).toBe(false);
+    expect(isOfficialHost('https://www.volkswagen.ie/brochures/id4.pdf', 'Volkswagen')).toBe(true);
+  });
+
+  it('reads a CMS file name for its date: an upload timestamp in front, a compact edition date in the name', () => {
+    const now = new Date('2026-09-18T00:00:00Z');
+    const day = (u: string) => urlDate(u, now)?.toISOString().slice(0, 10);
+    expect(day('https://www.polestar.com/dato-assets/11286/1775572382-fleet_polestar-2_brochure_my27_eu_260402.pdf')).toBe('2026-04-07');
+    expect(day('https://www.polestar.com/dato-assets/11286/1772703091-polestar-4_brochure_fleet_my26_202509.pdf')).toBe('2026-03-05');
+    expect(day('https://example.com/files/ev3_brochure_240905.pdf')).toBe('2024-09-05');
+    expect(day('https://example.com/files/ev3_brochure_20260115.pdf')).toBe('2026-01-15');
+    // not dates: a model number, a date far in the future, a long serial
+    expect(day('https://example.com/files/peugeot-2008-brochure.pdf')).toBeUndefined();
+    expect(day('https://example.com/files/brochure_301231.pdf')).toBeUndefined();
+    expect(day('https://example.com/files/brochure_20250704101255.pdf')).toBeUndefined();
+    // the text said July 2024 in a footnote; the file is from April 2026: the newest wins
+    expect(editionDate('Figures correct as of July 2024.', 'https://www.polestar.com/dato-assets/11286/1775572382-fleet_polestar-2_brochure_my27_eu_260402.pdf', now)).toMatchObject({ from: 'url' });
+  });
+
+  it('recognises English running text, and refuses German, French, a bilingual page and a bare table', () => {
+    const en = 'The Polestar 2 is an electric performance fastback. It is designed for the way you drive, with a range of up to 659 km and the power that you would expect from a car of this kind. Your car will be ready for you when you are, and all of its software is kept up to date over the air. This brochure is for the European market and the specification may vary from one country to the next. ';
+    const de = 'Der Polestar 2 ist ein elektrisches Fastback mit hoher Leistung. Er ist für die Art und Weise entwickelt, wie Sie fahren, mit einer Reichweite von bis zu 659 km und der Leistung, die Sie von einem Fahrzeug dieser Klasse erwarten. Ihr Fahrzeug ist bereit, wenn Sie es sind, und die Software wird über das Internet auf dem neuesten Stand gehalten. Die Ausstattung kann sich von Land zu Land unterscheiden und wird nicht in allen Märkten angeboten. ';
+    const fr = 'La Polestar 2 est une berline électrique performante. Elle est conçue pour votre façon de conduire, avec une autonomie qui peut aller au-delà de 659 km et la puissance que vous attendez pour une voiture de ce type. Votre voiture est prête quand vous êtes prêt, et les logiciels sont mis à jour à distance. Les équipements varient selon les pays et ne sont pas proposés dans tous les marchés. ';
+    expect(isEnglish(en)).toBe(true);
+    expect(isEnglish(de)).toBe(false);
+    expect(isEnglish(fr)).toBe(false);
+    expect(isEnglish(en + de)).toBe(false);
+    expect(isEnglish('Polestar 2 82 kWh 659 km 310 kW 4.5 s 205 km/h WLTP 14.8 kWh/100 km')).toBe(false);
   });
 
   it('does not let a short or numeric model name match everything', () => {
@@ -171,9 +215,13 @@ describe('findBrochure (replayed against recorded manufacturer sites)', () => {
     expect(old?.reasons.join()).toMatch(/archived or used-car/);
   });
 
-  it('Audi Q4 e-tron: a configurator or a call-back form is never a document', async () => {
+  it('Audi Q4 e-tron: a configurator or a call-back form is never a document, and Audi Ireland’s price guides are not a fallback', async () => {
     const r = await replay('Audi', 'Q4 e-tron');
     expect(r.status).toBe('not_verified');
+    // the fallback opens the official Irish documents (recorded 21 Sept 2026): euro price lists, so never used
+    const irish = r.candidates.filter((c) => c.url.includes('/country/ie/'));
+    expect(irish.length).toBeGreaterThan(0);
+    for (const c of irish) expect(c.reasons.join(), c.url).toMatch(/European price & spec guide is never used|older than/);
   });
 
   it('Denza Z9 GT: no official UK document means nothing is attached, aggregator copies included', async () => {
@@ -193,6 +241,16 @@ describe('findBrochure (replayed against recorded manufacturer sites)', () => {
     const http: FinderHttp = async (url) => ({ status: 200, contentType: 'text/html;charset=utf-8', finalUrl: url, text: async () => `<script>{"url":"${wrapped}"}</script>` });
     const r = await replay('Leapmotor', 'C10', http);
     expect(r).toMatchObject({ status: 'official_page_only', documentType: 'price_spec_guide', assetRetrievable: false, url: 'https://www.leapmotor.net/uk/price-guides' });
+  });
+
+  it('Polestar 2 (recorded 21 Sept 2026): no UK brochure exists, so the current European fleet brochure in English is attached as one', async () => {
+    const r = await findBrochure({ make: 'Polestar', model: '2' }, { firecrawl: replayClient(), http: noHttp, now: () => new Date('2026-09-21T09:00:00.000Z') });
+    expect(r).toMatchObject({ status: 'verified_pdf', market: 'eu', documentType: 'brochure', officialSite: 'polestar.com', editionDate: '2026-04-07' });
+    expect(r.url).toContain('fleet_polestar-2_brochure_my27_eu_260402.pdf');
+    expect(r.flags).toContain('european_edition');
+    // the file quotes July 2024 in a footnote: the date in its name is the newer one and wins
+    expect(r.candidates[0]?.evidence).toMatchObject({ market: 'eu', english: true, dateFrom: 'url' });
+    expect(r.candidates.find((c) => c.url.includes('australia'))?.reasons).toEqual(['another market’s URL']);
   });
 
   it('reports a failed search as search_failed, never as "not found"', async () => {
@@ -274,6 +332,100 @@ describe('FirecrawlBrochureSource', () => {
   });
 });
 
+// ---------- the European English-language fallback (21 Sept 2026) ----------
+// Scripted from the real Polestar 2 search of 21 Sept 2026: the UK site links no brochure, and the only current
+// document on polestar.com is the European fleet brochure, which quotes July 2024 in a footnote.
+
+const EU_PDF = 'https://www.polestar.com/dato-assets/11286/1775572382-fleet_polestar-2_brochure_my27_eu_260402.pdf';
+const AU_PDF = 'https://www.polestar.com/dato-assets/11286/1725628156-general_polestar-2_brochure_my25_australia_240905.pdf';
+const PROSE = 'It is designed for the way that you drive, with the power that you would expect from a car of this kind, and all of its software is kept up to date over the air. Your car will be ready for you when you are. The specification that is shown in this brochure may vary from one market to the next, and not all of the options are offered with every version. ';
+const EU_TEXT = `Polestar 2. The electric performance fastback. ${PROSE.repeat(2)} Range of up to 659 km (WLTP). Figures correct as of July 2024.`;
+const DE_PROSE = 'Er ist für die Art und Weise entwickelt, wie Sie fahren, mit der Leistung, die Sie von einem Fahrzeug dieser Klasse erwarten, und die Software wird über das Internet auf dem neuesten Stand gehalten. Die Ausstattung kann sich von Land zu Land unterscheiden und wird nicht in allen Märkten angeboten. ';
+const DE_TEXT = `Polestar 2. Das elektrische Fastback. ${DE_PROSE.repeat(2)} Reichweite bis zu 659 km (WLTP).`;
+
+function fallbackClient(pdfs: { url: string; title?: string; text: string }[], make = 'Polestar', page = 'https://www.polestar.com/uk/polestar-2/'): FirecrawlClient & { read: string[] } {
+  const read: string[] = [];
+  return {
+    read,
+    async search(_q, opts) {
+      return { results: opts?.categories ? pdfs.map((p) => ({ url: p.url, title: p.title ?? '[PDF] brochure' })) : [{ url: page, title: `${make} UK` }], creditsUsed: 2 };
+    },
+    async scrape(url, opts) {
+      if (!opts?.pdfMaxPages) return { markdown: '# The model page links no documents', statusCode: 200, creditsUsed: 1 };
+      read.push(url);
+      return { markdown: pdfs.find((p) => p.url === url)?.text ?? '', totalPages: 51, creditsUsed: 4 };
+    },
+    async map() {
+      return { links: [], creditsUsed: 1 };
+    },
+    async fetchFile() {
+      return { bytes: pdfBytes(), contentType: 'application/pdf', ok: true, creditsUsed: 2 };
+    },
+  };
+}
+const find = (fc: FirecrawlClient, make = 'Polestar', model = '2') => findBrochure({ make, model }, { firecrawl: fc, http: noHttp, now: () => REPLAY_NOW });
+
+describe('findBrochure: the European English-language fallback', () => {
+  it('Polestar 2: no UK edition, so the manufacturer’s current European brochure in English is attached and marked as one', async () => {
+    const fc = fallbackClient([{ url: AU_PDF, text: EU_TEXT }, { url: EU_PDF, text: EU_TEXT }]);
+    const r = await find(fc);
+    expect(r).toMatchObject({ status: 'verified_pdf', market: 'eu', documentType: 'brochure', url: EU_PDF, editionDate: '2026-04-07' });
+    expect(r.flags).toContain('european_edition');
+    expect(r.reason).toMatch(/European English-language brochure/);
+    expect(r.candidates[0]).toMatchObject({ url: EU_PDF, status: 'accepted', evidence: { market: 'eu', english: true } });
+    // Australia is the rest of the world: dropped on its address, never opened
+    expect(r.candidates.find((c) => c.url === AU_PDF)).toMatchObject({ status: 'rejected', reasons: ['another market’s URL'] });
+    expect(fc.read).toEqual([EU_PDF]);
+  });
+
+  it('the UK edition still wins: a European copy beside it is never opened', async () => {
+    const eu = 'https://www.kia.com/content/dam/kwcms/kme/eu/en/assets/ev3-brochure_eu_260601.pdf';
+    const fc = fallbackClient([{ url: eu, text: EU_TEXT.replaceAll('Polestar 2', 'Kia EV3') }, { url: PDF_URL, text: PDF_TEXT }], 'Kia', 'https://www.kia.com/uk/new-cars/ev3/');
+    const r = await find(fc, 'Kia', 'EV3');
+    expect(r).toMatchObject({ status: 'verified_pdf', market: 'uk', url: PDF_URL });
+    expect(r.flags).not.toContain('european_edition');
+    expect(fc.read).toEqual([PDF_URL]);
+    expect(r.candidates.find((c) => c.url === eu)?.reasons.join()).toMatch(/another market’s URL \(a European edition: not needed/);
+  });
+
+  it('refuses a European brochure that is not in English', async () => {
+    const r = await find(fallbackClient([{ url: EU_PDF, text: DE_TEXT }]));
+    expect(r.status).toBe('not_verified');
+    expect(r.market).toBeUndefined();
+    expect(r.candidates.find((c) => c.url === EU_PDF)?.reasons).toContain('not in English');
+  });
+
+  it('never uses a European price & spec guide: not the UK’s prices or trims', async () => {
+    const guide = 'https://www.polestar.com/dato-assets/11286/1775572382-polestar-2_price-list_eu_260402.pdf';
+    const r = await find(fallbackClient([{ url: guide, title: 'Polestar 2 price list and specification guide', text: `${EU_TEXT} Prices from €49,900.` }]));
+    expect(r.status).toBe('not_verified');
+    expect(r.candidates.find((c) => c.url === guide)?.reasons.join()).toMatch(/European price & spec guide is never used/);
+  });
+
+  it('a document that does not say which market it is for is not passed off as European; one priced in euros is, and is flagged', async () => {
+    const plain = 'https://www.polestar.com/dato-assets/11286/1775572382-polestar-2_brochure_my27.pdf';
+    const no = await find(fallbackClient([{ url: plain, text: EU_TEXT }]));
+    expect(no.status).toBe('not_verified');
+    expect(no.candidates.find((c) => c.url === plain)?.reasons).toContain('nothing says this is a European edition');
+    expect(no.queries.at(-1)).toMatch(/Ireland Europe \[pdf\]/); // nothing European turned up, so the fallback ran its own search
+
+    const priced = fallbackClient([{ url: plain, text: `${EU_TEXT} From €49,900.` }]);
+    const yes = await find(priced);
+    expect(yes).toMatchObject({ status: 'verified_pdf', market: 'eu' });
+    expect(yes.flags).toEqual(expect.arrayContaining(['european_edition', 'euro_pricing']));
+    expect(priced.read).toEqual([plain]); // re-judged from the first reading: the document is never paid for twice
+  });
+
+  it('records a European edition as what it is: titled, marked and noted, never "(UK)"', async () => {
+    const { brochure: b, search } = await source(fallbackClient([{ url: EU_PDF, text: EU_TEXT }]), directOk).find({ make: 'Polestar', model: '2' });
+    expect(b && Brochure.parse(b)).toEqual(b);
+    expect(b).toMatchObject({ kind: 'pdf', market: 'eu', title: 'Polestar 2 brochure (European edition)', sourceUrl: EU_PDF, finder: { version: FINDER_VERSION, status: 'verified_pdf', flags: ['european_edition'] } });
+    expect(b?.ukVerified.note).toMatch(/European English-language edition: no UK edition verified/);
+    expect(BrochureSearch.parse(search)).toEqual(search);
+    expect(search.market).toBe('eu');
+  });
+});
+
 // ---------- manual ----------
 
 describe('manualBrochure', () => {
@@ -343,8 +495,8 @@ const stored = (fetchedAt: string, id = 'b0000000-0000-4000-8000-000000000001', 
   ...extra,
 });
 
-const searchRecord = (status: BrochureSearchT['status'], searchedAt = NOW.toISOString()): BrochureSearchT => ({
-  vehicleKey: 'kia/ev3', vehicle: 'Kia EV3', status, flags: [], queries: ['q'], pagesOpened: [], candidates: [], credits: 4, durationMs: 900, finderVersion: 'finder-1.0', searchedAt, searchedBy: BY, reason: 'nothing passed',
+const searchRecord = (status: BrochureSearchT['status'], searchedAt = NOW.toISOString(), finderVersion: string = FINDER_VERSION): BrochureSearchT => ({
+  vehicleKey: 'kia/ev3', vehicle: 'Kia EV3', status, flags: [], queries: ['q'], pagesOpened: [], candidates: [], credits: 4, durationMs: 900, finderVersion, searchedAt, searchedBy: BY, reason: 'nothing passed',
 });
 
 const EV3 = { make: 'Kia', model: 'EV3' };
@@ -405,5 +557,12 @@ describe('ensureBrochure', () => {
     await ensureBrochure(EV3, { repo: repo2, harvester: { kind: 'firecrawl', find: failing }, now: () => NOW });
     expect(failing).toHaveBeenCalledTimes(2);
     expect(repo2.searches).toHaveLength(0);
+  });
+
+  it('searches again when the remembered "nothing found" was reached under older rules', async () => {
+    const find = vi.fn(async () => ({ search: searchRecord('not_verified') }));
+    const repo = memoryRepo([], [searchRecord('not_verified', NOW.toISOString(), 'finder-1.0')]);
+    expect(await ensureBrochure(EV3, { repo, harvester: { kind: 'firecrawl', find }, now: () => NOW })).not.toHaveProperty('remembered');
+    expect(find).toHaveBeenCalledTimes(1);
   });
 });

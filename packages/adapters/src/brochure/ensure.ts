@@ -10,11 +10,13 @@
  *            page, or sends without.
  *
  * A search that found nothing is remembered for 7 days so the same model is not searched on every click; a
- * search that FAILED (Firecrawl error, every document unreachable) is never remembered.
+ * search that FAILED (Firecrawl error, every document unreachable) is never remembered, and neither is one
+ * made by an older version of the finder's rules.
  */
 import { BROCHURE_MAX_AGE_MONTHS, BROCHURE_NEGATIVE_TTL_DAYS, vehicleKey } from '@offer-mailer/schema';
 import type { Brochure, BrochureSearch, Vehicle } from '@offer-mailer/schema';
 import type { BrochureSource } from '../types.js';
+import { FINDER_VERSION } from './finder.js';
 import { isBrochureExpired } from './harvest.js';
 
 export interface BrochureRepo {
@@ -63,7 +65,8 @@ export async function ensureBrochure(vehicle: Pick<Vehicle, 'make' | 'model'>, d
   if (!current && !deps.force) {
     const last = await deps.repo.findSearch(key);
     const ageDays = last ? (now.getTime() - new Date(last.searchedAt).getTime()) / 864e5 : Infinity;
-    if (last && last.status !== 'search_failed' && ageDays < BROCHURE_NEGATIVE_TTL_DAYS) return { state: 'none', search: last, remembered: true };
+    // a "nothing found" reached under older rules is not remembered: the rules changed, so the answer may have
+    if (last && last.status !== 'search_failed' && last.finderVersion === FINDER_VERSION && ageDays < BROCHURE_NEGATIVE_TTL_DAYS) return { state: 'none', search: last, remembered: true };
   }
 
   const found = await deps.harvester.find(vehicle);

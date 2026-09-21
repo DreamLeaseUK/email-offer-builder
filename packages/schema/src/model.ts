@@ -34,6 +34,12 @@ export type BrochureDocumentType = z.infer<typeof BrochureDocumentType>;
 /** Outcome of an automatic brochure search. Only verified_pdf and verified_web_brochure attach by themselves. */
 export const BrochureFinderStatus = z.enum(['verified_pdf', 'verified_web_brochure', 'official_page_only', 'brochure_request', 'not_verified', 'search_failed']);
 export type BrochureFinderStatus = z.infer<typeof BrochureFinderStatus>;
+/**
+ * Which edition the finder attached. uk is the target; eu is the fallback (21 Sept 2026): the manufacturer's
+ * European English-language brochure, used only when no UK edition verifies. Absent = uk.
+ */
+export const BrochureMarket = z.enum(['uk', 'eu']);
+export type BrochureMarket = z.infer<typeof BrochureMarket>;
 export const BrochureSourceKind = z.enum(['harvest', 'manual']);
 export const BrochureStatus = z.enum(['current', 'superseded']);
 export const UkVerifiedBy = z.enum(['domain', 'content', 'user']);
@@ -191,6 +197,8 @@ export const Brochure = z
     ukVerified: z.object({ by: UkVerifiedBy, note: z.string().optional() }),
     /** Absent on records made before the finder: treated as a brochure. */
     documentType: BrochureDocumentType.optional(),
+    /** eu = a European English-language edition attached because no UK edition verified. Absent = uk. */
+    market: BrochureMarket.optional(),
     /** The edition date the finder read from the document (YYYY-MM-DD); re-checked against the age limit on every attach. */
     editionDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
     /** Set when the finder chose this record: which version, what it concluded, and any flags (e.g. lead_capture_present). */
@@ -231,6 +239,8 @@ export const BrochureSearch = z.object({
   vehicle: z.string().min(1),
   status: BrochureFinderStatus,
   documentType: BrochureDocumentType.or(z.literal('brochure_request_form')).optional(),
+  /** Set when something verified: uk, or eu for the European English-language fallback. */
+  market: BrochureMarket.optional(),
   /** The page or document the outcome points at (absent for not_verified / search_failed). */
   url: z.string().optional(),
   assetUrl: z.string().optional(),

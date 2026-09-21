@@ -8,6 +8,8 @@
  *                            to official_page_only: we never work around a download protection.
  *   verified_web_brochure  → a `web` brochure that links the manufacturer's own page.
  *   anything else          → no brochure. The search record says what was checked and why nothing attached.
+ * Either verified outcome may be the European English-language fallback (market 'eu', finder.ts): the record
+ * carries the market and is titled "(European edition)", never "(UK)".
  * official_page_only and brochure_request are never attached automatically; the rep can accept them in one
  * click (acceptSearchOutcome). The manual path (upload / paste) always works.
  */
@@ -116,12 +118,13 @@ export class FirecrawlBrochureSource implements BrochureSource {
 
   private record(vehicle: Pick<Vehicle, 'make' | 'model'>, r: FinderResult, now: Date, x: { kind: 'pdf' | 'web'; file?: NonNullable<Brochure['file']>; sourceUrl: string }): Brochure {
     const documentType = r.documentType === 'price_spec_guide' ? 'price_spec_guide' : 'brochure';
+    const european = r.market === 'eu';
     const evidence = r.candidates.find((c) => c.status === 'accepted')?.evidence;
-    const note = [r.officialSite, evidence?.['poundPricing'] ? '£ pricing' : undefined, evidence?.['ukWording'] ? 'UK wording' : undefined, r.editionDate ? `edition ${r.editionDate}` : undefined].filter(Boolean).join(', ');
+    const note = [european ? 'European English-language edition: no UK edition verified' : undefined, r.officialSite, evidence?.['poundPricing'] ? '£ pricing' : undefined, evidence?.['ukWording'] ? 'UK wording' : undefined, r.editionDate ? `edition ${r.editionDate}` : undefined].filter(Boolean).join(', ');
     const b: Brochure = {
       id: this.d.newId?.() ?? crypto.randomUUID(),
       vehicleKey: vehicleKey(vehicle),
-      title: `${vehicle.make} ${vehicle.model} ${documentNoun(documentType)} (UK)`,
+      title: `${vehicle.make} ${vehicle.model} ${documentNoun(documentType)} (${european ? 'European edition' : 'UK'})`,
       kind: x.kind,
       sourceUrl: toHttps(x.sourceUrl),
       source: 'harvest',
@@ -133,6 +136,7 @@ export class FirecrawlBrochureSource implements BrochureSource {
       status: 'current',
       createdBy: this.d.createdBy,
     };
+    if (r.market) b.market = r.market;
     if (r.editionDate) b.editionDate = r.editionDate;
     if (x.file) b.file = x.file;
     return b;
@@ -155,6 +159,7 @@ export function toSearchRecord(vehicle: Pick<Vehicle, 'make' | 'model'>, r: Find
     searchedBy,
   };
   if (r.documentType) s.documentType = r.documentType;
+  if (r.market) s.market = r.market;
   if (r.url) s.url = r.url;
   if (r.assetUrl) s.assetUrl = r.assetUrl;
   if (r.assetRetrievable !== undefined) s.assetRetrievable = r.assetRetrievable;
@@ -173,15 +178,17 @@ export function acceptSearchOutcome(search: BrochureSearch, o: { vehicle: Pick<V
   const now = o.now?.() ?? new Date();
   const isRequest = search.status === 'brochure_request';
   const documentType = search.documentType === 'price_spec_guide' ? 'price_spec_guide' : 'brochure';
+  const edition = search.market === 'eu' ? 'European edition' : 'UK';
   return {
     id: o.newId?.() ?? crypto.randomUUID(),
     vehicleKey: vehicleKey(o.vehicle),
-    title: isRequest ? `${o.vehicle.make} ${o.vehicle.model} brochure request (UK)` : `${o.vehicle.make} ${o.vehicle.model} ${documentNoun(documentType)} (UK)`,
+    title: isRequest ? `${o.vehicle.make} ${o.vehicle.model} brochure request (${edition})` : `${o.vehicle.make} ${o.vehicle.model} ${documentNoun(documentType)} (${edition})`,
     kind: isRequest ? 'gated' : 'web',
     sourceUrl: toHttps(search.url),
     source: 'harvest',
     ukVerified: { by: 'user', note: `accepted by the rep from a ${search.status} search result` },
     ...(isRequest ? {} : { documentType }),
+    ...(search.market ? { market: search.market } : {}),
     finder: { version: search.finderVersion, status: search.status, ...(search.flags.length ? { flags: search.flags } : {}) },
     fetchedAt: now.toISOString(),
     expiresAt: brochureExpiresAt(now),
