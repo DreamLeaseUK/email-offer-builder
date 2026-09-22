@@ -27,16 +27,20 @@
  * vertical-align:top). diff-reference therefore reports a third hero pill the reference lacks
  * (layout-A, intended); stack/grid2/grid3 stay identical to the reference.
  *
- * Knowing deviations of 21 Sept 2026 (Matt's tests: HTML pasted into New Outlook, read in Gmail and Outlook
- * mobile). The paste drops the <style> block and the conditional comments, so nothing may depend on either.
- * diff-reference reports 22 lines in all: 8 pre-date 21 Sept (2 the logo width, 6 the third hero pill) and 14 are
- * a (10) and b (4); c sits outside the sections the script compares:
+ * Knowing deviations of 21 and 22 Sept 2026 (Matt's tests: HTML pasted into New Outlook, read in Gmail and
+ * Outlook mobile). The paste drops the <style> block and the conditional comments, so nothing may depend on either.
+ * diff-reference reports 72 lines in all: 8 pre-date 21 Sept (2 the logo width, 6 the third hero pill), 14 are
+ * a (10) and b (4), and 50 are d; c sits outside the sections the script compares:
  *  a. pills are inline-block tables, not align="left" floats: the clearing spacer did not survive, and the
  *     make name ran beside the pill and broke in Gmail ("VOLKSWA / GEN").
  *  b. the row card's image column is calc()-fluid (its desktop width beside the details, the full card width
  *     once wrapped on a phone) and its image is max-width:100%: that was the media query's job.
  *  c. the email wrapper (render.ts) is fluid, 100% up to 600px, not fixed at 600px: Outlook mobile shrank the
  *     fixed layout to fit instead of reflowing it. Classic Outlook keeps its 600px from the ghost table.
+ *  d. (22 Sept) the row card's heading (badge, make, model, derivative) is a row across the top of the card and
+ *     its small print a row along the bottom, outside the two columns. The reference put the heading in the
+ *     details column and the small print under the image, so on a phone, where the columns wrap, the reader met
+ *     the legal line between the picture and the car's name (Matt's Gmail and Outlook screenshots, 22 Sept).
  * And the tool now sends one offer per row (auto: 1 → single, 2+ → stack); grid2 / grid3 are kept for stored
  * campaigns but no longer offered. Rows are matched in height when a grid is rendered (match.ts).
  */
@@ -228,10 +232,16 @@ ${smallPrint(vm.smallPrint, '14px 0 0 0', 12, 18)}
   );
 }
 
-// ---------- B. Row (stack) — image left, ghost table inside the card ----------
+// ---------- B. Row (stack) — heading across the top, image left, small print along the bottom ----------
 
 export function rowCard(vm: CardVM): string {
   const priceBlock = vm.isSalsac ? netPair(vm, 28, 22, 12, ' taxpayer') : price(vm, 28, 32, 13, 8);
+  // Reading order (Matt, 22 Sept 2026, from his phone): the car's name before its picture, the small print last.
+  // On a phone the two columns wrap, so the heading (badge, make, model, derivative) is a row across the top of
+  // the card and the small print a row along the bottom; between them the image column and the details column
+  // sit side by side on a desktop and one under the other on a phone (deviation d in the header). The reference
+  // kept the heading in the details column and the small print under the image, which on a phone put the legal
+  // line between the picture and the car's name.
   // The image column is STACK_IMG_COL wide beside the details, and the full card width once the columns
   // have wrapped on a phone. That used to be the media query's job, but the style block does not survive the
   // New Outlook paste, so it is done inline: below a 480px card the calc() is huge and max-width wins (100%),
@@ -241,9 +251,8 @@ export function rowCard(vm: CardVM): string {
     'class="stack-col"',
     `display:inline-block; width:calc((480px - 100%) * 480); min-width:${STACK_IMG_COL}px; max-width:100%; vertical-align:top;`,
     `<tr>
-<td style="padding:16px 16px 0 16px; font-size:14px; text-align:left;">
+<td style="padding:0 16px 12px 16px; font-size:14px; text-align:left;">
 ${img(vm.imageUrl, STACK_IMG, STACK_IMG_H, vm.alt, '10px', '100%')}
-${smallPrint(vm.smallPrint, '12px 0 16px 0', 11, 16, true)}
 </td>
 </tr>`,
   );
@@ -251,11 +260,7 @@ ${smallPrint(vm.smallPrint, '12px 0 16px 0', 11, 16, true)}
     'class="stack-col"',
     `display:inline-block; width:100%; max-width:${STACK_CONTENT_COL}px; vertical-align:top;`,
     `<tr>
-<td style="padding:16px 18px; font-size:14px; text-align:left; ${FF}">
-${badgeRow(vm, 1, PILL_SMALL, 3, 10, 11, 14, 6)}
-${eyebrow(vm, 11, 14, 2)}
-${model(vm, 20, 26, 2)}
-${derivative(vm, 13, 18, 10)}
+<td style="padding:0 18px; font-size:14px; text-align:left; ${FF}">
 ${priceBlock}
 ${specP(vm.specLine, 13, 18, 12)}
 ${statsPairs(vm.stats, 14)}
@@ -269,12 +274,25 @@ ${vm.brochure ? brochureStack(vm.brochure) : ''}
     'width="100%"',
     `border:1px solid ${C.border}; border-radius:16px; margin-bottom:16px;`,
     `<tr>
+<td style="padding:16px 18px 0 18px; font-size:14px; text-align:left; ${FF}">
+${badgeRow(vm, 1, PILL_SMALL, 3, 10, 11, 14, 6)}
+${eyebrow(vm, 11, 14, 2)}
+${model(vm, 20, 26, 2)}
+${derivative(vm, 13, 18, 12)}
+</td>
+</tr>
+<tr>
 <td style="padding:0; font-size:0; text-align:left;">
 ${mso(`<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="${STACK_INNER}"><tr><td width="${STACK_IMG_COL}" valign="top">`)}
 ${imageCol}
 ${mso(`</td><td width="${STACK_CONTENT_COL}" valign="top">`)}
 ${contentCol}
 ${mso('</td></tr></table>')}
+</td>
+</tr>
+<tr>
+<td style="padding:0 18px 16px 18px; font-size:14px; text-align:left; ${FF}">
+${smallPrint(vm.smallPrint, '12px 0 0 0', 11, 16)}
 </td>
 </tr>`,
   );

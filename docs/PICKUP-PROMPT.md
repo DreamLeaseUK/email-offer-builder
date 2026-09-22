@@ -57,10 +57,11 @@ web page. It is an FCA-regulated financial-promotions tool (compliance matters).
   deleted. Working tree clean at the end of session 5 (HEAD is the commit that last touched this file). Run
   `git log --oneline -20` for the session-5 commits.
 - **Tests [verified 22 Sept]:** `pnpm test` → **214 pass** (schema 23, render 37, adapters 92, api 62);
-  `pnpm typecheck` clean. There is **no CI**: the tests are the only gate. `diff-reference` reports **22** differing
+  `pnpm typecheck` clean. There is **no CI**: the tests are the only gate. `diff-reference` reports **72** differing
   lines: 8 pre-date 21 Sept (2 the logo width, 6 the third hero pill), 14 are the inline-block pills (10) and the
-  stack card's image column (4); the fluid wrapper is outside the sections it compares. All are recorded in the
-  header of `packages/render/src/cards.ts`. `MARKUP_VERSION` is still 2.
+  stack card's image column (4), 50 are the stacked card's heading row and small-print row (22 Sept, deviation d);
+  the fluid wrapper is outside the sections it compares. All are recorded in the header of
+  `packages/render/src/cards.ts`. `MARKUP_VERSION` is still 2.
 - **Production [verified 21 Sept]:** https://offer-mailer.matt-wilson-9b8.workers.dev/health → **v0.5.0**, db ok,
   images true, **`firecrawl:false`** (the production Firecrawl secret is not set). **Every `/api` route answers 503**
   until Cloudflare Access exists (IT). D1 migrations 0000–0002 applied. `wrangler` is signed in as Matt with deploy
@@ -121,8 +122,10 @@ card; auto layout 1 → single, 2+ → stack; layout picker removed. Matt's verd
 
 1. **Flattened colour / size on the paste path** (§4) — cause found and the Copy for Outlook screen now tells the rep
    to paste with Keep source formatting (22 Sept); Matt still to confirm with a real send made that way.
-2. **Small print order on a phone** — in the stack card it sits under the image, so on a phone it reads before the
-   car's name and price. Proposed: move it below the button. **Matt has not answered; do not build unasked.**
+2. **Reading order on a phone** — done 22 Sept (Matt's instruction): the stacked card is now heading row (badge,
+   make, model, derivative), then image beside price / stats / button, then the small print as the last row; on a
+   phone that reads name, picture, price, button, small print. Deviation d in ${B}cards.ts${B}. Matt to confirm with a
+   real send; the hero card (one offer) still shows its image first — not asked about.
 3. **Delete the dormant grid code** (`halfCard`, `compactCard`, `match.ts`, `measure.ts`, the grid tests) once Matt
    confirms the stacked layout in Gmail and Outlook mobile. He has not been asked since "100% better".
 4. **Brochure finder** — Matt: "It's not set up properly… must be resolved", then "You are not leveraging Firecrawl
@@ -185,5 +188,5 @@ card; auto layout 1 → single, 2+ → stack; layout picker removed. Matt's verd
 
 Confirm in a few lines that you have read the docs above; state the git, test and live state as you find them
 (`git status`, `git log --oneline -5`, `pnpm test`, `/health`); then ask Matt which of §5 he wants, leading with the
-two things only he can unblock: the Keep-source-formatting test send (§5.1) and the small-print decision (§5.2). Propose
+thing only he can unblock: a test send made with Keep source formatting, which checks §5.1 and §5.2 at once. Propose
 nothing else until he answers.

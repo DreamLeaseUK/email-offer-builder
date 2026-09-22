@@ -260,7 +260,7 @@ edition** (`Brochure.market === 'eu'`), the small print adds "This is the manufa
 specification, equipment and prices may differ from UK models." (grid3: a shared-footnote variant).
 
 **Deviations from the v5 reference, all for the paste path of A5** (recorded in the header of `cards.ts`;
-`diff-reference` reports 22 lines: 8 pre-date 21 Sept (2 the logo width, 6 the third hero pill) and 14 are the inline-block pills (10) and the stack card’s image column (4); the fluid wrapper sits outside the sections the script compares). **`MARKUP_VERSION` was not bumped for them (still 2)**, so templates approved against it — including the
+`diff-reference` reports 72 lines: 8 pre-date 21 Sept (2 the logo width, 6 the third hero pill), 14 are the inline-block pills (10) and the stack card’s image column (4), and 50 are the stacked card's heading row and small-print row of 22 Sept; the fluid wrapper sits outside the sections the script compares). **`MARKUP_VERSION` was not bumped for them (still 2)**, so templates approved against it — including the
 seeded placeholder — keep rendering (`render()` refuses a mismatch); whether Emma should re-approve the changed
 markup is undecided:
 - **Fluid wrapper** — `width:100%; max-width:600px`, not a fixed 600px. Outlook mobile shrank the fixed layout to
@@ -271,6 +271,10 @@ markup is undecided:
 - **The stack card's image column is calc()-fluid** — `width:calc((480px - 100%) * 480); min-width:250px;
   max-width:100%`: 250px beside the details on a desktop, the full card width once the columns wrap on a phone
   (the media query's old job). A client without `calc()` falls back to the fixed 250px column.
+- **The stacked card's heading is a row across the top and its small print a row along the bottom** (22 Sept, deviation
+  d): badge, make, model and derivative above the image, then image beside price / stats / button, then the small
+  print. The reference kept the heading in the details column and the small print under the image, so on a phone,
+  where the columns wrap, the legal line came between the picture and the car's name (Matt's screenshots, 22 Sept).
 - (Earlier, 14 Sept) up to three pills on the hero where the reference has two; logo 98px wide.
 
 **Matched rows** (`match.ts`, `measure.ts`): when a grid IS rendered, the cards in each row come out the same
@@ -389,8 +393,8 @@ re-render a campaign).
 - **Flattened text colour and size on the paste path** (A5) — cause found 22 Sept: Outlook's Merge-formatting paste.
   The fix is the rep's paste mode (Keep source formatting); Matt to confirm with a real send. The Copy for Outlook
   screen tells the rep (helper line under the button, 22 Sept).
-- **Small print reads before the offer on a phone** — in the stack card it sits under the image; proposed: move it
-  below the button. Not built (awaiting Matt).
+- **Small print before the offer on a phone** — done 22 Sept (B7, deviation d): the stacked card now reads name,
+  picture, price, button, small print. Matt to confirm with a real send.
 - **Confirm the stacked layout in Gmail and Outlook mobile**, then delete the grid code (`halfCard`,
   `compactCard`, `match.ts`, `measure.ts`) and the reference's grid sections.
 - **Rendering assurance** (A5): certification on real clients + an automatic pre-send check. Proposed, not built.

@@ -332,6 +332,36 @@ describe('render()', () => {
     expect(out.html).toMatch(/\.fluid-img \{ width: 100% !important; height: auto !important; max-width: 100% !important; \}/);
   });
 
+  it("stacked card reads name, picture, price, button, small print, so a phone never shows the legal line before the car (Matt, 22 Sept 2026)", () => {
+    const html = r({ layout: 'stack', offerCount: 2, brochure: 'pdf' }).out.html;
+    const cardStart = html.indexOf('border-radius:16px; margin-bottom:16px;');
+    const cardEnd = html.indexOf('border-radius:16px; margin-bottom:16px;', cardStart + 1);
+    expect(cardStart).toBeGreaterThan(-1);
+    expect(cardEnd).toBeGreaterThan(cardStart);
+    const card = html.slice(cardStart, cardEnd);
+    const at = (s: string): number => {
+      const i = card.indexOf(s);
+      expect(i, s).toBeGreaterThan(-1);
+      return i;
+    };
+    const make = at('text-transform:uppercase');
+    const model = at('class="lock-ink"');
+    const image = at('<img ');
+    const price = at('font-size:28px; font-weight:bold; color:#E30613;');
+    const button = at('background-color:#31BD51;');
+    const brochure = at('Download brochure (PDF)');
+    const small = at('margin:12px 0 0 0; font-size:11px; line-height:16px;');
+    expect(make).toBeLessThan(model);
+    expect(model).toBeLessThan(image);
+    expect(image).toBeLessThan(price);
+    expect(price).toBeLessThan(button);
+    expect(button).toBeLessThan(brochure);
+    expect(brochure).toBeLessThan(small);
+    // the heading and the small print are rows of the card, outside the two wrapping columns
+    expect(card.indexOf('class="stack-col"')).toBeGreaterThan(model);
+    expect(card.lastIndexOf('class="stack-col"')).toBeLessThan(small);
+  });
+
   it('caps badges at one per multi-offer card and up to three on the single hero, hot badge first', () => {
     const { campaign, brochures } = fixtureCampaign({ layout: 'grid3', offerCount: 1 });
     campaign.offers[0]!.badges = ['In stock', 'Special offer', 'Price drop'];
