@@ -29,18 +29,20 @@
  *
  * Knowing deviations of 21 and 22 Sept 2026 (Matt's tests: HTML pasted into New Outlook, read in Gmail and
  * Outlook mobile). The paste drops the <style> block and the conditional comments, so nothing may depend on either.
- * diff-reference reports 72 lines in all: 8 pre-date 21 Sept (2 the logo width, 6 the third hero pill), 14 are
- * a (10) and b (4), and 50 are d; c sits outside the sections the script compares:
+ * diff-reference reports 86 lines in all: 8 pre-date 21 Sept (2 the logo width, 6 the third hero pill), 14 are
+ * a (10) and b (4), and 64 are d (50 the row card, 14 the hero); c sits outside the sections the script compares:
  *  a. pills are inline-block tables, not align="left" floats: the clearing spacer did not survive, and the
  *     make name ran beside the pill and broke in Gmail ("VOLKSWA / GEN").
  *  b. the row card's image column is calc()-fluid (its desktop width beside the details, the full card width
  *     once wrapped on a phone) and its image is max-width:100%: that was the media query's job.
  *  c. the email wrapper (render.ts) is fluid, 100% up to 600px, not fixed at 600px: Outlook mobile shrank the
  *     fixed layout to fit instead of reflowing it. Classic Outlook keeps its 600px from the ghost table.
- *  d. (22 Sept) the row card's heading (badge, make, model, derivative) is a row across the top of the card and
- *     its small print a row along the bottom, outside the two columns. The reference put the heading in the
- *     details column and the small print under the image, so on a phone, where the columns wrap, the reader met
- *     the legal line between the picture and the car's name (Matt's Gmail and Outlook screenshots, 22 Sept).
+ *  d. (22 Sept) the car's name comes before its picture on both cards. Row card: the heading (badge, make, model,
+ *     derivative) is a row across the top of the card and its small print a row along the bottom, outside the two
+ *     columns. The reference put the heading in the details column and the small print under the image, so on a
+ *     phone, where the columns wrap, the reader met the legal line between the picture and the car's name (Matt's
+ *     Gmail and Outlook screenshots, 22 Sept). Hero: the same heading row sits above the full-width image, carrying
+ *     the card's rounded top corners; the image is square below it (Matt: "it should match").
  * And the tool now sends one offer per row (auto: 1 → single, 2+ → stack); grid2 / grid3 are kept for stored
  * campaigns but no longer offered. Rows are matched in height when a grid is rendered (match.ts).
  */
@@ -207,20 +209,27 @@ ${mso('</td></tr></table>')}`
     : btn;
   const priceBlock = vm.isSalsac ? heroSalsac(vm) : price(vm, 34, 38, 14, 14);
 
+  // Reading order (Matt, 22 Sept 2026): the car's name before its picture, the same as the stacked card
+  // (deviation d in the header). The reference put the image first with the card's rounded top corners on it;
+  // the heading row now carries those corners and the image sits square between the heading and the price.
   return table(
     'width="100%"',
     `border:1px solid ${C.border}; border-radius:16px; margin-bottom:20px;`,
     `<tr>
-<td class="lock-bg" style="padding:0; background-color:${C.white}; border-radius:16px 16px 0 0;">
-${img(vm.imageUrl, HERO_IMG, HERO_IMG_H, vm.alt, '16px 16px 0 0', `${HERO_IMG}px`)}
+<td class="lock-bg" style="padding:20px 20px 4px 20px; background-color:${C.white}; border-radius:16px 16px 0 0; ${FF}">
+${badgeRow(vm, 3, PILL_HERO, 4, 12, 12, 16, 8)}
+${eyebrow(vm, 12, 16, 4)}
+${model(vm, 26, 32, 4)}
+${derivative(vm, 14, 20, 12)}
+</td>
+</tr>
+<tr>
+<td class="lock-bg" style="padding:0; background-color:${C.white};">
+${img(vm.imageUrl, HERO_IMG, HERO_IMG_H, vm.alt, '0', `${HERO_IMG}px`)}
 </td>
 </tr>
 <tr>
 <td style="padding:20px 20px 22px 20px; ${FF}">
-${badgeRow(vm, 3, PILL_HERO, 4, 12, 12, 16, 8)}
-${eyebrow(vm, 12, 16, 4)}
-${model(vm, 26, 32, 4)}
-${derivative(vm, 14, 20, 16)}
 ${priceBlock}
 ${specP(vm.specLine, 14, 20, 16)}
 ${statsRow(vm.stats)}

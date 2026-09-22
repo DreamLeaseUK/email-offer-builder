@@ -362,6 +362,34 @@ describe('render()', () => {
     expect(card.lastIndexOf('class="stack-col"')).toBeLessThan(small);
   });
 
+  it('hero card reads the same way: badge, name, picture, price, button, small print (Matt, 22 Sept 2026)', () => {
+    const html = r({ layout: 'single', offerCount: 1, brochure: 'pdf' }).out.html;
+    const cardStart = html.indexOf('border-radius:16px; margin-bottom:20px;');
+    expect(cardStart).toBeGreaterThan(-1);
+    const card = html.slice(cardStart, html.indexOf('<!-- Signature -->', cardStart));
+    const at = (s: string): number => {
+      const i = card.indexOf(s);
+      expect(i, s).toBeGreaterThan(-1);
+      return i;
+    };
+    const badge = at('background-color:#FF8811;');
+    const make = at('text-transform:uppercase');
+    const model = at('class="lock-ink"');
+    const image = at('<img ');
+    const price = at('font-size:34px; font-weight:bold; color:#E30613;');
+    const button = at('background-color:#31BD51;');
+    const small = at('margin:14px 0 0 0; font-size:12px; line-height:18px;');
+    expect(badge).toBeLessThan(make);
+    expect(make).toBeLessThan(model);
+    expect(model).toBeLessThan(image);
+    expect(image).toBeLessThan(price);
+    expect(price).toBeLessThan(button);
+    expect(button).toBeLessThan(small);
+    // the card's rounded top corners now belong to the heading row, and the image sits square below it
+    expect(card.indexOf('border-radius:16px 16px 0 0;')).toBeLessThan(make);
+    expect(card).toMatch(/<img [^>]*width="550" height="413"[^>]*border-radius:0;/);
+  });
+
   it('caps badges at one per multi-offer card and up to three on the single hero, hot badge first', () => {
     const { campaign, brochures } = fixtureCampaign({ layout: 'grid3', offerCount: 1 });
     campaign.offers[0]!.badges = ['In stock', 'Special offer', 'Price drop'];

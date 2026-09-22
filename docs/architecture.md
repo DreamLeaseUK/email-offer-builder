@@ -260,7 +260,7 @@ edition** (`Brochure.market === 'eu'`), the small print adds "This is the manufa
 specification, equipment and prices may differ from UK models." (grid3: a shared-footnote variant).
 
 **Deviations from the v5 reference, all for the paste path of A5** (recorded in the header of `cards.ts`;
-`diff-reference` reports 72 lines: 8 pre-date 21 Sept (2 the logo width, 6 the third hero pill), 14 are the inline-block pills (10) and the stack card’s image column (4), and 50 are the stacked card's heading row and small-print row of 22 Sept; the fluid wrapper sits outside the sections the script compares). **`MARKUP_VERSION` was not bumped for them (still 2)**, so templates approved against it — including the
+`diff-reference` reports 86 lines: 8 pre-date 21 Sept (2 the logo width, 6 the third hero pill), 14 are the inline-block pills (10) and the stack card’s image column (4), and 64 are the name-before-picture reorder of 22 Sept (50 the stacked card, 14 the hero); the fluid wrapper sits outside the sections the script compares). **`MARKUP_VERSION` was not bumped for them (still 2)**, so templates approved against it — including the
 seeded placeholder — keep rendering (`render()` refuses a mismatch); whether Emma should re-approve the changed
 markup is undecided:
 - **Fluid wrapper** — `width:100%; max-width:600px`, not a fixed 600px. Outlook mobile shrank the fixed layout to
@@ -271,10 +271,12 @@ markup is undecided:
 - **The stack card's image column is calc()-fluid** — `width:calc((480px - 100%) * 480); min-width:250px;
   max-width:100%`: 250px beside the details on a desktop, the full card width once the columns wrap on a phone
   (the media query's old job). A client without `calc()` falls back to the fixed 250px column.
-- **The stacked card's heading is a row across the top and its small print a row along the bottom** (22 Sept, deviation
-  d): badge, make, model and derivative above the image, then image beside price / stats / button, then the small
-  print. The reference kept the heading in the details column and the small print under the image, so on a phone,
-  where the columns wrap, the legal line came between the picture and the car's name (Matt's screenshots, 22 Sept).
+- **The car's name comes before its picture on both cards** (22 Sept, deviation d). Stacked card: the heading (badge,
+  make, model, derivative) is a row across the top and the small print a row along the bottom; between them the
+  image sits beside price / stats / button. The reference kept the heading in the details column and the small
+  print under the image, so on a phone, where the columns wrap, the legal line came between the picture and the
+  car's name (Matt's screenshots, 22 Sept). Hero: the same heading row above the full-width image, carrying the
+  card's rounded top corners; the image is square below it (Matt: "it should match").
 - (Earlier, 14 Sept) up to three pills on the hero where the reference has two; logo 98px wide.
 
 **Matched rows** (`match.ts`, `measure.ts`): when a grid IS rendered, the cards in each row come out the same

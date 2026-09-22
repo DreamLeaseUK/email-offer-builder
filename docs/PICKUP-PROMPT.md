@@ -57,9 +57,10 @@ web page. It is an FCA-regulated financial-promotions tool (compliance matters).
   deleted. Working tree clean at the end of session 5 (HEAD is the commit that last touched this file). Run
   `git log --oneline -20` for the session-5 commits.
 - **Tests [verified 22 Sept]:** `pnpm test` → **214 pass** (schema 23, render 37, adapters 92, api 62);
-  `pnpm typecheck` clean. There is **no CI**: the tests are the only gate. `diff-reference` reports **72** differing
+  `pnpm typecheck` clean. There is **no CI**: the tests are the only gate. `diff-reference` reports **86** differing
   lines: 8 pre-date 21 Sept (2 the logo width, 6 the third hero pill), 14 are the inline-block pills (10) and the
-  stack card's image column (4), 50 are the stacked card's heading row and small-print row (22 Sept, deviation d);
+  stack card's image column (4), 64 are the name-before-picture reorder of 22 Sept (deviation d: 50 the stacked
+  card, 14 the hero);
   the fluid wrapper is outside the sections it compares. All are recorded in the header of
   `packages/render/src/cards.ts`. `MARKUP_VERSION` is still 2.
 - **Production [verified 21 Sept]:** https://offer-mailer.matt-wilson-9b8.workers.dev/health → **v0.5.0**, db ok,
@@ -125,7 +126,8 @@ card; auto layout 1 → single, 2+ → stack; layout picker removed. Matt's verd
 2. **Reading order on a phone** — done 22 Sept (Matt's instruction): the stacked card is now heading row (badge,
    make, model, derivative), then image beside price / stats / button, then the small print as the last row; on a
    phone that reads name, picture, price, button, small print. Deviation d in `cards.ts`. CLOSED 22 Sept: Matt's
-   real sends to Gmail and Outlook look right. The hero card (one offer) still shows its image first — not asked about.
+   real sends to Gmail and Outlook look right. The hero card (one offer) was given the same order the same day
+   (Matt: "it should match"): heading row above the full-width image, then price, stats, button, small print.
 3. **Delete the dormant grid code** (`halfCard`, `compactCard`, `match.ts`, `measure.ts`, the grid tests) once Matt
    confirms the stacked layout in Gmail and Outlook mobile. He has not been asked since "100% better".
 4. **Brochure finder** — Matt: "It's not set up properly… must be resolved", then "You are not leveraging Firecrawl
