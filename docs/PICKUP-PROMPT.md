@@ -56,7 +56,7 @@ web page. It is an FCA-regulated financial-promotions tool (compliance matters).
   (private). `git push` works through the stored credential. The `brochure-finder` branch is fully merged and can be
   deleted. Working tree clean at the end of session 5 (HEAD is the commit that last touched this file). Run
   `git log --oneline -20` for the session-5 commits.
-- **Tests [verified 21 Sept]:** `pnpm test` → **207 pass** (schema 18, render 37, adapters 92, api 60);
+- **Tests [verified 22 Sept]:** `pnpm test` → **214 pass** (schema 23, render 37, adapters 92, api 62);
   `pnpm typecheck` clean. There is **no CI**: the tests are the only gate. `diff-reference` reports **22** differing
   lines: 8 pre-date 21 Sept (2 the logo width, 6 the third hero pill), 14 are the inline-block pills (10) and the
   stack card's image column (4); the fluid wrapper is outside the sections it compares. All are recorded in the
@@ -167,8 +167,11 @@ card; auto layout 1 → single, 2+ → stack; layout picker removed. Matt's verd
 - A brochure "nothing found" is remembered 7 days; a search that never reached the official site only 1 day; a
   failed search never; and nothing is remembered across a finder rules change (`FINDER_VERSION`), so bumping it
   re-runs, and re-pays for, every remembered miss.
-- The site HTML-encodes text inside its own script block ("Techno &#x2B; Comfort"): the lookup decodes it, and a
-  cached lookup that still carries an entity refreshes itself. If a name shows `&…;`, that is where to look.
+- The site HTML-encodes text inside its own script block ("Techno &#x2B; Comfort"): the lookup decodes it, a
+  cached lookup that still carries an entity refreshes itself, and since 22 Sept an offer is decoded again wherever
+  it reaches the server (library save / list, campaign preview / create: `packages/schema/src/text.ts`). Two test
+  campaigns of 21 Sept (13:22 and 13:36) still carry the entity in their stored snapshot and hosted page. If a name
+  shows `&…;`, that is where to look.
 - The page-operating script (`brochure/operate.ts`) runs inside Firecrawl's browser in ONE scrape with `actions`
   (1 credit). It must never press request / test-drive / configurator controls or submit anything.
 - Windows shell: a long heredoc with backticks and apostrophes can fail in the Bash tool; write the script to a

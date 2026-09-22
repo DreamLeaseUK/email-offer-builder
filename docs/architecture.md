@@ -27,7 +27,9 @@ Three audiences / lease products, each with its own compliance wording and terms
    image) → the site's own pricing JSON prices the chosen term/mileage/initial → returns an `Offer` plus the
    configuration options (the "chips"). Cached 24 h. Prices are not in the page HTML. The site HTML-encodes text
    even inside its script block ("Techno &#x2B; Comfort Range"), so names, stats and spec lines are entity-decoded;
-   a cached result that still carries an entity is treated as stale. The **configured terms
+   a cached result that still carries an entity is treated as stale. The same decoding runs again where an offer
+   re-enters the server (library save and list, campaign preview and create), because a saved or open offer is a
+   snapshot from before the fix (`packages/schema/src/text.ts`). The **configured terms
    are encoded into the offer URL**, so "View offer" opens the site pre-set to exactly what was quoted.
 2. **Configure & assemble.** Rep picks the audience and up to six offers, writes the intro/subject, picks
    the green-button CTA + optional secondary contact links, optionally attaches a brochure, previews live.
@@ -409,7 +411,7 @@ IT — Access + a Cloudflare-served subdomain (parked; `mailer.` occupied) + the
 secret + confirming the Workers Paid plan; Tawk webchat (parked, renewals-only stage one).
 
 ## B10. Testing & verification
-- `pnpm test` — **207 tests**: schema 18, render 37, adapters 92, api 60. The adapter suite replays 18 recorded
+- `pnpm test` — **214 tests**: schema 23, render 37, adapters 92, api 62. The adapter suite replays 18 recorded
   manufacturer sites through the brochure finder at zero credits (added 21 Sept: Polestar 2, the European fallback;
   Renault 4 and Geely EX2, the two misses of that afternoon; Toyota C-HR, Škoda Kodiaq and Hyundai Kona from the
   finder-1.4 sweep). `packages/adapters/scripts/finder-sweep.mts` runs the finder LIVE over a list of cars (real
@@ -419,7 +421,7 @@ secret + confirming the Workers Paid plan; Tawk webchat (parked, renewals-only s
   fidelity. The test suites assert no CAP-ID leak (there is no CI pipeline yet). `.dev.vars` is git-ignored and must never be committed.
 
 ## B11. Key files index
-- Model & guard: `packages/schema/src/model.ts`, `capid.ts`
+- Model & guard: `packages/schema/src/model.ts`, `capid.ts`, `text.ts` (the site's HTML entities, decoded at lookup and again wherever an offer reaches the server)
 - Rendering: `packages/render/src/render.ts`, `cards.ts`, `viewmodel.ts`, `layout.ts`, `links.ts`, `match.ts`, `measure.ts`
 - Adapters: `packages/adapters/src/url/*`, `firecrawl/`, `brochure/` (`finder.ts`, `operate.ts`, `harvest.ts`, `ensure.ts`), `scripts/finder-sweep.mts`
 - Worker: `apps/api/src/index.ts` (routes + Cron), `campaigns.ts`, `profile.ts`, `templates.ts`,
