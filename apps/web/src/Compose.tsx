@@ -851,7 +851,9 @@ export function Compose({ email, base, items, setItems }: { email: string; base:
                 <Button size="sm" onClick={copyForOutlook}>{copied ? 'Copied ✓' : 'Copy for Outlook'}</Button>
                 <Button variant="outline" size="sm" onClick={() => navigator.clipboard.writeText(created.hostedUrl)}>Copy hosted link</Button>
               </div>
-              <span className="dl-small app__muted">Paste into a New Outlook message (Ctrl+V) and press Send. Drafts only — nothing is sent for you.</span>
+              <span className="dl-small app__muted">
+                Paste into a New Outlook message (Ctrl+V) <strong>with Keep source formatting</strong>: the small (Ctrl) paste button under the pasted email, or once in Settings → Mail → Compose and reply → Cut, copy and paste → Pasting from other apps. Outlook's default, Merge formatting, turns the red price black. Then press Send. Drafts only — nothing is sent for you.
+              </span>
             </div>
           </Alert>
         )}

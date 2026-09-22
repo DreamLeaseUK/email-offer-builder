@@ -387,8 +387,8 @@ re-render a campaign).
 
 **Open from the 21 Sept test sends (in priority order):**
 - **Flattened text colour and size on the paste path** (A5) — cause found 22 Sept: Outlook's Merge-formatting paste.
-  The fix is the rep's paste mode (Keep source formatting); Matt to confirm with a real send. Proposed, not built:
-  the Copy for Outlook screen tells the rep.
+  The fix is the rep's paste mode (Keep source formatting); Matt to confirm with a real send. The Copy for Outlook
+  screen tells the rep (helper line under the button, 22 Sept).
 - **Small print reads before the offer on a phone** — in the stack card it sits under the image; proposed: move it
   below the button. Not built (awaiting Matt).
 - **Confirm the stacked layout in Gmail and Outlook mobile**, then delete the grid code (`halfCard`,

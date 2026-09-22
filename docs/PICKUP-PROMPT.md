@@ -119,8 +119,8 @@ card; auto layout 1 → single, 2+ → stack; layout picker removed. Matt's verd
 
 ## 5. Open items, in the order I would take them
 
-1. **Flattened colour / size on the paste path** (§4) — cause found; Matt to confirm a send made with Keep source
-   formatting, then decide whether the Copy for Outlook screen should tell reps (proposed, not built).
+1. **Flattened colour / size on the paste path** (§4) — cause found and the Copy for Outlook screen now tells the rep
+   to paste with Keep source formatting (22 Sept); Matt still to confirm with a real send made that way.
 2. **Small print order on a phone** — in the stack card it sits under the image, so on a phone it reads before the
    car's name and price. Proposed: move it below the button. **Matt has not answered; do not build unasked.**
 3. **Delete the dormant grid code** (`halfCard`, `compactCard`, `match.ts`, `measure.ts`, the grid tests) once Matt
