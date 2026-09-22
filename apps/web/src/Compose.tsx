@@ -552,6 +552,17 @@ export function Compose({ email, base, items, setItems }: { email: string; base:
     setCreated(null);
     setPreviewStale(true);
   };
+  // The offer tray is shared with the Library, which adds to it from outside this component, and Compose stays
+  // mounted across tabs. So a campaign created before a Library add kept its "Campaign created" panel, and
+  // Copy for Outlook handed out an email with fewer offers than the list showed (Matt, 22 Sept 2026: three
+  // offers, one in the email). Whatever changes the tray, from wherever, the created result is dropped.
+  const lastItems = useRef(items);
+  useEffect(() => {
+    if (lastItems.current === items) return;
+    lastItems.current = items;
+    clearOutput();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items]);
   // Full clear — used when the whole offer context is thrown away (e.g. switching audience).
   const resetPreview = () => {
     setCreated(null);
