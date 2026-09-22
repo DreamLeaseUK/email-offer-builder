@@ -107,7 +107,7 @@ Scope is **Gmail (web + app) and New Outlook (desktop + mobile)** only, for now 
   letter-spacing, link colours, images.
 - **Lost:** the `<style>` block (so no media query, no forced-light overrides), the conditional comments (no ghost
   tables), a float's clearing spacer.
-- **Found (22 Sept), awaiting Matt's confirming send:** **text colour and font size arrive flattened** — the 28px
+- **Found and confirmed fixed (22 Sept, Matt's real sends):** **text colour and font size arrive flattened** — the 28px
   red price and red make name arrive black and body-sized; white badge text arrives black — because Outlook pastes
   "from other apps" with **Merge formatting**, its default (Settings → Mail → Compose and reply → Cut, copy and
   paste). Proven from the sent `.eml` and through Outlook's own editor: no markup survives Merge formatting, and
@@ -120,12 +120,12 @@ card; auto layout 1 → single, 2+ → stack; layout picker removed. Matt's verd
 
 ## 5. Open items, in the order I would take them
 
-1. **Flattened colour / size on the paste path** (§4) — cause found and the Copy for Outlook screen now tells the rep
-   to paste with Keep source formatting (22 Sept); Matt still to confirm with a real send made that way.
+1. **Flattened colour / size on the paste path** (§4) — CLOSED 22 Sept: cause found, the Copy for Outlook screen tells
+   the rep to paste with Keep source formatting, and Matt's real sends to Gmail and Outlook look right.
 2. **Reading order on a phone** — done 22 Sept (Matt's instruction): the stacked card is now heading row (badge,
    make, model, derivative), then image beside price / stats / button, then the small print as the last row; on a
-   phone that reads name, picture, price, button, small print. Deviation d in ${B}cards.ts${B}. Matt to confirm with a
-   real send; the hero card (one offer) still shows its image first — not asked about.
+   phone that reads name, picture, price, button, small print. Deviation d in `cards.ts`. CLOSED 22 Sept: Matt's
+   real sends to Gmail and Outlook look right. The hero card (one offer) still shows its image first — not asked about.
 3. **Delete the dormant grid code** (`halfCard`, `compactCard`, `match.ts`, `measure.ts`, the grid tests) once Matt
    confirms the stacked layout in Gmail and Outlook mobile. He has not been asked since "100% better".
 4. **Brochure finder** — Matt: "It's not set up properly… must be resolved", then "You are not leveraging Firecrawl

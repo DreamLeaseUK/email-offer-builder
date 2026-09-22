@@ -391,10 +391,10 @@ re-render a campaign).
 
 **Open from the 21 Sept test sends (in priority order):**
 - **Flattened text colour and size on the paste path** (A5) — cause found 22 Sept: Outlook's Merge-formatting paste.
-  The fix is the rep's paste mode (Keep source formatting); Matt to confirm with a real send. The Copy for Outlook
-  screen tells the rep (helper line under the button, 22 Sept).
+  The fix is the rep's paste mode (Keep source formatting), confirmed by Matt's real sends to Gmail and Outlook on
+  22 Sept. The Copy for Outlook screen tells the rep (helper line under the button, 22 Sept).
 - **Small print before the offer on a phone** — done 22 Sept (B7, deviation d): the stacked card now reads name,
-  picture, price, button, small print. Matt to confirm with a real send.
+  picture, price, button, small print. Confirmed by Matt's real sends to Gmail and Outlook, 22 Sept.
 - **Confirm the stacked layout in Gmail and Outlook mobile**, then delete the grid code (`halfCard`,
   `compactCard`, `match.ts`, `measure.ts`) and the reference's grid sections.
 - **Rendering assurance** (A5): certification on real clients + an automatic pre-send check. Proposed, not built.
