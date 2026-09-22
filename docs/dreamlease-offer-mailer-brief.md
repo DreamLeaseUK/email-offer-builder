@@ -435,8 +435,9 @@ Where the implementation has departed from this brief, and why. `docs/status-202
   still parked on IT, so Copy-for-Outlook is how every email goes out. The paste drops the `<style>` block and the
   conditional comments and flattens text colour and size, so the email may not depend on a media query or on
   `[if mso]`: the wrapper is fluid, badges are not floated, the stack card's image column is fluid inline. **The flattened
-  text colour and size is still open and unfixed** (the red 28px price and the red make name arrive black and
-  body-sized); the cause is not established and it is blocked on the as-received source (Gmail → Show original). The
+  text colour and size** (the red 28px price and the red make name arriving black and body-sized) **is Outlook's
+  Merge-formatting paste** (22 Sept; `status-2026-09-21.md` §11): with Keep source formatting the markup arrives as
+  designed, so the fix is the rep's paste mode, not the markup. The
   current target is Gmail and New Outlook (desktop and mobile); §8.3's full client list is not yet attempted.
 - **Test sends run on production storage** (`pnpm dev:live`): a campaign made on local storage points its images and
   links at production, which does not have them.

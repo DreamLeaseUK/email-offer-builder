@@ -106,11 +106,12 @@ Scope is **Gmail (web + app) and New Outlook (desktop + mobile)** only, for now 
   letter-spacing, link colours, images.
 - **Lost:** the `<style>` block (so no media query, no forced-light overrides), the conditional comments (no ghost
   tables), a float's clearing spacer.
-- **OPEN, not fixed:** **text colour and font size arrive flattened** — the 28px red price and red make name arrive
-  black and body-sized, in Gmail and Outlook alike; white badge text arrives black. Leading suspect: Outlook's
-  "merge formatting" paste option. **Blocked on evidence Matt has been asked for three times:** the as-received
-  source (Gmail → ⋮ → Show original → Download original) and which paste option Outlook used. Ask again, or ask for
-  his OK to pull it from his Gmail in Chrome. Do not guess a fix.
+- **Found (22 Sept), awaiting Matt's confirming send:** **text colour and font size arrive flattened** — the 28px
+  red price and red make name arrive black and body-sized; white badge text arrives black — because Outlook pastes
+  "from other apps" with **Merge formatting**, its default (Settings → Mail → Compose and reply → Cut, copy and
+  paste). Proven from the sent `.eml` and through Outlook's own editor: no markup survives Merge formatting, and
+  with **Keep source formatting** the same markup arrives red and 28px. The fix is the rep's paste mode, per paste
+  (the "(Ctrl)" paste-options button) or as the default. `status-2026-09-21.md` §11.
 
 So **nothing may depend on the media query or on `[if mso]`**. What was changed for that (all in `main`): fluid
 wrapper (100% up to 600px); inline-block badge pills instead of floats; a calc()-fluid image column in the stack
@@ -118,7 +119,8 @@ card; auto layout 1 → single, 2+ → stack; layout picker removed. Matt's verd
 
 ## 5. Open items, in the order I would take them
 
-1. **Flattened colour / size on the paste path** (§4) — needs the as-received source first.
+1. **Flattened colour / size on the paste path** (§4) — cause found; Matt to confirm a send made with Keep source
+   formatting, then decide whether the Copy for Outlook screen should tell reps (proposed, not built).
 2. **Small print order on a phone** — in the stack card it sits under the image, so on a phone it reads before the
    car's name and price. Proposed: move it below the button. **Matt has not answered; do not build unasked.**
 3. **Delete the dormant grid code** (`halfCard`, `compactCard`, `match.ts`, `measure.ts`, the grid tests) once Matt
@@ -183,5 +185,5 @@ card; auto layout 1 → single, 2+ → stack; layout picker removed. Matt's verd
 
 Confirm in a few lines that you have read the docs above; state the git, test and live state as you find them
 (`git status`, `git log --oneline -5`, `pnpm test`, `/health`); then ask Matt which of §5 he wants, leading with the
-two things only he can unblock: the as-received Gmail source (§5.1) and the small-print decision (§5.2). Propose
+two things only he can unblock: the Keep-source-formatting test send (§5.1) and the small-print decision (§5.2). Propose
 nothing else until he answers.

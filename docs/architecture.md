@@ -119,9 +119,12 @@ sends of 21 Sept (read in Gmail web, Gmail iOS, Outlook desktop, Outlook mobile)
   `border-radius`, bold, letter-spacing, link colours, images.
 - **Does not survive:** the `<style>` block (so **no media query and no forced-light-mode overrides**) and the
   conditional comments (so no ghost tables). A float's clearing spacer was lost too.
-- **Still open:** text **colour and font size arrive flattened** (the 28px red price and the red make name arrive
-  black and body-sized, in Gmail and Outlook alike). Whether that is Outlook's paste option ("merge formatting")
-  or its sanitiser is not known; it needs the as-received source (Gmail → Show original). Not fixed.
+- **Text colour and font size arrive flattened** (the 28px red price and the red make name arrive black and
+  body-sized, in Gmail and Outlook alike) **only when Outlook pastes with Merge formatting**, its default for
+  "Pasting from other apps" (Settings → Mail → Compose and reply → Cut, copy and paste). Merge formatting replaces
+  every text run's font, size and colour with the account default and keeps bold, letter-spacing, line-height,
+  backgrounds and link colour; no markup survives it. With **Keep source formatting** the markup arrives as
+  designed. Established 22 Sept from the sent `.eml` and Outlook's own editor (`status-2026-09-21.md` §11).
 
 **Design rule that follows:** nothing may DEPEND on the media query, the style block or `[if mso]`. They stay in
 the markup as enhancement only. Responsiveness has to come from inline, fluid constructions (B7).
@@ -383,7 +386,9 @@ what `pnpm dev:live` renders, so it is in use without a deploy (production serve
 re-render a campaign).
 
 **Open from the 21 Sept test sends (in priority order):**
-- **Flattened text colour and size on the paste path** (A5) — needs the as-received source before it can be fixed.
+- **Flattened text colour and size on the paste path** (A5) — cause found 22 Sept: Outlook's Merge-formatting paste.
+  The fix is the rep's paste mode (Keep source formatting); Matt to confirm with a real send. Proposed, not built:
+  the Copy for Outlook screen tells the rep.
 - **Small print reads before the offer on a phone** — in the stack card it sits under the image; proposed: move it
   below the button. Not built (awaiting Matt).
 - **Confirm the stacked layout in Gmail and Outlook mobile**, then delete the grid code (`halfCard`,
