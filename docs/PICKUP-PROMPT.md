@@ -166,6 +166,9 @@ card; auto layout 1 → single, 2+ → stack; layout picker removed. Matt's verd
 - Initial payment is `initial-months × monthly`; a "1-month" offer showing `initial == monthly` is config, not a bug.
 - The car image renders on black only in plain local `wrangler dev`; production (and `dev:live`) render white.
 - Links inside a *preview* iframe 404 ("Link not found.") — expected; only a created campaign has links.
+- Copy for Outlook copies the campaign **as created**. Since 22 Sept any change to the offers, including a Library
+  add, drops the created result so the button cannot hand out a stale email; the rep presses Create again
+  (`status-2026-09-21.md` §13).
 - "View offer" already deep-links with the rep's configured terms. No change needed.
 - Template admin needs all three audience blocks; the seeded default template is a **placeholder, not Emma-approved**,
   and seeds itself into an empty database on first use.
