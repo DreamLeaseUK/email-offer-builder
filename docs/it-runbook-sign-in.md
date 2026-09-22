@@ -117,3 +117,34 @@ Matt and IT and it does not block sign-in.
 - **What flows where**: Entra gives Cloudflare the user's name and work email (and group membership only if the
   group permissions are granted). The tool receives the email. Nothing is written back to Entra. There is no
   second Entra app: the "create draft in Outlook" idea that would have needed one has been dropped.
+
+## Data protection
+
+Sign-in adds no customer data and creates no new GDPR issue; it removes two risks.
+
+**What sign-in adds**
+
+- Cloudflare receives the staff member's name and work email from Entra at each sign-in and keeps an Access log
+  of sign-ins (time, IP address). Staff data in a business context, legitimate interest, under Cloudflare's
+  processing terms. Customers never sign in.
+- The tool receives the work email and records it as the author of each campaign and register entry, as it
+  already does in development. Nothing new is stored.
+- One cookie on the tool's hostname holds the Access session: strictly necessary, staff-only, no consent banner.
+
+**What sign-in removes**
+
+- The development bypass. Setting the audience tag (B5) closes the one route by which production could have
+  been opened without a login.
+- Any separate credential store. Access follows the M365 account, so joiners, leavers and MFA are handled where
+  they already are.
+
+**Keeping it minimal**
+
+- Grant only the five permissions in A4. The two group permissions let Cloudflare read directory group
+  membership; add them only if the policy is to be written by Entra group.
+- Turn on Assignment required (A5), so only the sales group can start a sign-in at all.
+
+**Compliance items that are not about sign-in.** Before the first real customer send: the live compliance
+template is still a placeholder, not the approved wording (an FCA financial-promotions matter, not GDPR); the
+production register holds test campaigns that should be wiped; and the retention period for campaign records is
+still to be set. Sign-in can go live without any of these. Real sends should not.
