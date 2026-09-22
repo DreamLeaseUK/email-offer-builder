@@ -8,7 +8,7 @@
  *   5. hand the site's image URL to the image pipeline, keep only our R2 copy
  *   6. build and validate the Offer, guard it against CAP ID leaks, cache it
  */
-import { assertNoCapId } from '@offer-mailer/schema';
+import { assertNoCapId, carriesEntity } from '@offer-mailer/schema';
 import type { Offer, OfferImage } from '@offer-mailer/schema';
 import type { OfferSource } from '../types.js';
 import { buildOffer } from './build-offer.js';
@@ -88,7 +88,7 @@ export class UrlOfferSource implements OfferSource<LookupInput> {
 
     const cachedHit = await this.d.cache?.get(url.canonical);
     // a result cached by an older parser may still carry an undecoded entity ("Techno &#x2B; Comfort"): look again
-    const hit = cachedHit && /&(#x?[0-9a-f]{1,7}|[a-z][a-z0-9]{1,9});/i.test(JSON.stringify(cachedHit.offer.vehicle)) ? undefined : cachedHit;
+    const hit = cachedHit && carriesEntity(cachedHit.offer.vehicle) ? undefined : cachedHit;
     if (hit) {
       return { ...hit, offer: { ...hit.offer, createdBy: input.createdBy }, cached: true };
     }

@@ -7,7 +7,7 @@
  *   GET    /api/offers/library             the caller's saved offers, newest first
  *   DELETE /api/offers/library/:id         remove one of the caller's saved offers
  */
-import { Offer, assertNoCapId, vehicleKey } from '@offer-mailer/schema';
+import { Offer, assertNoCapId, decodeOfferText, vehicleKey } from '@offer-mailer/schema';
 import type { Offer as OfferT } from '@offer-mailer/schema';
 import { and, desc, eq } from 'drizzle-orm';
 import { Hono } from 'hono';
@@ -28,7 +28,8 @@ function offersRepo(env: Env) {
     },
     async listByUser(email: string): Promise<OfferT[]> {
       const rows = await d.select({ data: offersTable.data }).from(offersTable).where(eq(offersTable.createdBy, email)).orderBy(desc(offersTable.createdAt)).all();
-      return rows.map((r) => Offer.parse(r.data));
+      // an offer saved before a parser fix may still carry the site's entity ("Techno &#x2B; Comfort"): never hand it on
+      return rows.map((r) => decodeOfferText(Offer.parse(r.data)));
     },
     async remove(id: string, email: string): Promise<void> {
       await d.delete(offersTable).where(and(eq(offersTable.id, id), eq(offersTable.createdBy, email))).run();
@@ -43,7 +44,7 @@ libraryApi.post('/offers/library', async (c) => {
   const parsed = Offer.safeParse(body.offer);
   if (!parsed.success) return c.json({ error: 'That is not a valid offer.', issues: parsed.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`) }, 422);
   // The library is the caller's; stamp ownership and the save time rather than trusting the client.
-  const offer: OfferT = { ...parsed.data, createdBy: c.get('user').email, updatedAt: new Date().toISOString() };
+  const offer: OfferT = { ...decodeOfferText(parsed.data), createdBy: c.get('user').email, updatedAt: new Date().toISOString() };
   await offersRepo(c.env).save(offer);
   return c.json({ offer }, 201);
 });

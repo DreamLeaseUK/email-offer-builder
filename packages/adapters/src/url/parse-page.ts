@@ -11,6 +11,7 @@
  * `imageSourceUrl` carries a CAP ID. It exists only to be fetched; it must never be persisted,
  * logged or copied into an Offer. The pipeline strips it as soon as the bytes are in hand.
  */
+import { decodeEntities } from '@offer-mailer/schema';
 import type { LeaseConfig } from './normalise.js';
 
 export interface PageStat {
@@ -72,18 +73,8 @@ interface ElementHandlers {
 
 const FUEL_WORDS = ['electric', 'petrol', 'diesel', 'hybrid', 'plug-in hybrid', 'mild hybrid', 'hydrogen'];
 
-/**
- * The site HTML-encodes text even inside its script block: a Renault 5 "Techno + Comfort Range" arrives as
- * "Techno &#x2B; Comfort Range" and was shown to the customer like that (Matt, 21 Sept 2026). Every numeric
- * entity and the named ones a vehicle name or spec can carry are decoded; an unknown name is left as it is.
- */
-const NAMED_ENTITIES: Record<string, string> = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ', ndash: '–', mdash: '—', plus: '+', deg: '°', pound: '£', euro: '€', eacute: 'é', egrave: 'è', euml: 'ë', ecirc: 'ê', aacute: 'á', agrave: 'à', auml: 'ä', ouml: 'ö', uuml: 'ü', scaron: 'š', ccedil: 'ç', ntilde: 'ñ', sup2: '²', frac12: '½', times: '×', reg: '', trade: '' };
-const fromCodePoint = (n: number, raw: string): string => (Number.isInteger(n) && n > 0 && n <= 0x10ffff && !(n >= 0xd800 && n <= 0xdfff) ? String.fromCodePoint(n) : raw);
-export const decodeEntities = (s: string): string =>
-  s
-    .replace(/&#x([0-9a-f]{1,6});/gi, (raw, hex: string) => fromCodePoint(parseInt(hex, 16), raw))
-    .replace(/&#(\d{1,7});/g, (raw, dec: string) => fromCodePoint(Number(dec), raw))
-    .replace(/&([a-z][a-z0-9]{1,9});/gi, (raw, name: string) => NAMED_ENTITIES[name] ?? NAMED_ENTITIES[name.toLowerCase()] ?? raw);
+// The site HTML-encodes text even inside its script block ("Techno &#x2B; Comfort Range"): every name, stat and
+// spec line read below goes through decodeEntities (packages/schema/src/text.ts, shared with the API).
 
 /** window.motorleaseInit.<key> = <value>; — strings, numbers, booleans. */
 function parseInitBlock(js: string): Record<string, string | number | boolean> {

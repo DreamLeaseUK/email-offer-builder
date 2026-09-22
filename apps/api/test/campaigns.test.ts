@@ -101,6 +101,27 @@ describe('POST /api/campaigns', () => {
     expect(body.text).toContain('View these offers online');
   });
 
+  it('decodes an HTML entity an offer still carries (saved or opened before a parser fix): email, hosted page, preview and the stored record', async () => {
+    const stale = draft({ layout: 'auto' });
+    (stale.offers as { vehicle: { derivative: string } }[])[0]!.vehicle.derivative = '110kW Techno &#x2B; Comfort Range 52kWh 5dr Auto';
+
+    const res = await post(stale, authed());
+    expect(res.status).toBe(201);
+    const body = (await res.json()) as { campaign: Campaign; html: string; text: string };
+    for (const out of [body.html, body.text]) {
+      expect(out).toContain('110kW Techno + Comfort Range 52kWh 5dr Auto');
+      expect(out).not.toMatch(/x2B/i);
+    }
+    expect(body.campaign.offers[0]!.vehicle.derivative).toBe('110kW Techno + Comfort Range 52kWh 5dr Auto');
+    const row = await env.DB.prepare('select data from campaigns where id = ?').bind(body.campaign.id).first<{ data: string }>();
+    expect(row!.data).not.toMatch(/x2B/i);
+    const hosted = await (await app.request(`/c/${body.campaign.hostedPage.slug}`, {}, env)).text();
+    expect(hosted).not.toMatch(/x2B/i);
+
+    const preview = await app.request('/api/campaigns/preview', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(stale) }, authed());
+    expect(((await preview.json()) as { html: string }).html).not.toMatch(/x2B/i);
+  });
+
   it('rejects mixed contract types and an invalid body', async () => {
     const mixed = draft();
     (mixed.offers as { contractType: string }[])[1]!.contractType = 'business';

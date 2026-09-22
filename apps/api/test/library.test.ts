@@ -41,4 +41,26 @@ describe('offer library', () => {
   it('rejects an invalid offer', async () => {
     expect((await save({ not: 'an offer' }, authed())).status).toBe(422);
   });
+
+  it('never hands on the site’s HTML entity: decoded when saved, and when a row stored earlier is listed', async () => {
+    const ENTITY = '110kW Techno &#x2B; Comfort Range 52kWh 5dr Auto';
+    const CLEAN = '110kW Techno + Comfort Range 52kWh 5dr Auto';
+    const withEntity = (id: string): Offer => ({ ...anOffer(), id, vehicle: { ...anOffer().vehicle, derivative: ENTITY } });
+
+    // saved now (an offer still open in Compose from before the parser fix)
+    const res = await save(withEntity('0e000000-0000-4000-8000-000000000001'), authed());
+    expect(res.status).toBe(201);
+    expect(((await res.json()) as { offer: Offer }).offer.vehicle.derivative).toBe(CLEAN);
+
+    // stored before the fix: the row itself still carries the entity (Matt's Renault 5, 21 Sept 2026)
+    const old = { ...withEntity('0e000000-0000-4000-8000-000000000002'), createdBy: USER };
+    await env.DB.prepare('insert into offers (id, vehicle_key, contract_type, valid_until, created_by, created_at, updated_at, data) values (?, ?, ?, ?, ?, ?, ?, ?)')
+      .bind(old.id, 'renault/5', old.contractType, old.validUntil, USER, old.createdAt, old.updatedAt, JSON.stringify(old))
+      .run();
+
+    const list = (await (await app.request('/api/offers/library', {}, authed())).json()) as { offers: Offer[] };
+    const mine = list.offers.filter((x) => x.id.startsWith('0e000000-'));
+    expect(mine).toHaveLength(2);
+    for (const o of mine) expect(o.vehicle.derivative).toBe(CLEAN);
+  });
 });

@@ -14,7 +14,7 @@
  */
 import { render } from '@offer-mailer/render';
 import { fixtureTemplate } from '@offer-mailer/render/fixtures';
-import { Campaign, CampaignUseCase, Offer, RecipientContext, Sender, Template, assertNoCapId } from '@offer-mailer/schema';
+import { Campaign, CampaignUseCase, Offer, RecipientContext, Sender, Template, assertNoCapId, decodeOfferText } from '@offer-mailer/schema';
 import type { Campaign as CampaignT, Template as TemplateT } from '@offer-mailer/schema';
 import { desc, eq } from 'drizzle-orm';
 import { Hono } from 'hono';
@@ -236,6 +236,9 @@ async function assemble(env: Env, input: DraftCampaign, createdBy: string): Prom
   if (!input.offers.every((o) => o.contractType === input.offers[0]!.contractType)) {
     throw new AssembleError('All offers in one campaign must be the same contract type.', 422);
   }
+  // An offer is a snapshot: one still open in Compose, or taken from the library, from before a parser fix
+  // carries the site's entity ("Techno &#x2B; Comfort") into the email. Decode here, whatever the browser sent.
+  input.offers = input.offers.map(decodeOfferText);
   // The rep's saved portrait is authoritative for a user sender: inject it (and drop any client-supplied
   // headshot), so it shows on every email and can't be spoofed with someone else's photo.
   if (input.sender.kind === 'user') {
