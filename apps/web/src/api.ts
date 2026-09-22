@@ -32,7 +32,7 @@ export interface LookupResponse {
   warnings: string[];
 }
 
-export type LayoutChoice = 'auto' | 'single' | 'stack' | 'grid2' | 'grid3';
+export type LayoutChoice = 'auto' | 'single' | 'stack';
 export type UseCase = 'follow_up' | 'offer_pack' | 'renewal';
 /** The audience / lease product. Drives the compliance block, terms and (for salsac) the pricing shape. */
 export type Audience = 'personal' | 'business' | 'salary_sacrifice';

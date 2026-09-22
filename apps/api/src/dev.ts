@@ -2,7 +2,7 @@
  * Dev preview — renders the fixture campaigns so the template can be checked in real clients
  * before the editor exists (brief §8.2 step 2). Behind Access like the rest of /api.
  *
- *   /api/dev/preview?layout=grid2&count=4&contract=personal&cta=book&brochure=pdf&sender=rep&format=html
+ *   /api/dev/preview?layout=stack&count=4&contract=personal&cta=book&brochure=pdf&sender=rep&format=html
  *   format: html (default) | hosted | text | eml | json
  *   publish=1 also writes the hosted page to R2 so /c/<slug> serves it.
  */
@@ -22,7 +22,7 @@ export const dev = new Hono<AppEnv>();
 dev.get('/preview', async (c) => {
   const q = c.req.query();
   const opts: FixtureOptions = {};
-  const layout = oneOf(q.layout, ['auto', 'single', 'stack', 'grid2', 'grid3'] as const);
+  const layout = oneOf(q.layout, ['auto', 'single', 'stack'] as const);
   if (layout) opts.layout = layout;
   if (q.count) opts.offerCount = Number(q.count);
   const contract = oneOf(q.contract, ['personal', 'business', 'salary_sacrifice'] as const);

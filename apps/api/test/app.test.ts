@@ -106,7 +106,7 @@ describe('dev preview', () => {
   const env = { ...baseEnv, DEV_USER_EMAIL: 'matt.wilson@dreamlease.co.uk', HOSTED: fakeBucket({}) };
 
   it('renders a fixture and can publish its hosted page', async () => {
-    const res = await app.request('/api/dev/preview?layout=grid2&count=4&cta=book&brochure=pdf&publish=1', {}, env);
+    const res = await app.request('/api/dev/preview?layout=stack&count=4&cta=book&brochure=pdf&publish=1', {}, env);
     expect(res.status).toBe(200);
     expect(await res.text()).toMatch(/Book a time to talk/);
     const hostedRes = await app.request('/c/k3J9xQ2mZp8LwN4vR7tY', {}, env);

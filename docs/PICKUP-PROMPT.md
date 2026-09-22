@@ -56,9 +56,9 @@ web page. It is an FCA-regulated financial-promotions tool (compliance matters).
   (private). `git push` works through the stored credential. The `brochure-finder` branch is fully merged and can be
   deleted. Working tree clean at the end of session 5 (HEAD is the commit that last touched this file). Run
   `git log --oneline -20` for the session-5 commits.
-- **Tests [verified 22 Sept]:** `pnpm test` → **214 pass** (schema 23, render 37, adapters 92, api 62);
-  `pnpm typecheck` clean. There is **no CI**: the tests are the only gate. `diff-reference` reports **86** differing
-  lines: 8 pre-date 21 Sept (2 the logo width, 6 the third hero pill), 14 are the inline-block pills (10) and the
+- **Tests [verified 22 Sept]:** `pnpm test` → **211 pass** (schema 23, render 34, adapters 92, api 62);
+  `pnpm typecheck` clean. There is **no CI**: the tests are the only gate. `diff-reference` reports **82** differing
+  lines: 8 pre-date 21 Sept (2 the logo width, 6 the third hero pill), 10 are the inline-block pills (6) and the
   stack card's image column (4), 64 are the name-before-picture reorder of 22 Sept (deviation d: 50 the stacked
   card, 14 the hero);
   the fluid wrapper is outside the sections it compares. All are recorded in the header of
@@ -91,7 +91,7 @@ web page. It is an FCA-regulated financial-promotions tool (compliance matters).
 | Step | State |
 |---|---|
 | 1 Scaffold, schema, D1, Worker, Access middleware, deploy | Done, deployed |
-| 2 `render()`, layouts, hosted page | Done. **One offer per row since 21 Sept** (1 → hero, 2+ → stacked rows); grids dormant |
+| 2 `render()`, layouts, hosted page | Done. **One offer per row since 21 Sept** (1 → hero, 2+ → stacked rows); the grid cards were deleted 22 Sept |
 | 3 URL lookup, image pipeline, brochures | Done. Brochures are the **finder** (no allowlist, `finder-1.4`: Map + the model's page operated inside Firecrawl), with a **European English-language fallback that is only ever OFFERED to the rep** |
 | 4 Web app | Core screens built; runs locally only, **not yet served from the production Worker** |
 | 5 Graph draft / Copy for Outlook | Copy-for-Outlook done and is the only send path; Graph draft parked (IT Entra app) |
@@ -128,8 +128,8 @@ card; auto layout 1 → single, 2+ → stack; layout picker removed. Matt's verd
    phone that reads name, picture, price, button, small print. Deviation d in `cards.ts`. CLOSED 22 Sept: Matt's
    real sends to Gmail and Outlook look right. The hero card (one offer) was given the same order the same day
    (Matt: "it should match"): heading row above the full-width image, then price, stats, button, small print.
-3. **Delete the dormant grid code** (`halfCard`, `compactCard`, `match.ts`, `measure.ts`, the grid tests) once Matt
-   confirms the stacked layout in Gmail and Outlook mobile. He has not been asked since "100% better".
+3. **Dormant grid code** — deleted 22 Sept after Matt confirmed the stacked layout in Gmail and Outlook
+   (`status-2026-09-21.md` §14). The schema still accepts `grid2` / `grid3`; render treats them as stack.
 4. **Brochure finder** — Matt: "It's not set up properly… must be resolved", then "You are not leveraging Firecrawl
    capability to its optimum." Discovery was rebuilt as **finder-1.4** (design in `architecture.md` B7b; the day's
    story in `status-2026-09-21.md` §8–§10) and proven on 17 cars: 13 right attachments, 3 correct one-click offers,

@@ -22,6 +22,7 @@ export const CampaignUseCase = z.enum(['follow_up', 'offer_pack', 'renewal']);
 export const CampaignStatus = z.enum(['draft', 'rendered', 'sent', 'archived']);
 export const SentVia = z.enum(['graph_draft', 'clipboard', 'hosted_only']);
 
+/** grid2 / grid3 are accepted so a campaign stored before 22 Sept 2026 still parses; render treats them as stack. */
 export const TemplateLayout = z.enum(['single', 'stack', 'grid2', 'grid3']);
 export type TemplateLayout = z.infer<typeof TemplateLayout>;
 export const TemplateStatus = z.enum(['draft', 'approved', 'retired']);
@@ -361,7 +362,7 @@ export const Campaign = z.object({
   preheader: z.string().max(150).optional(),
   /** Rep's personal message, plain text with line breaks. Recorded in the register. */
   intro: z.string().min(1).max(4000),
-  /** 'auto' picks single for 1 offer, stack for 3, grid2 otherwise (resolveLayout in packages/render). */
+  /** 'auto' picks single for 1 offer, stack for 2 or more; grid2 / grid3 are accepted for stored campaigns and render as stack (resolveLayout in packages/render). */
   layout: z.enum(['auto', 'single', 'stack', 'grid2', 'grid3']),
   /** Snapshot copies, not references: what was sent must not change when the library does. */
   offers: z.array(Offer).min(1).max(6),

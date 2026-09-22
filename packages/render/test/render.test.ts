@@ -14,8 +14,9 @@ describe('layout resolution', () => {
   it('auto is one offer per row: the hero for one, stacked rows for two or more, never a grid', () => {
     expect(resolveLayout('auto', 1)).toBe('single');
     for (const n of [2, 3, 4, 6]) expect(resolveLayout('auto', n)).toBe('stack');
-    // a campaign that names a grid still renders as one (stored campaigns), but the tool no longer offers them
-    expect(resolveLayout('grid3', 5)).toBe('grid3');
+    // the grid cards were deleted on 22 Sept 2026: a campaign stored with one still parses and renders stacked
+    expect(resolveLayout('grid3', 5)).toBe('stack');
+    expect(resolveLayout('grid2', 1)).toBe('single');
   });
 });
 
@@ -38,7 +39,7 @@ describe('render()', () => {
   });
 
   it('renders every layout for every contract type without a CAP ID or unsupported CSS', () => {
-    const layouts: TemplateLayout[] = ['single', 'stack', 'grid2', 'grid3'];
+    const layouts: TemplateLayout[] = ['single', 'stack'];
     for (const contractType of ['personal', 'business', 'salary_sacrifice'] as const) {
       for (const layout of layouts) {
         const { out } = r({ layout, contractType, offerCount: layout === 'single' ? 1 : 4, brochure: 'pdf', cta: { kind: 'book' } });
@@ -126,44 +127,9 @@ describe('render()', () => {
     expect(r({ offerCount: 1 }).out.html).not.toMatch(/brochure/i);
   });
 
-  it('matches the cards in a row: one reserves the badge row, brochure row and extra text lines its row-mate has', () => {
-    const { campaign, brochures } = fixtureCampaign({ offerCount: 2, layout: 'grid2', brochure: 'pdf' });
-    const like = render(campaign, fixtureTemplate, { publicBaseUrl: BASE, brochures }).html;
-    const [a, b] = campaign.offers;
-    if (!a || !b) throw new Error('fixture has two offers');
-    // make the second card unlike the first: no badge, no brochure, and a model name that wraps
-    b.badges = [];
-    delete b.hotBadge;
-    delete b.brochure;
-    a.vehicle.model = 'Q4 e-tron Sportback quattro';
-    const out = render(campaign, fixtureTemplate, { publicBaseUrl: BASE, brochures }).html;
-    const cards = out.split('class="card-cell"').slice(1);
-    expect(cards).toHaveLength(2);
-    const [first, second] = cards as [string, string];
-    // the badge-less card holds the badge row open with an empty pill of the same box (no orange, no text)
-    expect(first).toContain('background-color:#FF8811');
-    expect(second).not.toContain('background-color:#FF8811');
-    expect(second).toContain('<td width="100" style="width:100px; padding:3px 10px; font-size:11px; line-height:14px; mso-line-height-rule:exactly;">&nbsp;</td>');
-    // it holds the brochure link row open too (8px margin + 16px line), and its one-line model takes two lines' height
-    expect(second).toContain('<td height="24" style="font-size:0; line-height:0; height:24px;">&nbsp;</td>');
-    expect(second).toMatch(/font-weight:bold; color:#000000; min-height:52px;/);
-    expect(first).not.toMatch(/color:#000000; min-height/);
-    // like-for-like cards reserve nothing: the markup is exactly the reference's
-    expect(like).not.toMatch(/min-height:52px|height="24"/);
-  });
-
-  it('matches rows, not the whole email: an odd card out on its own row reserves nothing', () => {
-    const { campaign, brochures } = fixtureCampaign({ offerCount: 3, layout: 'grid2' });
-    campaign.offers.forEach((o, i) => { if (i < 2) { o.badges = []; delete o.hotBadge; } });
-    const cards = render(campaign, fixtureTemplate, { publicBaseUrl: BASE, brochures }).html.split('class="card-cell"').slice(1);
-    // row one has no badges at all, row two is a single card: nobody reserves anything
-    for (const c of cards.slice(0, 2)) expect(c).not.toContain('<td width="100" style="width:100px; padding:3px 10px;');
-    expect(cards[2]).toContain('background-color:#FF8811');
-  });
-
   it('tells the recipient when the brochure is the manufacturer’s European edition, and only then', () => {
-    const european = (layout: 'single' | 'grid3') => {
-      const { campaign, brochures } = fixtureCampaign({ offerCount: layout === 'grid3' ? 3 : 1, layout, brochure: 'pdf' });
+    const european = (layout: 'single' | 'stack') => {
+      const { campaign, brochures } = fixtureCampaign({ offerCount: layout === 'stack' ? 3 : 1, layout, brochure: 'pdf' });
       const id = Object.keys(brochures)[0]!;
       return render(campaign, fixtureTemplate, { publicBaseUrl: BASE, brochures: { [id]: { ...brochures[id]!, market: 'eu' } } });
     };
@@ -171,16 +137,16 @@ describe('render()', () => {
     expect(card.html).toContain('may differ from this offer. This is the manufacturer&#39;s European brochure; specification, equipment and prices may differ from UK models.');
     expect(card.text).toContain("This is the manufacturer's European brochure; specification, equipment and prices may differ from UK models.");
     expect(card.html).toContain('Download brochure (PDF)'); // the link itself is unchanged
-    // grid3 has one shared footnote for every card
-    expect(european('grid3').html).toContain('Where a brochure is the manufacturer&#39;s European edition, specification, equipment and prices may differ from UK models.');
+    // every stacked card carries its own small print, so the sentence appears on each card with a European brochure
+    expect(european('stack').html).toContain('This is the manufacturer&#39;s European brochure');
     // a UK brochure (market absent or 'uk') says nothing of the kind
     expect(r({ offerCount: 1, brochure: 'pdf' }).out.html).not.toMatch(/European/);
-    expect(r({ offerCount: 3, layout: 'grid3', brochure: 'pdf' }).out.html).not.toMatch(/European/);
+    expect(r({ offerCount: 3, layout: 'stack', brochure: 'pdf' }).out.html).not.toMatch(/European/);
   });
 
   it("labels a web brochure and a price & spec guide as what they are, in the reference's external-link construction", () => {
-    const withBrochure = (patch: Partial<Brochure>, layout: 'single' | 'grid3' = 'single') => {
-      const { campaign, brochures } = fixtureCampaign({ offerCount: layout === 'grid3' ? 3 : 1, layout, brochure: 'gated' });
+    const withBrochure = (patch: Partial<Brochure>, layout: 'single' | 'stack' = 'single') => {
+      const { campaign, brochures } = fixtureCampaign({ offerCount: layout === 'stack' ? 3 : 1, layout, brochure: 'gated' });
       const id = Object.keys(brochures)[0]!;
       return render(campaign, fixtureTemplate, { publicBaseUrl: BASE, brochures: { [id]: { ...brochures[id]!, ...patch } } });
     };
@@ -192,7 +158,7 @@ describe('render()', () => {
 
     const guidePage = withBrochure({ kind: 'web', documentType: 'price_spec_guide' });
     expect(guidePage.html).toContain('>View price &amp; spec guide</a>');
-    expect(withBrochure({ kind: 'web', documentType: 'price_spec_guide' }, 'grid3').html).toContain('>Price &amp; spec guide</a>');
+    expect(withBrochure({ kind: 'web', documentType: 'price_spec_guide' }, 'stack').html).toContain('>View price &amp; spec guide</a>');
 
     const { campaign, brochures } = fixtureCampaign({ offerCount: 1, brochure: 'pdf' });
     const id = Object.keys(brochures)[0]!;
@@ -205,7 +171,7 @@ describe('render()', () => {
   });
 
   it('shows the same, even number of stat tiles on every card in a multi-offer email', () => {
-    const { campaign, brochures } = fixtureCampaign({ offerCount: 2, layout: 'grid2' });
+    const { campaign, brochures } = fixtureCampaign({ offerCount: 2, layout: 'stack' });
     campaign.offers[1]!.vehicle.stats = campaign.offers[1]!.vehicle.stats!.slice(0, 2); // one card exposes only two
     const out = render(campaign, fixtureTemplate, { publicBaseUrl: BASE, brochures });
     // both cards drop to two tiles (no lonely tile), so the 3rd/4th stats disappear from BOTH
@@ -259,16 +225,8 @@ describe('render()', () => {
   });
 
   // The v5 reference markup's non-negotiables (docs/status: 14 Sept, "Offer Mailer implementation notes").
-  it('wraps every card group in a ghost table with one ghost td per card, in rows', () => {
+  it('wraps the stacked card’s columns and the hero CTA row in ghost tables, one ghost td per column', () => {
     const ghostCells = (html: string, width: number) => html.match(new RegExp(`<!--\\[if mso\\]>[^<]*(?:<[^!][^<]*)*?<td width="${width}" valign="top"><!\\[endif\\]-->`, 'g'))?.length ?? 0;
-    const grid4 = r({ layout: 'grid2', offerCount: 4 }).out.html;
-    expect(ghostCells(grid4, 288)).toBe(4);
-    expect(grid4.match(/<!--\[if mso\]><\/td><\/tr><tr><td width="288" valign="top"><!\[endif\]-->/g)?.length).toBe(1); // two rows
-    const grid3 = r({ layout: 'grid3', offerCount: 6 }).out.html;
-    expect(ghostCells(grid3, 192)).toBe(6);
-    expect(grid3.match(/<!--\[if mso\]><\/td><\/tr><tr><td width="192" valign="top"><!\[endif\]-->/g)?.length).toBe(1);
-    const odd = r({ layout: 'grid2', offerCount: 3 }).out.html;
-    expect(ghostCells(odd, 288)).toBe(3);
     const stack = r({ layout: 'stack', offerCount: 3 }).out.html;
     expect(ghostCells(stack, 250)).toBe(3);
     expect(ghostCells(stack, 300)).toBe(3);
@@ -277,7 +235,7 @@ describe('render()', () => {
   });
 
   it('builds buttons with td padding, a block anchor and mso-padding-alt, and no VML', () => {
-    for (const layout of ['single', 'stack', 'grid2', 'grid3'] as const) {
+    for (const layout of ['single', 'stack'] as const) {
       const html = r({ layout, offerCount: layout === 'single' ? 1 : 3 }).out.html;
       const buttons = html.match(/<td align="center" style="background-color:#31BD51;[^"]*">/g) ?? [];
       expect(buttons.length).toBe(layout === 'single' ? 1 : 3);
@@ -290,10 +248,8 @@ describe('render()', () => {
   it('fixes the image sizes and pill widths the reference specifies, inside a fluid wrapper that tops out at 600px', () => {
     expect(r({ layout: 'single', offerCount: 1 }).out.html).toMatch(/<img [^>]*width="550" height="413"/);
     expect(r({ layout: 'stack', offerCount: 2 }).out.html).toMatch(/<img [^>]*width="218" height="164"/);
-    expect(r({ layout: 'grid2', offerCount: 2 }).out.html).toMatch(/<img [^>]*width="262" height="197"/);
-    expect(r({ layout: 'grid3', offerCount: 3 }).out.html).toMatch(/<img [^>]*width="166" height="125"/);
     expect(r({ layout: 'single', offerCount: 1 }).out.html).toMatch(/<td width="126" align="center" class="lock-white" style="width:126px;/);
-    expect(r({ layout: 'grid2', offerCount: 2 }).out.html).toMatch(/<td width="100" align="center" class="lock-white" style="width:100px;/);
+    expect(r({ layout: 'stack', offerCount: 2 }).out.html).toMatch(/<td width="100" align="center" class="lock-white" style="width:100px;/);
     const html = r().out.html;
     // fluid, not fixed: Outlook mobile shrank a fixed 600px layout to fit instead of reflowing it (21 Sept 2026)
     expect(html).toMatch(/width="100%" class="wrapper lock-bg" style="width:100%; max-width:600px;/);
@@ -302,15 +258,14 @@ describe('render()', () => {
   });
 
   it('forces light mode and keeps the media query as an enhancement', () => {
-    const html = r({ layout: 'grid3', offerCount: 3 }).out.html;
+    const html = r({ layout: 'single', offerCount: 1 }).out.html;
     expect(html).toMatch(/<meta name="color-scheme" content="light only" \/>/);
     expect(html).toMatch(/\[data-ogsc\] \.lock-red/);
     for (const cls of ['lock-bg', 'lock-tint', 'lock-ink', 'lock-body', 'lock-red', 'lock-white']) expect(html).toContain(`class="${cls}`);
     expect(html).toMatch(/@media only screen and \(max-width: 480px\)/);
-    expect(html).toMatch(/class="card-cell" style="display:inline-block; width:100%; max-width:192px;/);
     expect(html).not.toMatch(/margin:\s*-/);
-    // spacers are cells, never margins (grid3's full-width pill needs none; grid2's floated pills do)
-    expect(r({ layout: 'grid2', offerCount: 2 }).out.html).toMatch(/<td height="8" style="font-size:0; line-height:0; height:8px;">&nbsp;<\/td>/);
+    // spacers are cells, never margins: the gap under the badge pills is a td
+    expect(r({ layout: 'single', offerCount: 1 }).out.html).toMatch(/<td height="8" style="font-size:0; line-height:0; height:8px;">&nbsp;<\/td>/);
   });
 
   it('bumps MARKUP_VERSION to the v5 generation and refuses a template pinned to v1', () => {
@@ -320,14 +275,13 @@ describe('render()', () => {
   });
 
   it("reflows on a phone without the media query: only classic Outlook's ghost table is 600px wide", () => {
-    const { out } = r({ layout: 'grid2', offerCount: 4 });
+    const { out } = r({ layout: 'stack', offerCount: 4 });
     expect(out.html.match(/width="600"/g)?.length).toBe(1); // the [if mso] ghost wrapper only
     // the stacked row's image column is its desktop width beside the details and the full card width once wrapped
     const stacked = r({ layout: 'stack', offerCount: 2 }).out.html;
     expect(stacked).toContain('display:inline-block; width:calc((480px - 100%) * 480); min-width:250px; max-width:100%; vertical-align:top;');
     expect(stacked).toMatch(/<img [^>]*width="218" height="164"[^>]*style="display:block; border:0; width:100%; max-width:100%; height:auto;/);
     expect(out.html).toMatch(/\.wrapper \{ width: 100% !important; \}/);
-    expect(out.html).toMatch(/\.card-cell \{ max-width: 100% !important; width: 100% !important; \}/);
     expect(out.html).toMatch(/\.stack-col \{ max-width: 100% !important; width: 100% !important; \}/);
     expect(out.html).toMatch(/\.fluid-img \{ width: 100% !important; height: auto !important; max-width: 100% !important; \}/);
   });
@@ -390,14 +344,14 @@ describe('render()', () => {
     expect(card).toMatch(/<img [^>]*width="550" height="413"[^>]*border-radius:0;/);
   });
 
-  it('caps badges at one per multi-offer card and up to three on the single hero, hot badge first', () => {
-    const { campaign, brochures } = fixtureCampaign({ layout: 'grid3', offerCount: 1 });
+  it('caps badges at one on the stacked card and up to three on the single hero, hot badge first', () => {
+    const { campaign, brochures } = fixtureCampaign({ layout: 'stack', offerCount: 1 });
     campaign.offers[0]!.badges = ['In stock', 'Special offer', 'Price drop'];
     campaign.offers[0]!.hotBadge = 'DreamLease exclusive!';
     const pills = (html: string) => html.match(/background-color:#FF8811/g)?.length ?? 0;
-    const compact = render(campaign, fixtureTemplate, { publicBaseUrl: BASE, brochures }).html;
-    expect(pills(compact)).toBe(1);
-    expect(compact).toMatch(/<td align="center" class="lock-white" style="background-color:#FF8811;[^"]*">DreamLease exclusive!<\/td>/);
+    const stacked = render(campaign, fixtureTemplate, { publicBaseUrl: BASE, brochures }).html;
+    expect(pills(stacked)).toBe(1);
+    expect(stacked).toMatch(/<td width="100" align="center" class="lock-white" style="width:100px; background-color:#FF8811;[^"]*">DreamLease exclusive!<\/td>/);
     campaign.layout = 'single';
     const hero = render(campaign, fixtureTemplate, { publicBaseUrl: BASE, brochures }).html;
     expect(pills(hero)).toBe(3);
@@ -405,10 +359,6 @@ describe('render()', () => {
     // inline-block pills, never floated: a float's clearing spacer did not survive the Outlook paste (21 Sept 2026)
     expect(hero.match(/<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="display:inline-block; vertical-align:top; margin:0 6px 8px 0;">/g)?.length).toBe(3);
     expect(hero).not.toContain('align="left"');
-    campaign.layout = 'stack';
-    expect(pills(render(campaign, fixtureTemplate, { publicBaseUrl: BASE, brochures }).html)).toBe(1);
-    campaign.layout = 'grid2';
-    expect(pills(render(campaign, fixtureTemplate, { publicBaseUrl: BASE, brochures }).html)).toBe(1);
   });
 
   it('omits the "View these offers online" link from the hosted page', () => {

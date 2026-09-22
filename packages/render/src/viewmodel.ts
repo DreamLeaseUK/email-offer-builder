@@ -4,7 +4,7 @@
  */
 import { CTA_DEFAULT_LABELS, availableCtaKinds } from '@offer-mailer/schema';
 import type { Brochure, Campaign, Offer, Sender } from '@offer-mailer/schema';
-import { gbp, gbpPence, kMiles, longDate, number, shortDate } from './format.js';
+import { gbp, gbpPence, longDate, number } from './format.js';
 import { Links, withUtm } from './links.js';
 
 export class RenderError extends Error {
@@ -35,16 +35,14 @@ export interface CardVM {
   net40?: string;
   grossLine?: string;
   specLine: string;
-  specShort: string;
   stats: Stat[];
   imageUrl: string;
   cta: { href: string; label: string };
   /** Present when the CTA is not view_offer: the offer page must stay one click away. */
   viewHref?: string;
-  /** label for hero/stack/grid2, shortLabel for grid3; iconUrl is the 14px glyph on our origin. */
-  brochure?: { href: string; label: string; shortLabel: string; alt: string; kind: 'pdf' | 'gated'; iconUrl: string; european?: boolean };
+  /** iconUrl is the 14px glyph on our origin. */
+  brochure?: { href: string; label: string; alt: string; kind: 'pdf' | 'gated'; iconUrl: string; european?: boolean };
   smallPrint: string;
-  validityLine: string;
   validUntil: string;
 }
 
@@ -62,8 +60,6 @@ const PCH_PROCESSING_FEE = 299.99;
  * Wording agreed with Matt 21 Sept 2026; Emma approves it with the template block (brief §5.8 step 9).
  */
 export const EUROPEAN_BROCHURE_NOTE = "This is the manufacturer's European brochure; specification, equipment and prices may differ from UK models.";
-/** The same point for grid3's one shared footnote, where it may apply to some of the cards only. */
-export const EUROPEAN_BROCHURE_NOTE_SHARED = "Where a brochure is the manufacturer's European edition, specification, equipment and prices may differ from UK models.";
 
 function ctaFor(offer: Offer, sender: Sender, index: number, links: Links, offerUrlWithUtm: string): CardVM['cta'] {
   const cta = offer.cta ?? { kind: 'view_offer' as const };
@@ -124,15 +120,12 @@ export function buildCards(campaign: Campaign, opts: VmOptions): CardVM[] {
     const p = offer.pricing;
     const term = `${p.termMonths} months`;
     const spec = [term, `${number(p.annualMileage)} miles p.a.`];
-    const specShort = [`${p.termMonths} mo`, `${kMiles(p.annualMileage)} miles`];
     if (isSalsac) {
       // Salary sacrifice: no initial payment. The net figure is all-in — it already includes the
       // finance payment, maintenance and insurance (Matt, 15 Sept) — so the card states the cover.
       spec.push('Maintenance & insurance included');
-      specShort.push('Maint. & insurance incl.');
     } else {
       spec.push(`${gbp(p.initialPayment)} initial payment`);
-      specShort.push(`${gbp(p.initialPayment)} initial`);
     }
 
     let brochure: CardVM['brochure'];
@@ -149,13 +142,13 @@ export function buildCards(campaign: Campaign, opts: VmOptions): CardVM[] {
       brochure =
         b.kind === 'pdf'
           ? guide
-            ? { href, label: 'Download price & spec guide (PDF)', shortLabel: 'Price guide (PDF)', ...doc }
-            : { href, label: 'Download brochure (PDF)', shortLabel: 'Brochure (PDF)', ...doc }
+            ? { href, label: 'Download price & spec guide (PDF)', ...doc }
+            : { href, label: 'Download brochure (PDF)', ...doc }
           : b.kind === 'web'
             ? guide
-              ? { href, label: 'View price & spec guide', shortLabel: 'Price & spec guide', ...ext }
-              : { href, label: 'View brochure', shortLabel: 'View brochure', ...ext }
-            : { href, label: 'Request a brochure', shortLabel: 'Request brochure', ...ext };
+              ? { href, label: 'View price & spec guide', ...ext }
+              : { href, label: 'View brochure', ...ext }
+            : { href, label: 'Request a brochure', ...ext };
       // the finder's fallback (no UK edition verified): the recipient is told it is not the UK brochure
       if (b.market === 'eu') brochure.european = true;
     }
@@ -180,12 +173,10 @@ export function buildCards(campaign: Campaign, opts: VmOptions): CardVM[] {
       price: gbp(p.monthly),
       vatLabel: p.vat === 'ex' ? 'per month ex VAT' : 'per month inc VAT',
       specLine: spec.join(' · '),
-      specShort: specShort.join(' · '),
       stats: (offer.vehicle.stats ?? []).slice(0, statCount),
       imageUrl: offer.image?.url ?? `${publicBaseUrl}/a/vehicle-placeholder.png`,
       cta,
       smallPrint: smallPrintParts.join(' · '),
-      validityLine: `Valid until ${shortDate(offer.validUntil)}`,
       validUntil: offer.validUntil,
     };
     if (offer.hotBadge) vm.hot = offer.hotBadge;

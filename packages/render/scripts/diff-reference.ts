@@ -59,8 +59,11 @@ function between(src: string, start: string, end: string): string {
   return src.slice(i, j);
 }
 
-/** The reference's layout block N, cut to its first card (the others are copies). */
-function refLayout(letter: 'A' | 'B' | 'C' | 'D', cards: number): string {
+/**
+ * The reference's layout block N, cut to its first card (the others are copies). Blocks C (grid2) and D
+ * (grid3) are still in the reference file but no longer built (deleted 22 Sept 2026), so they are not compared.
+ */
+function refLayout(letter: 'A' | 'B', cards: number): string {
   const block = between(reference, `<!--== LAYOUT ${letter} —`, `<!--== LAYOUT ${letter} END ==-->`);
   const body = block.slice(block.indexOf('<tr>'));
   // keep the first `cards` cards with the ghost separators between them, then the block's tail
@@ -73,7 +76,7 @@ function refLayout(letter: 'A' | 'B' | 'C' | 'D', cards: number): string {
 }
 
 const BASE = 'https://offers.dreamlease.co.uk';
-const ours = (layout: 'single' | 'stack' | 'grid2' | 'grid3', offerCount: number): string => {
+const ours = (layout: 'single' | 'stack', offerCount: number): string => {
   const { campaign, brochures } = fixtureCampaign({ layout, offerCount, brochure: 'pdf' });
   return render(campaign, fixtureTemplate, { publicBaseUrl: BASE, brochures }).html;
 };
@@ -87,8 +90,6 @@ const checks: { name: string; ref: string; our: string }[] = [
   { name: 'intro', ref: between(reference, '<!-- Intro -->', '<!-- ===================='), our: ourSection(ours('single', 1), '<!-- Intro -->', '<tr>\n<td class="gutter" style="padding:12px') },
   { name: 'layout-A-single', ref: refLayout('A', 1), our: ourSection(ours('single', 1), '<tr>\n<td class="gutter" style="padding:12px', '<!-- Signature -->') },
   { name: 'layout-B-stack', ref: refLayout('B', 1), our: ourSection(ours('stack', 1), '<tr>\n<td class="gutter" style="padding:12px', '<!-- Signature -->') },
-  { name: 'layout-C-grid2', ref: refLayout('C', 2), our: ourSection(ours('grid2', 2), '<tr>\n<td style="padding:12px 12px 0 12px;', '<!-- Signature -->') },
-  { name: 'layout-D-grid3', ref: refLayout('D', 3), our: ourSection(ours('grid3', 3), '<tr>\n<td style="padding:12px 12px 0 12px;', '<!-- Signature -->') },
   { name: 'signature', ref: between(reference, '<!-- Signature -->', '<!-- Compliance footer'), our: ourSection(ours('single', 1), '<!-- Signature -->', '<!-- Compliance footer') },
   { name: 'footer', ref: between(reference, '<!-- Compliance footer', '<!-- ================= /EMAIL WRAPPER'), our: ourSection(ours('single', 1), '<!-- Compliance footer', '<!-- ================= /EMAIL WRAPPER') },
   { name: 'head', ref: between(reference, '<!DOCTYPE', '<body'), our: ourSection(ours('single', 1), '<!DOCTYPE', '<body') },

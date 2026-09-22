@@ -18,9 +18,8 @@ const variants: Record<string, FixtureOptions> = {
   '01-single-personal-brochure': { layout: 'single', offerCount: 1, brochure: 'pdf' },
   '02-single-personal-book-cta': { layout: 'single', offerCount: 1, cta: { kind: 'book' }, brochure: 'gated' },
   '03-stack-business': { layout: 'stack', offerCount: 3, contractType: 'business', brochure: 'pdf' },
-  '04-grid2-personal': { layout: 'grid2', offerCount: 4, cta: { kind: 'call' } },
-  '05-grid2-salsac-shared': { layout: 'auto', offerCount: 6, contractType: 'salary_sacrifice', sender: 'shared', brochure: 'pdf' },
-  '06-grid3-explicit': { layout: 'grid3', offerCount: 6 },
+  '04-stack-personal-call': { layout: 'auto', offerCount: 4, cta: { kind: 'call' } },
+  '05-stack-salsac-shared': { layout: 'auto', offerCount: 6, contractType: 'salary_sacrifice', sender: 'shared', brochure: 'pdf' },
 };
 
 for (const [name, opts] of Object.entries(variants)) {

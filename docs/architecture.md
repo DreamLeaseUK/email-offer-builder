@@ -167,7 +167,7 @@ memory); a free Cloudflare-served subdomain is needed — proposed `offer-mailer
 |---|---|
 | `packages/schema` | Zod offer model + `assertNoCapId`. The shared contract. |
 | `packages/adapters` | Source & output adapters, pure: URL lookup (normalise → parse → pricing → buildOffer), Firecrawl client (search, map, scrape with page actions, raw file fetch), brochure finder / operate (the in-page script) / harvest (which also holds the manual upload-or-paste path and the accept paths) / ensure; `scripts/finder-sweep.mts` (live proof runs). No adapter imports another. |
-| `packages/render` | `render(campaign, template)` — the sole HTML producer. v5 markup as template functions (`cards.ts`, `render.ts`), with the recorded deviations of B7; four layouts, two of them offered; `match.ts` + `measure.ts` (row height matching); `diff-reference.ts` fidelity check; `MARKUP_VERSION`. |
+| `packages/render` | `render(campaign, template)` — the sole HTML producer. v5 markup as template functions (`cards.ts`, `render.ts`), with the recorded deviations of B7; two layouts, hero and stacked (the grids were deleted 22 Sept); `diff-reference.ts` fidelity check; `MARKUP_VERSION`. |
 | `packages/design-system` | Vendored DreamLease design system (`dl-*` React components, tokens, Sofia Pro), consumed as source. |
 | `apps/api` | The Cloudflare Worker (Hono): API, hosted pages, redirects, files, static assets, the retention Cron. |
 | `apps/web` | Vite + React tool UI: Compose / Campaigns / Library / Register / Suppressions / Templates (admin). Dev-only today; served from the Worker in prod later. |
@@ -246,8 +246,8 @@ whichever is on 8787. Production `/api` itself stays 503 until Access is configu
 `render()` is pure and the only HTML producer. Card markup is translated line-for-line from
 `design/dreamlease-offer-mailer-v5.html`; after any `cards.ts`/`render.ts` change run
 `packages/render/scripts/diff-reference.ts` — any non-data structural difference is a deviation, justified in the `cards.ts`
-header. **Auto layout is one offer per row: 1 → single (hero), 2+ → stack** (Matt, 21 Sept; grid2 / grid3 still
-render for a stored campaign that names one, but the tool no longer offers them). `MARKUP_VERSION` is bumped
+header. **Auto layout is one offer per row: 1 → single (hero), 2+ → stack** (Matt, 21 Sept). The grid2 / grid3 cards
+were deleted on 22 Sept; the schema still accepts the names so a stored campaign parses, and it renders stacked. `MARKUP_VERSION` is bumped
 when the markup changes in a way Emma should re-approve; templates pin the version they were approved against
 (campaigns pin `compliance.approvedWordingVersion`).
 
@@ -257,10 +257,10 @@ unchanged — first stage); and **every card in a multi-offer campaign shows the
 tiles** (the common count across the offers, floored to even) so the cards read as a matched set — a single
 hero keeps its natural count. A third (21 Sept): when the attached brochure is the manufacturer's **European
 edition** (`Brochure.market === 'eu'`), the small print adds "This is the manufacturer's European brochure;
-specification, equipment and prices may differ from UK models." (grid3: a shared-footnote variant).
+specification, equipment and prices may differ from UK models."
 
 **Deviations from the v5 reference, all for the paste path of A5** (recorded in the header of `cards.ts`;
-`diff-reference` reports 86 lines: 8 pre-date 21 Sept (2 the logo width, 6 the third hero pill), 14 are the inline-block pills (10) and the stack card’s image column (4), and 64 are the name-before-picture reorder of 22 Sept (50 the stacked card, 14 the hero); the fluid wrapper sits outside the sections the script compares). **`MARKUP_VERSION` was not bumped for them (still 2)**, so templates approved against it — including the
+`diff-reference` reports 82 lines: 8 pre-date 21 Sept (2 the logo width, 6 the third hero pill), 10 are the inline-block pills (6) and the stack card’s image column (4), and 64 are the name-before-picture reorder of 22 Sept (50 the stacked card, 14 the hero); the fluid wrapper sits outside the sections the script compares). **`MARKUP_VERSION` was not bumped for them (still 2)**, so templates approved against it — including the
 seeded placeholder — keep rendering (`render()` refuses a mismatch); whether Emma should re-approve the changed
 markup is undecided:
 - **Fluid wrapper** — `width:100%; max-width:600px`, not a fixed 600px. Outlook mobile shrank the fixed layout to
@@ -279,11 +279,8 @@ markup is undecided:
   card's rounded top corners; the image is square below it (Matt: "it should match").
 - (Earlier, 14 Sept) up to three pills on the hero where the reference has two; logo 98px wide.
 
-**Matched rows** (`match.ts`, `measure.ts`): when a grid IS rendered, the cards in each row come out the same
-height — a card reserves the badge row, brochure row and extra text lines its row-mate has, using empty cells
-and `min-height` only. `measure.ts` estimates where Arial text wraps without a browser (15 of 15 strings agreed
-with Chrome). Like-for-like cards reserve nothing and render the reference exactly. With one offer per row this
-is dormant; the grid code and it are candidates for deletion once the stacked layout is confirmed in both clients.
+**Matched rows** (`match.ts`, `measure.ts`) and the grid cards were deleted on 22 Sept, once Matt had confirmed the
+stacked layout in Gmail and Outlook (`status-2026-09-21.md` §14). The history is in `status-2026-09-21.md` §7.3.
 
 ## B7b. Brochure discovery — the finder (`finder-1.4`, 21 Sept 2026)
 Code: `packages/adapters/src/brochure/` — `finder.ts` (pure; Firecrawl and a plain GET are injected), `operate.ts`
@@ -378,7 +375,7 @@ only runs through `pnpm dev` / `dev:live` today.
 | Step | State |
 |---|---|
 | 1 Scaffold, schema, D1, Worker, Access, deploy | Done, deployed |
-| 2 `render()`, four layouts, hosted page | Done |
+| 2 `render()`, layouts, hosted page | Done (hero and stacked; the grids were deleted 22 Sept) |
 | 3 URL lookup, image pipeline, brochure harvest | Done (brochure discovery rebuilt as the finder, 18 Sept) |
 | 4 Web app | Core built (dev-only) |
 | 5 Graph draft, Copy-for-Outlook | Copy-for-Outlook done; Graph parked |
@@ -397,8 +394,9 @@ re-render a campaign).
   22 Sept. The Copy for Outlook screen tells the rep (helper line under the button, 22 Sept).
 - **Small print before the offer on a phone** — done 22 Sept (B7, deviation d): the stacked card now reads name,
   picture, price, button, small print. Confirmed by Matt's real sends to Gmail and Outlook, 22 Sept.
-- **Confirm the stacked layout in Gmail and Outlook mobile**, then delete the grid code (`halfCard`,
-  `compactCard`, `match.ts`, `measure.ts`) and the reference's grid sections.
+- **Grid code deleted** (22 Sept) once Matt confirmed the stacked layout in Gmail and Outlook: `halfCard`,
+  `compactCard`, `ghostGrid`, `match.ts`, `measure.ts`, the grid tests and fixtures. The design reference keeps its
+  grid sections; `diff-reference` no longer compares them.
 - **Rendering assurance** (A5): certification on real clients + an automatic pre-send check. Proposed, not built.
 
 **Queued / open decisions (from the 16 Sept UX pass — pick up next session):**
@@ -412,7 +410,7 @@ re-render a campaign).
   send path, pre-send check in the tool). Assessed and rejected earlier: mailpeek (Vue) and Mailpit (SMTP
   capture — we don't send). None built.
 - **Equal-height card columns** — built 21 Sept as matched rows (B7), then made moot the same day by the
-  one-offer-per-row decision. Button alignment across cards no longer arises.
+  one-offer-per-row decision. Button alignment across cards no longer arises. Deleted 22 Sept.
 - **BCH / salary-sacrifice processing fee** — the £299.99 fee is forced on **PCH only** (first stage); decide
   BCH/salsac handling.
 
@@ -433,7 +431,7 @@ secret + confirming the Workers Paid plan; Tawk webchat (parked, renewals-only s
 
 ## B11. Key files index
 - Model & guard: `packages/schema/src/model.ts`, `capid.ts`, `text.ts` (the site's HTML entities, decoded at lookup and again wherever an offer reaches the server)
-- Rendering: `packages/render/src/render.ts`, `cards.ts`, `viewmodel.ts`, `layout.ts`, `links.ts`, `match.ts`, `measure.ts`
+- Rendering: `packages/render/src/render.ts`, `cards.ts`, `viewmodel.ts`, `layout.ts`, `links.ts`
 - Adapters: `packages/adapters/src/url/*`, `firecrawl/`, `brochure/` (`finder.ts`, `operate.ts`, `harvest.ts`, `ensure.ts`), `scripts/finder-sweep.mts`
 - Worker: `apps/api/src/index.ts` (routes + Cron), `campaigns.ts`, `profile.ts`, `templates.ts`,
   `suppressions.ts`, `retention.ts`, `roles.ts`, `files.ts`, `brochures.ts`, `lookup.ts`, `library.ts`,

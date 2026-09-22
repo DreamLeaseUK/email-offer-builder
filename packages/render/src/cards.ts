@@ -7,30 +7,32 @@
  *  2. buttons: padding on the <td>, display:block on the anchor, mso-padding-alt:0; no VML, square
  *     corners in Outlook classic are accepted
  *  3. images: explicit width and height, display:block, border:0, real alt; sizes hero 550×413,
- *     stack 218×164, grid2 262×197, grid3 166×125
+ *     stack 218×164 (the reference's grid2 262×197 and grid3 166×125 cards are no longer built)
  *  4. background colour, padding and radius on a <td>, never a <div>
  *  5. no negative margins; spacers are <td height> cells with font-size:0
  *  6. fixed-width pills: one-cell tables with the content width on the <td> (126 hero, 100 small)
  *  7. lock-* classes on every coloured cell for the forced-light overrides
- * Sizes come from layout.ts. Four sizes: hero (single), row (stack), half (grid2), compact (grid3).
+ * Sizes come from layout.ts. Two sizes: hero (single) and row (stack). The reference's two-up and
+ * three-up grid cards (half, compact) and their row matching (match.ts, measure.ts) were deleted on
+ * 22 Sept 2026, once Matt had confirmed the one-offer-per-row layout in Gmail and Outlook; a stored
+ * campaign that names a grid renders as the stacked layout (resolveLayout).
  * The only additions to the reference are the salary-sacrifice price blocks (from the v4 design), the
  * red "View this offer" link the brief requires under any non-view_offer button, and the optional
  * secondary contact link row in the signature (sender.secondaryContacts, in render.ts — opt-in, so the
  * fixture sender leaves it unset and diff-reference stays green).
  *
- * Badge pill counts (Matt, 14 Sept, New Outlook focus): ONE pill on every multi-offer card (stack,
- * grid2, grid3), up to THREE on the single-offer hero. The v5 reference itself caps at hero 2,
- * stack 1, grid2 1, grid3 1, so the multi-offer cards already match it; only the hero raise (2 → 3)
- * exceeds the reference, on Matt's instruction. Reason for one pill on multi-offer cards: a second
- * PILL_SMALL badge (120px + gap) cannot sit beside the first in a ~230px card column, so two badges
- * wrapped to a second row and threw the row's card heights out in New Outlook (which also drops
- * vertical-align:top). diff-reference therefore reports a third hero pill the reference lacks
- * (layout-A, intended); stack/grid2/grid3 stay identical to the reference.
+ * Badge pill counts (Matt, 14 Sept, New Outlook focus): ONE pill on the multi-offer row card, up to
+ * THREE on the single-offer hero. The v5 reference itself caps at hero 2 and stack 1, so the row card
+ * already matches it; only the hero raise (2 → 3) exceeds the reference, on Matt's instruction. Reason
+ * for one pill on a multi-offer card: a second PILL_SMALL badge (120px + gap) cannot sit beside the
+ * first in a ~230px card column, so two badges wrapped to a second row and threw the row's card heights
+ * out in New Outlook (which also drops vertical-align:top). diff-reference therefore reports a third
+ * hero pill the reference lacks (layout-A, intended); the row card stays identical to the reference.
  *
  * Knowing deviations of 21 and 22 Sept 2026 (Matt's tests: HTML pasted into New Outlook, read in Gmail and
  * Outlook mobile). The paste drops the <style> block and the conditional comments, so nothing may depend on either.
- * diff-reference reports 86 lines in all: 8 pre-date 21 Sept (2 the logo width, 6 the third hero pill), 14 are
- * a (10) and b (4), and 64 are d (50 the row card, 14 the hero); c sits outside the sections the script compares:
+ * diff-reference reports 82 lines in all: 8 pre-date 21 Sept (2 the logo width, 6 the third hero pill), 10 are
+ * a (6) and b (4), and 64 are d (50 the row card, 14 the hero); c sits outside the sections the script compares:
  *  a. pills are inline-block tables, not align="left" floats: the clearing spacer did not survive, and the
  *     make name ran beside the pill and broke in Gmail ("VOLKSWA / GEN").
  *  b. the row card's image column is calc()-fluid (its desktop width beside the details, the full card width
@@ -43,12 +45,10 @@
  *     phone, where the columns wrap, the reader met the legal line between the picture and the car's name (Matt's
  *     Gmail and Outlook screenshots, 22 Sept). Hero: the same heading row sits above the full-width image, carrying
  *     the card's rounded top corners; the image is square below it (Matt: "it should match").
- * And the tool now sends one offer per row (auto: 1 → single, 2+ → stack); grid2 / grid3 are kept for stored
- * campaigns but no longer offered. Rows are matched in height when a grid is rendered (match.ts).
+ * And the tool sends one offer per row (auto: 1 → single, 2+ → stack).
  */
 import { C, FF, LH, esc, mso, spacer, table } from './html.js';
-import type { Reserve } from './match.js';
-import { GRID2_CELL, GRID2_IMG, GRID2_IMG_H, GRID3_CELL, GRID3_IMG, GRID3_IMG_H, GRID_WIDTH, HERO_IMG, HERO_IMG_H, ICON, PILL_HERO, PILL_SMALL, STACK_CONTENT_COL, STACK_IMG, STACK_IMG_COL, STACK_IMG_H, STACK_INNER } from './layout.js';
+import { HERO_IMG, HERO_IMG_H, ICON, PILL_HERO, PILL_SMALL, STACK_CONTENT_COL, STACK_IMG, STACK_IMG_COL, STACK_IMG_H, STACK_INNER } from './layout.js';
 import type { CardVM, Stat } from './viewmodel.js';
 
 // ---------- pieces ----------
@@ -70,34 +70,28 @@ const pill = (text: string, width: number, padV: number, padH: number, font: num
 
 const badgeList = (vm: CardVM, max: number): string[] => [vm.hot, ...vm.badges].filter((b): b is string => !!b).slice(0, max);
 
-/** The same box as a pill with nothing in it: holds the badge row open on a card whose row-mate has a badge (match.ts). */
-const pillGhost = (width: number, padV: number, padH: number, font: number, lh: number, mb: number) =>
-  table('', `${PILL_BOX} margin:0 6px ${mb}px 0;`, `<tr><td width="${width}" style="width:${width}px; padding:${padV}px ${padH}px; font-size:${font}px; line-height:${lh}px; ${LH};">&nbsp;</td></tr>`);
-
 /** Hot badge first, then the rest, capped, then the gap above the make name. */
-function badgeRow(vm: CardVM, max: number, width: number, padV: number, padH: number, font: number, lh: number, mb: number, reserve = false): string {
+function badgeRow(vm: CardVM, max: number, width: number, padV: number, padH: number, font: number, lh: number, mb: number): string {
   const all = badgeList(vm, max);
-  if (all.length === 0 && reserve) return `${pillGhost(width, padV, padH, font, lh, mb)}
-${spacer(8)}`;
   if (all.length === 0) return '';
   return `${all.map((b) => pill(b, width, padV, padH, font, lh, mb)).join('\n')}\n${spacer(8)}`;
 }
 
 const eyebrow = (vm: CardVM, font: number, lh: number, mb: number) =>
   `<p class="lock-red" style="margin:0 0 ${mb}px 0; font-size:${font}px; line-height:${lh}px; ${LH}; font-weight:bold; letter-spacing:1px; text-transform:uppercase; color:${C.red};">${esc(vm.make.toUpperCase())}</p>`;
-const model = (vm: CardVM, font: number, lh: number, mb: number, cls = '', minHeight = 0) =>
-  `<p class="lock-ink${cls}" style="margin:0 0 ${mb}px 0; font-size:${font}px; line-height:${lh}px; ${LH}; font-weight:bold; color:${C.black};${minHeight ? ` min-height:${minHeight}px;` : ''}">${esc(vm.model)}</p>`;
-const derivative = (vm: CardVM, font: number, lh: number, mb: number, minHeight = 0, cls = '') =>
-  `<p class="lock-body${cls}" style="margin:0 0 ${mb}px 0; font-size:${font}px; line-height:${lh}px; ${LH}; color:${C.graphite};${minHeight ? ` min-height:${minHeight}px;` : ''}">${esc(vm.derivative)}</p>`;
+const model = (vm: CardVM, font: number, lh: number, mb: number) =>
+  `<p class="lock-ink" style="margin:0 0 ${mb}px 0; font-size:${font}px; line-height:${lh}px; ${LH}; font-weight:bold; color:${C.black};">${esc(vm.model)}</p>`;
+const derivative = (vm: CardVM, font: number, lh: number, mb: number) =>
+  `<p class="lock-body" style="margin:0 0 ${mb}px 0; font-size:${font}px; line-height:${lh}px; ${LH}; color:${C.graphite};">${esc(vm.derivative)}</p>`;
 const price = (vm: CardVM, big: number, lh: number, small: number, mb: number) =>
   `<p style="margin:0 0 ${mb}px 0; line-height:${lh}px; ${LH};">
 <span class="lock-red" style="font-size:${big}px; font-weight:bold; color:${C.red};">${esc(vm.price)}</span>
 <span class="lock-body" style="font-size:${small}px; color:${C.graphite};">${esc(vm.vatLabel)}</span>
 </p>`;
-const specP = (text: string, font: number, lh: number, mb: number, minHeight = 0) =>
-  `<p style="margin:0 0 ${mb}px 0; font-size:${font}px; line-height:${lh}px; ${LH}; color:${C.ink};${minHeight ? ` min-height:${minHeight}px;` : ''}">${esc(text)}</p>`;
+const specP = (text: string, font: number, lh: number, mb: number) =>
+  `<p style="margin:0 0 ${mb}px 0; font-size:${font}px; line-height:${lh}px; ${LH}; color:${C.ink};">${esc(text)}</p>`;
 
-/** Salary sacrifice, stack and grid2: both nets stacked. */
+/** Salary sacrifice, stack: both nets stacked. */
 const netPair = (vm: CardVM, big: number, mid: number, small: number, suffix: string) =>
   `<p style="margin:0 0 2px 0; line-height:${big + 4}px; ${LH};"><span class="lock-red" style="font-size:${big}px; font-weight:bold; color:${C.red};">${esc(vm.net20 ?? '')}</span> <span class="lock-body" style="font-size:${small}px; color:${C.graphite};">net &middot; 20%${suffix}</span></p>
 <p style="margin:0 0 8px 0; line-height:${mid + 4}px; ${LH};"><span class="lock-red" style="font-size:${mid}px; font-weight:bold; color:${C.red};">${esc(vm.net40 ?? '')}</span> <span class="lock-body" style="font-size:${small}px; color:${C.graphite};">net &middot; 40%${suffix}</span></p>`;
@@ -139,7 +133,7 @@ function statsRow(stats: Stat[]): string {
   return table('width="100%"', 'margin-bottom:18px;', `<tr>\n${stats.map((s, i) => `${i > 0 ? `${gapTd}\n` : ''}${tile(s, pct, '10px', 10, 14, 0.6, 15, 20, 2)}`).join('\n')}\n</tr>`);
 }
 
-/** Two-by-two tiles (stack and grid2). */
+/** Two-by-two tiles (stack). */
 function statsPairs(stats: Stat[], mb: number): string {
   if (stats.length === 0) return '';
   const rows: string[] = [];
@@ -184,15 +178,9 @@ const brochureLinkTd = (b: Brochure, label: string, font: number, lh: number, pa
 const brochureHero = (b: Brochure) => table('', 'display:inline-block; vertical-align:middle;', `<tr>\n${brochureIconTd(b, '10px 6px 10px 16px')}\n${brochureLinkTd(b, b.label, 13, 18, '10px 0')}\n</tr>`);
 /** Stack: under the button, left aligned. */
 const brochureStack = (b: Brochure) => table('', 'margin-top:8px;', `<tr>\n${brochureIconTd(b, '0 6px 0 0')}\n${brochureLinkTd(b, b.label, 13, 18, '')}\n</tr>`);
-/** Grids: under the full-width button, centred. */
-const brochureCentred = (b: Brochure, label: string, font: number, lh: number, iconGap: number) =>
-  table('align="center"', 'margin:8px auto 0 auto;', `<tr>\n${brochureIconTd(b, `0 ${iconGap}px 0 0`)}\n${brochureLinkTd(b, label, font, lh, '')}\n</tr>`);
 
-const smallPrint = (text: string, margin: string, font: number, lh: number, withFont = false, minHeight = 0) =>
-  `<p class="lock-body" style="margin:${margin}; ${withFont ? FF + ' ' : ''}font-size:${font}px; line-height:${lh}px; ${LH}; color:${C.graphite};${minHeight ? ` min-height:${minHeight}px;` : ''}">${esc(text)}</p>`;
-
-/** The brochure link row held open on a card whose row-mate has a brochure: its 8px top margin plus the taller of text and glyph. */
-const brochureGhost = (lh: number) => spacer(8 + Math.max(lh, ICON));
+const smallPrint = (text: string, margin: string, font: number, lh: number) =>
+  `<p class="lock-body" style="margin:${margin}; font-size:${font}px; line-height:${lh}px; ${LH}; color:${C.graphite};">${esc(text)}</p>`;
 
 // ---------- A. Hero (single) — image on top ----------
 
@@ -307,88 +295,3 @@ ${smallPrint(vm.smallPrint, '12px 0 0 0', 11, 16)}
   );
 }
 
-// ---------- C. Half (grid2) ----------
-
-export function halfCard(vm: CardVM, r: Reserve = {}): string {
-  const priceBlock = vm.isSalsac ? netPair(vm, 28, 22, 12, '') : price(vm, 28, 32, 12, 8);
-  const card = table(
-    'width="100%"',
-    `border:1px solid ${C.border}; border-radius:16px;`,
-    `<tr>
-<td class="lock-bg" style="padding:0; background-color:${C.white}; border-radius:16px 16px 0 0;">
-${img(vm.imageUrl, GRID2_IMG, GRID2_IMG_H, vm.alt, '16px 16px 0 0', '100%')}
-</td>
-</tr>
-<tr>
-<td style="padding:14px 16px 18px 16px; ${FF}">
-${badgeRow(vm, 1, PILL_SMALL, 3, 10, 11, 14, 6, r.badge)}
-${eyebrow(vm, 11, 14, 2)}
-${model(vm, 20, 26, 2, '', r.model)}
-${derivative(vm, 13, 18, 10, r.derivative ?? 36)}
-${priceBlock}
-${specP(vm.specLine, 12, 18, 12, r.spec)}
-${statsPairs(vm.stats, 12)}
-${button(vm.cta.href, vm.cta.label, 11, 12, 14, 18, { full: true })}
-${vm.viewHref ? viewLink(vm.viewHref, 13, 18, 8, true) : ''}
-${vm.brochure ? brochureCentred(vm.brochure, vm.brochure.label, 12, 16, 6) : r.brochure ? brochureGhost(16) : ''}
-${smallPrint(vm.smallPrint, '12px 0 0 0', 11, 16, false, r.smallPrint)}
-</td>
-</tr>`,
-  );
-  return table('class="card-cell"', `display:inline-block; width:100%; max-width:${GRID2_CELL}px; vertical-align:top;`, `<tr>\n<td style="padding:0 12px 20px 12px; font-size:14px; text-align:left;">\n${card}\n</td>\n</tr>`);
-}
-
-// ---------- D. Compact (grid3) ----------
-
-export function compactCard(vm: CardVM, r: Reserve = {}): string {
-  const badge = badgeList(vm, 1)[0];
-  const badgeBlock = badge
-    ? table('width="100%"', 'margin-bottom:6px;', `<tr><td align="center" class="lock-white" style="background-color:${C.orange}; border-radius:999px; padding:2px 8px; ${FF} font-size:10px; line-height:14px; ${LH}; font-weight:bold; color:${C.white};">${esc(badge)}</td></tr>`)
-    : r.badge
-      ? table('width="100%"', 'margin-bottom:6px;', `<tr><td style="padding:2px 8px; font-size:10px; line-height:14px; ${LH};">&nbsp;</td></tr>`)
-      : '';
-  const priceBlock = vm.isSalsac
-    ? `<p style="margin:0; line-height:26px; ${LH};"><span class="lock-red compact-price" style="font-size:22px; font-weight:bold; color:${C.red};">${esc(vm.net20 ?? '')}</span></p>
-<p class="lock-body" style="margin:0 0 2px 0; font-size:10px; line-height:14px; ${LH}; color:${C.graphite};">net &middot; 20% taxpayer &middot; ${esc(vm.net40 ?? '')} at 40%</p>`
-    : `<p style="margin:0; line-height:26px; ${LH};"><span class="lock-red compact-price" style="font-size:22px; font-weight:bold; color:${C.red};">${esc(vm.price)}</span></p>
-<p class="lock-body" style="margin:0 0 2px 0; font-size:10px; line-height:14px; ${LH}; color:${C.graphite};">${esc(vm.vatLabel)}</p>`;
-  const card = table(
-    'width="100%"',
-    `border:1px solid ${C.border}; border-radius:12px;`,
-    `<tr>
-<td class="lock-bg" style="padding:0; background-color:${C.white}; border-radius:12px 12px 0 0;">
-${img(vm.imageUrl, GRID3_IMG, GRID3_IMG_H, vm.alt, '12px 12px 0 0', '100%')}
-</td>
-</tr>
-<tr>
-<td style="padding:12px 12px 14px 12px; ${FF}">
-${badgeBlock}
-${eyebrow(vm, 10, 14, 2)}
-${model(vm, 17, 22, 2, ' compact-model', r.model)}
-${derivative(vm, 11, 16, 8, r.derivative ?? 32, ' compact-deriv')}
-${priceBlock}
-<p class="lock-body" style="margin:0 0 8px 0; font-size:10px; line-height:14px; ${LH}; color:${C.graphite};">${esc(vm.validityLine)}</p>
-<p class="compact-spec" style="margin:0 0 10px 0; font-size:11px; line-height:16px; ${LH}; color:${C.ink};${r.spec ? ` min-height:${r.spec}px;` : ''}">${esc(vm.specShort)}</p>
-${button(vm.cta.href, vm.cta.label, 9, 10, 13, 16, { full: true })}
-${vm.viewHref ? viewLink(vm.viewHref, 11, 14, 8, true) : ''}
-${vm.brochure ? brochureCentred(vm.brochure, vm.brochure.shortLabel, 11, 14, 5) : r.brochure ? brochureGhost(14) : ''}
-</td>
-</tr>`,
-  );
-  return table('class="card-cell"', `display:inline-block; width:100%; max-width:${GRID3_CELL}px; vertical-align:top;`, `<tr>\n<td style="padding:0 12px 16px 12px; font-size:14px; text-align:left;">\n${card}\n</td>\n</tr>`);
-}
-
-/**
- * Lay out inline-block cards inside an Outlook ghost table: one ghost <td> per card, in rows of
- * perRow, so Outlook classic keeps the columns. The ghost td count always matches the card count.
- */
-export function ghostGrid(cards: string[], perRow: number, cellWidth: number): string {
-  const cell = `<td width="${cellWidth}" valign="top">`;
-  const open = mso(`<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="${GRID_WIDTH}"><tr>${cell}`);
-  const body = cards.map((card, i) => {
-    const last = i === cards.length - 1;
-    const after = last ? mso('</td></tr></table>') : (i + 1) % perRow === 0 ? mso(`</td></tr><tr>${cell}`) : mso(`</td>${cell}`);
-    return `${card}\n${after}`;
-  });
-  return `${open}\n${body.join('\n')}`;
-}

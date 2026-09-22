@@ -47,7 +47,7 @@ describe('POST /api/campaigns', () => {
 
   it('assembles, renders, writes the hosted page and stores the campaign with its link map', async () => {
     const { campaign, hostedUrl, layout } = await createCampaign();
-    expect(layout).toBe('grid2');
+    expect(layout).toBe('stack'); // the draft names grid2 (accepted for stored campaigns); the grids were deleted 22 Sept, it renders stacked
     expect(campaign.hostedPage.slug).toMatch(/^[A-Za-z0-9_-]{16,}$/);
     expect(campaign.createdBy).toBe(USER);
     expect(campaign.status).toBe('draft');

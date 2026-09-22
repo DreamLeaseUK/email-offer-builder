@@ -7,12 +7,11 @@
 import type { Brochure, Campaign, ComplianceBlock, Rendered, Template, TemplateLayout } from '@offer-mailer/schema';
 import { assertNoCapId, availableSecondaryContacts, SECONDARY_CONTACT_LABELS } from '@offer-mailer/schema';
 import type { ContactMethod } from '@offer-mailer/schema';
-import { compactCard, ghostGrid, halfCard, heroCard, rowCard } from './cards.js';
+import { heroCard, rowCard } from './cards.js';
 import { C, FF, FONT, LH, esc, mso, paragraphs, table } from './html.js';
-import { EMAIL_WIDTH, GRID2_CELL, GRID3_CELL, GRID_PAD, HEADSHOT, LOGO_H, LOGO_W, SIDE } from './layout.js';
+import { EMAIL_WIDTH, HEADSHOT, LOGO_H, LOGO_W, SIDE } from './layout.js';
 import { Links } from './links.js';
-import { matchRows } from './match.js';
-import { EUROPEAN_BROCHURE_NOTE_SHARED, RenderError, buildCards, type CardVM } from './viewmodel.js';
+import { RenderError, buildCards, type CardVM } from './viewmodel.js';
 
 export { RenderError };
 
@@ -36,10 +35,12 @@ export interface RenderOptions {
 /**
  * auto: 1 → single, 2 or more → stack: one offer per row (Matt, 21 Sept 2026). Side-by-side cards crowded
  * the email and were the hard part to get right in every client: Outlook mobile kept two columns, and the
- * rows came out uneven. The grids still render when a campaign names one, but the tool no longer offers them.
+ * rows came out uneven. The two-up / three-up grid cards were deleted on 22 Sept once Matt had confirmed the
+ * stacked layout in Gmail and Outlook; the schema still accepts 'grid2' / 'grid3' so a campaign stored with
+ * one still parses, and it renders as the stacked layout.
  */
 export function resolveLayout(layout: Campaign['layout'], offerCount: number): TemplateLayout {
-  if (layout !== 'auto') return layout;
+  if (layout === 'single' || layout === 'stack') return layout;
   return offerCount === 1 ? 'single' : 'stack';
 }
 
@@ -104,17 +105,10 @@ export const STYLE = `  /* Resets — enhancement only, no layout depends on thi
   /* Progressive enhancement. Cards already wrap without this. */
   @media only screen and (max-width: 480px) {
     .wrapper { width: 100% !important; }
-    .card-cell { max-width: 100% !important; width: 100% !important; }
     .gutter { padding-left: 16px !important; padding-right: 16px !important; }
     .stack-col { max-width: 100% !important; width: 100% !important; }
     .fluid-img { width: 100% !important; height: auto !important; max-width: 100% !important; }
     .cta-btn a { white-space: normal !important; }
-    /* compact cards adopt the grid2 type scale once they are full width */
-    .compact-model { font-size: 20px !important; line-height: 26px !important; }
-    .compact-deriv { font-size: 13px !important; line-height: 18px !important; min-height: 0 !important; }
-    .compact-price { font-size: 28px !important; }
-    .compact-spec { font-size: 12px !important; }
-    .center-sm { text-align: center !important; }
   }`;
 
 const MSO_HEAD = `<!--[if mso]>
@@ -251,26 +245,7 @@ ${greeting}${paragraphs(campaign.intro, `margin:0 0 14px 0; font-size:16px; line
     </td>
   </tr>`;
 
-  let offersHtml: string;
-  switch (layout) {
-    case 'single':
-      offersHtml = `<tr>\n<td class="gutter" style="padding:12px ${SIDE}px 0 ${SIDE}px;">\n${cards.map(heroCard).join('\n')}\n</td>\n</tr>`;
-      break;
-    case 'stack':
-      offersHtml = `<tr>\n<td class="gutter" style="padding:12px ${SIDE}px 0 ${SIDE}px;">\n${cards.map(rowCard).join('\n')}\n</td>\n</tr>`;
-      break;
-    case 'grid2':
-      offersHtml = `<tr>\n<td style="padding:12px ${GRID_PAD}px 0 ${GRID_PAD}px; font-size:0; text-align:center;">\n${ghostGrid(cards.map((c, i) => halfCard(c, matchRows(cards, 'grid2')[i])), 2, GRID2_CELL)}\n</td>\n</tr>`;
-      break;
-    case 'grid3': {
-      const feeParts = ['All offers: processing fee £299.99 inc VAT.'];
-      if (cards.some((c) => c.brochure)) feeParts.push("Brochure figures are the manufacturer's and may differ from this offer.");
-      if (cards.some((c) => c.brochure?.european)) feeParts.push(EUROPEAN_BROCHURE_NOTE_SHARED);
-      offersHtml = `<tr>\n<td style="padding:12px ${GRID_PAD}px 0 ${GRID_PAD}px; font-size:0; text-align:center;">\n${ghostGrid(cards.map((c, i) => compactCard(c, matchRows(cards, 'grid3')[i])), 3, GRID3_CELL)}\n</td>\n</tr>
-<tr>\n<td class="gutter" style="padding:0 ${SIDE}px 8px ${SIDE}px;">\n${bodyP(esc(feeParts.join(' ')), 11, 16, '0', FF + ' ')}\n</td>\n</tr>`;
-      break;
-    }
-  }
+  const offersHtml = `<tr>\n<td class="gutter" style="padding:12px ${SIDE}px 0 ${SIDE}px;">\n${cards.map(layout === 'single' ? heroCard : rowCard).join('\n')}\n</td>\n</tr>`;
 
   const s = campaign.sender;
   const sigEmail = ctx.links.track('sig-email', `mailto:${s.email}`);

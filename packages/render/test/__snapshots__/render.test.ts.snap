@@ -44,17 +44,10 @@ exports[`render() > matches the snapshot for the default fixture 1`] = `
   /* Progressive enhancement. Cards already wrap without this. */
   @media only screen and (max-width: 480px) {
     .wrapper { width: 100% !important; }
-    .card-cell { max-width: 100% !important; width: 100% !important; }
     .gutter { padding-left: 16px !important; padding-right: 16px !important; }
     .stack-col { max-width: 100% !important; width: 100% !important; }
     .fluid-img { width: 100% !important; height: auto !important; max-width: 100% !important; }
     .cta-btn a { white-space: normal !important; }
-    /* compact cards adopt the grid2 type scale once they are full width */
-    .compact-model { font-size: 20px !important; line-height: 26px !important; }
-    .compact-deriv { font-size: 13px !important; line-height: 18px !important; min-height: 0 !important; }
-    .compact-price { font-size: 28px !important; }
-    .compact-spec { font-size: 12px !important; }
-    .center-sm { text-align: center !important; }
   }
 </style>
 </head>
