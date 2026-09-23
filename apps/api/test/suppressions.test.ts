@@ -9,7 +9,7 @@ import type { Env } from '../src/env.js';
 
 const USER = 'matt.wilson@dreamlease.co.uk';
 const authed = (over: Partial<Env> = {}): Env => ({ ...env, DEV_USER_EMAIL: USER, ...over }) as Env;
-const rep = authed({ DEV_USER_EMAIL: 'sam.carter@dreamlease.co.uk' });
+const salesperson = authed({ DEV_USER_EMAIL: 'sam.carter@dreamlease.co.uk' });
 const { DEV_USER_EMAIL: _dev, ...anonRest } = env as Env;
 const anon = anonRest as Env;
 
@@ -21,8 +21,8 @@ describe('suppression register', () => {
     expect((await post('/api/suppressions', { email: 'x@y.com' }, anon)).status).toBe(503);
   });
 
-  it('adds an opt-out (any rep), lists it, and checks case/whitespace-insensitively', async () => {
-    expect((await post('/api/suppressions', { email: '  OptOut@Example.com ', note: 'replied stop' }, rep)).status).toBe(201);
+  it('adds an opt-out (any salesperson), lists it, and checks case/whitespace-insensitively', async () => {
+    expect((await post('/api/suppressions', { email: '  OptOut@Example.com ', note: 'replied stop' }, salesperson)).status).toBe(201);
 
     const list = (await (await app.request('/api/suppressions', {}, authed())).json()) as { suppressions: { email: string; addedBy: string; note: string | null }[] };
     const row = list.suppressions.find((s) => s.email === 'optout@example.com');
@@ -43,7 +43,7 @@ describe('suppression register', () => {
     await post('/api/suppressions', { email: 'remove-me@example.com' }, authed());
     expect(await check('remove-me@example.com', authed())).toBe(true);
 
-    expect((await post('/api/suppressions/remove', { email: 'remove-me@example.com' }, rep)).status).toBe(403); // salesperson blocked
+    expect((await post('/api/suppressions/remove', { email: 'remove-me@example.com' }, salesperson)).status).toBe(403); // salesperson blocked
     expect(await check('remove-me@example.com', authed())).toBe(true); // still suppressed
 
     expect((await post('/api/suppressions/remove', { email: 'remove-me@example.com' }, authed())).status).toBe(200); // admin

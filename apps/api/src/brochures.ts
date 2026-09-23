@@ -4,7 +4,7 @@
  *                                                        { state, brochure?, search?, remembered? }:
  *                                                        state 'none' means nothing attached — `search` says
  *                                                        what was checked and the UI offers the manual paths.
- *   POST /api/brochures/accept { make, model }         the rep accepts what the finder would not attach by itself:
+ *   POST /api/brochures/accept { make, model }         the salesperson accepts what the finder would not attach by itself:
  *                                                        an official page / request form, or the European
  *                                                        English-language edition it offered (URL from the stored search)
  *   POST /api/brochures/manual { make, model, url } | multipart pdf   the manual path
@@ -102,7 +102,7 @@ brochuresApi.post('/brochures/accept', async (c) => {
   const search = await repo.findSearch(vehicleKey(vehicle));
   const createdBy = c.get('user').email;
   const key = c.env.FIRECRAWL_API_KEY;
-  // the European edition the finder offered is only fetched and stored now, because the rep asked for it
+  // the European edition the finder offered is only fetched and stored now, because the salesperson asked for it
   const b = !search
     ? undefined
     : isEuropeanOffer(search)

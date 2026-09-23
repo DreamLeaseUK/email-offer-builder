@@ -10,7 +10,7 @@ import type { Env } from '../src/env.js';
 
 const USER = 'matt.wilson@dreamlease.co.uk';
 const authed = (over: Partial<Env> = {}): Env => ({ ...env, DEV_USER_EMAIL: USER, ...over }) as Env;
-const rep = authed({ DEV_USER_EMAIL: 'sam.carter@dreamlease.co.uk' });
+const salesperson = authed({ DEV_USER_EMAIL: 'sam.carter@dreamlease.co.uk' });
 
 const body = { name: 'Autumn 2026', complianceBlocks: fixtureTemplate.complianceBlocks, footer: fixtureTemplate.footer };
 const create = (e: Env, over: Record<string, unknown> = {}) =>
@@ -19,8 +19,8 @@ type Tmpl = { id: string; status: string; version: number; markupVersion: number
 
 describe('template admin', () => {
   it('is admin-only — a salesperson gets 403', async () => {
-    expect((await app.request('/api/templates', {}, rep)).status).toBe(403);
-    expect((await create(rep, { name: 'Nope' })).status).toBe(403);
+    expect((await app.request('/api/templates', {}, salesperson)).status).toBe(403);
+    expect((await create(salesperson, { name: 'Nope' })).status).toBe(403);
   });
 
   it('creates a draft (v1, markup pinned, not approved), then lists and gets it', async () => {

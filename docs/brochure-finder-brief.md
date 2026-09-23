@@ -1,26 +1,26 @@
 # Brief: rebuild brochure discovery ("Find brochure")
 
 > **STATUS — BUILT 18 Sept 2026, and the design below was changed on the way.** Read `status-2026-09-18.md` §2–§4
-> first. What changed: §5's "rep picks from a candidate list" was **dropped** (Matt: the rep must not pick) — the
+> first. What changed: §5's "salesperson picks from a candidate list" was **dropped** (Matt: the salesperson must not pick) — the
 > finder verifies the document itself and attaches nothing when unsure; official **web brochures** are accepted as
 > well as PDFs; outcomes are six statuses with a separate `documentType`; "not found" carries a trace; the
 > promotions register is **not** changed for brochures (§5 step 6 and §6 "Register" do not apply); §3's "UNCOMMITTED"
 > note is stale (those changes were committed in `70aadd6` / `5f40928`, and the allowlist has since been deleted).
 > §2 (the problem) still stands. §4 (the thinking gaps) stands except its second bullet and the "force a human
 > choice" in its fourth: the trust decision stayed with the machine, which reads and verifies the document itself;
-> the rep only accepts an official page or request form the finder surfaces, or uploads / pastes. §7 (constraints)
+> the salesperson only accepts an official page or request form the finder surfaces, or uploads / pastes. §7 (constraints)
 > stands except item 3's "chosen brochure source … recorded verbatim in the register": the register has no
 > brochure column. §9's open questions are closed: brochures
-> outrank price/spec guides; a found or uploaded brochure is shared by every rep for 90 days; the junk-host list is in
+> outrank price/spec guides; a found or uploaded brochure is shared by every salesperson for 90 days; the junk-host list is in
 > `finder.ts`.
 >
 > **UPDATE 21 Sept 2026 — the UK-only rule was loosened (Matt).** The UK edition is still the target, but when none
 > verifies the finder now falls back to the manufacturer's own **European brochure in English** (`market: 'eu'`),
-> which is **offered to the rep and never attached by itself** (`status-2026-09-21.md` §10). Discovery itself was
+> which is **offered to the salesperson and never attached by itself** (`status-2026-09-21.md` §10). Discovery itself was
 > rebuilt the same day as finder-1.4 (Map, the model's page operated inside Firecrawl, validation last): §9.
 > §4's "Non-UK leakage" concern is handled by marking, not refusing: the record is titled "European edition" and the
-> rep is told. Rules and live evidence (Polestar 2): `status-2026-09-21.md` §2–§4. **The same afternoon (finder-1.3)**
-> three defects that made it miss brochures a rep finds in 30 seconds were fixed — a numeric model filed without its
+> salesperson is told. Rules and live evidence (Polestar 2): `status-2026-09-21.md` §2–§4. **The same afternoon (finder-1.3)**
+> three defects that made it miss brochures a salesperson finds in 30 seconds were fixed — a numeric model filed without its
 > make ("R4-eBrochure.pdf"), a brochure offered through a button rather than a link (Geely EX2), and a document that
 > lost its "linked from the official site" status when the search had found it first: `status-2026-09-21.md` §8.
 
@@ -31,7 +31,7 @@
 
 ## 1. Objective
 
-A rep assembling an offer email can attach the vehicle's **manufacturer brochure** (a PDF) to an offer. The brochure is downloaded, stored on our own R2 (CAP‑ID‑free), and served to recipients from `/b/:id`. Because this is an FCA‑regulated financial promotion, the attached document must be the **genuine manufacturer brochure for that vehicle**, not a dealer/aggregator/other‑market document.
+A salesperson assembling an offer email can attach the vehicle's **manufacturer brochure** (a PDF) to an offer. The brochure is downloaded, stored on our own R2 (CAP‑ID‑free), and served to recipients from `/b/:id`. Because this is an FCA‑regulated financial promotion, the attached document must be the **genuine manufacturer brochure for that vehicle**, not a dealer/aggregator/other‑market document.
 
 The current implementation does not reliably achieve this. This brief replaces the discovery mechanism.
 
@@ -63,55 +63,55 @@ Verified: 52 adapter tests pass; Kia EV2 now harvests a real PDF (`kia.com/.../u
 ## 4. Gaps / shortfalls in thinking (own these; the redesign exists because of them)
 
 - **Defended the static allowlist as a "compliance control".** It is not a control — it is an unmaintainable liability. The trust question ("is this the real manufacturer brochure?") cannot be answered by a hand‑typed domain list.
-- **Put the trust decision in the wrong place — the machine.** The harvest autonomously decides which PDF is trustworthy and attaches it silently. The right decision‑maker is the **rep**, who knows the exact vehicle and can recognise its brochure. This tool's whole ethos is "a human presses send" (drafts only); brochure selection should be the same.
+- **Put the trust decision in the wrong place — the machine.** The harvest autonomously decides which PDF is trustworthy and attaches it silently. The right decision‑maker is the **salesperson**, who knows the exact vehicle and can recognise its brochure. This tool's whole ethos is "a human presses send" (drafts only); brochure selection should be the same.
 - **Even the improved matcher still fails** on non‑`/uk/` country markers (`denzauk`, deep CDN paths). Patching path rules per brand is the same losing game.
-- **Silent failure reaches customers.** When discovery is wrong there is no signal to the rep — a dead/wrong brochure link ships. Any redesign must make "no confident result" visible and force a human choice.
+- **Silent failure reaches customers.** When discovery is wrong there is no signal to the salesperson — a dead/wrong brochure link ships. Any redesign must make "no confident result" visible and force a human choice.
 - **No ranking / selection.** The harvest grabs the first allowlisted PDF (it took Kia's *specifications* sheet, not the fuller *brochure*). There is no notion of "best" candidate.
 - **Non‑UK leakage** (euro‑priced / other‑market brochures) is only softly mitigated by a `£`/`€` content peek.
 
-## 5. Target design — "the machine finds, the rep confirms"
+## 5. Target design — "the machine finds, the salesperson confirms"
 
 Replace the allowlist **gate** with a **candidate‑and‑confirm** flow:
 
-1. Rep clicks **Find brochure** on an offer.
+1. Salesperson clicks **Find brochure** on an offer.
 2. Server runs Firecrawl search(es) for `<make> <model> brochure pdf` (+ a spec/price‑guide variant), UK‑located.
 3. Server **ranks candidates** and returns the top 3–5, each with: source domain, page/PDF title, file type (PDF vs a request/landing page), size if known, and a UK/– confidence signal. It **excludes obvious junk** via a small stable **denylist** (aggregators & review & dealer sites: `scribd`, `carwow`, `autocatalogarchive`, `auto-brochures`, `motaclarity`, dealer CDNs, `pentagon-group`, `yumpu`, `issuu`, `slideshare`, etc.).
-4. Rep **picks one** (or picks none → manual upload/paste, which already exists).
+4. Salesperson **picks one** (or picks none → manual upload/paste, which already exists).
 5. Server downloads the chosen file via **`rawBase64`** (works past bot protection), verifies it is a PDF (`%PDF` magic, ≤ 40 MB), stores it under `brochures/<sha256>.pdf` in R2, and records a `Brochure` with `source: 'rep_selected'` (add to the enum) and `ukVerified.by: 'user'`.
-6. The chosen **source URL and the rep** are recorded in the promotions register (the compliance trail).
+6. The chosen **source URL and the salesperson** are recorded in the promotions register (the compliance trail).
 
 **Why this is better *and* more compliant:** a human who knows the car confirms the exact document; the register records who chose what and from where. That is a stronger, auditable control than a domain list — and it needs **zero per‑brand maintenance**. Kia on kia.com, Denza on denza.com/uk, next month's brand on whatever: irrelevant.
 
 ### Keep
 - `rawBase64` download + R2 hosting + `/b/:id` serving.
 - Manual upload / paste‑link fallback (`POST /api/brochures/manual`) — the always‑works path.
-- The 24h/90‑day cache and "one current brochure per `vehicleKey`, shared across offers/reps" model (`ensureBrochure`), but keyed off the rep‑selected result.
+- The 24h/90‑day cache and "one current brochure per `vehicleKey`, shared across offers/salespeople" model (`ensureBrochure`), but keyed off the salesperson‑selected result.
 - The `Brochure` schema, `assertNoCapId`, three‑layer separation.
 
 ### Remove / demote
 - The **static allowlist as a hard gate** (`config/manufacturer-uk-domains.json` + `isAllowlisted` filtering in `harvest.ts`). At most keep a small **denylist** of junk hosts to clean the candidate list. Delete the allowlist audit script and the per‑brand aliases once the gate is gone.
-- The silent autonomous "gate to a manufacturer page" fallback — replaced by the rep either picking a candidate or using manual.
+- The silent autonomous "gate to a manufacturer page" fallback — replaced by the salesperson either picking a candidate or using manual.
 
 ## 6. Concrete work items
 
-- **`packages/adapters/src/brochure/`**: new `findCandidates(vehicle, deps)` → ranked `BrochureCandidate[]` (`{ url, host, title, kind: 'pdf'|'page', ukSignal, sizeBytes? }`). Junk denylist. Keep `fetchFile`/download/store. `ensure` becomes: return cached current copy, else return candidates for the rep to choose (no autonomous attach).
+- **`packages/adapters/src/brochure/`**: new `findCandidates(vehicle, deps)` → ranked `BrochureCandidate[]` (`{ url, host, title, kind: 'pdf'|'page', ukSignal, sizeBytes? }`). Junk denylist. Keep `fetchFile`/download/store. `ensure` becomes: return cached current copy, else return candidates for the salesperson to choose (no autonomous attach).
 - **`packages/schema`**: add `BrochureCandidate`; add `'rep_selected'` to `Brochure.source`.
 - **`apps/api/src/brochures.ts`**: `POST /api/brochures/candidates {make,model}` → candidate list (Firecrawl). `POST /api/brochures/select {make,model,url}` → download+store+return the `Brochure`. Keep `/manual`, `/current`, `/b/:id`. Remove the allowlist import/gate.
-- **`apps/web/src/Compose.tsx` (`BrochureControl`)**: "Find brochure" → show candidate cards (source, title, PDF badge, UK signal) → rep picks → attaches; "None of these / upload" → existing manual UI. Show a spinner/progress during the ~10–20s search+fetch (Matt also asked for a progress indicator).
+- **`apps/web/src/Compose.tsx` (`BrochureControl`)**: "Find brochure" → show candidate cards (source, title, PDF badge, UK signal) → salesperson picks → attaches; "None of these / upload" → existing manual UI. Show a spinner/progress during the ~10–20s search+fetch (Matt also asked for a progress indicator).
 - **Register**: include the brochure's chosen `sourceUrl` + selector in the promotions register row.
 
 ## 7. Constraints (non‑negotiable — from `CLAUDE.md`)
 
 1. **CAP IDs never stored.** Only our R2 URL is persisted; never a source image URL. `assertNoCapId` guards every persisted object.
 2. **Three layers, no leaks.** Adapters don't import each other; `render()` is the only HTML producer; React never builds email HTML.
-3. **Compliance locked.** Rep‑authored copy + the chosen brochure source are recorded verbatim in the register; drafts only.
+3. **Compliance locked.** Salesperson‑authored copy + the chosen brochure source are recorded verbatim in the register; drafts only.
 4. **Drafts only.** The Worker never sends.
 5. **Firecrawl is the one metered service** — cap credits per find (search ≈ 2, rawBase64 fetch ≈ 2); cache results 24h+ per `vehicleKey`. Cloudflare only (Workers, D1, R2, Images); nothing CPU‑heavy in the request path.
 
 ## 8. Acceptance criteria
 
 With **no per‑brand domain configuration**:
-- **Kia EV2** (global domain, bot‑protected): Find brochure returns the `kia.com/.../uk/…` PDF among candidates; rep picks it; it downloads, hosts, serves from `/b/:id`, and renders "Download brochure (PDF)".
+- **Kia EV2** (global domain, bot‑protected): Find brochure returns the `kia.com/.../uk/…` PDF among candidates; salesperson picks it; it downloads, hosts, serves from `/b/:id`, and renders "Download brochure (PDF)".
 - **BMW / Vauxhall** (legacy `.co.uk`): still resolve to the right PDF.
 - **Denza** (pre‑launch, no UK PDF yet): returns candidates or a clean "no confident brochure found — upload/paste" with **no dead link ever shipped**.
 - **Aggregator junk** (scribd/carwow/dealer): never appears as a candidate.
@@ -121,5 +121,5 @@ With **no per‑brand domain configuration**:
 ## 9. Open questions for Matt
 
 - Candidate ranking: prefer a PDF whose URL/title contains "brochure" over "spec/price guide"? Show both?
-- Should a rep‑selected brochure be reusable by other reps for the same model automatically (cache), or is selection per‑campaign?
+- Should a salesperson‑selected brochure be reusable by other salespeople for the same model automatically (cache), or is selection per‑campaign?
 - Denylist: confirm the initial junk‑host list.

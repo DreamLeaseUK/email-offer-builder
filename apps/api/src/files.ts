@@ -68,7 +68,7 @@ export function brochureStore(env: Env): BrochureStore {
   };
 }
 
-// ---------- rep portrait (headshot) ----------
+// ---------- salesperson portrait (headshot) ----------
 
 export const HEADSHOT_PX = 256;
 

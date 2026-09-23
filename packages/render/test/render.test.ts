@@ -92,13 +92,13 @@ describe('render()', () => {
     expect(() => render(campaign, fixtureTemplate, { publicBaseUrl: BASE })).toThrow(/whatsapp/);
   });
 
-  it('renders the chosen secondary contact links in the signature, in the rep’s order', () => {
+  it('renders the chosen secondary contact links in the signature, in the salesperson’s order', () => {
     const { campaign, brochures } = fixtureCampaign({ offerCount: 1, layout: 'single' });
     campaign.sender = { ...campaign.sender, secondaryContacts: ['whatsapp', 'call', 'book'] };
     const out = render(campaign, fixtureTemplate, { publicBaseUrl: BASE, brochures });
     const at = ['>WhatsApp</a>', '>Call</a>', '>Book a call</a>'].map((t) => out.html.indexOf(t));
     expect(at.every((i) => i > 0)).toBe(true);
-    expect(at[0]! < at[1]! && at[1]! < at[2]!).toBe(true); // rep's chosen order preserved
+    expect(at[0]! < at[1]! && at[1]! < at[2]!).toBe(true); // salesperson's chosen order preserved
     expect(out.links['sig-whatsapp']).toBe('https://wa.me/447700900123'); // http link is redirect-tracked
     expect(out.links['sig-book']).toBe('https://outlook.office.com/book/DreamLease@dreamlease.co.uk/');
     expect(out.html).toMatch(/href="tel:01234567890"/); // tel stays direct
@@ -216,7 +216,7 @@ describe('render()', () => {
     expect(out.html).not.toMatch(/per month inc VAT/);
   });
 
-  it('escapes rep-authored text', () => {
+  it('escapes salesperson-authored text', () => {
     const { campaign, brochures } = fixtureCampaign({ offerCount: 1 });
     campaign.intro = 'Hi <script>alert(1)</script> & "friends"';
     const out = render(campaign, fixtureTemplate, { publicBaseUrl: BASE, brochures });

@@ -1,5 +1,5 @@
 /**
- * Rep portrait: upload -> persist on the senders record -> inject into the signature of every email ->
+ * Salesperson portrait: upload -> persist on the senders record -> inject into the signature of every email ->
  * clear. Runs inside workerd with real local D1, R2 and the Images binding.
  */
 import { env } from 'cloudflare:test';
@@ -21,7 +21,7 @@ const photoForm = (bytes: Uint8Array, type = 'image/png'): FormData => {
   return fd;
 };
 
-/** A valid draft whose user sender is the signed-in rep (so the injected headshot keys to them). */
+/** A valid draft whose user sender is the signed-in salesperson (so the injected headshot keys to them). */
 function draft(over: Record<string, unknown> = {}) {
   const { campaign } = fixtureCampaign({ offerCount: 2, brochure: 'none' });
   return {
@@ -39,7 +39,7 @@ function draft(over: Record<string, unknown> = {}) {
 }
 const createCampaign = (e = authed()) => app.request('/api/campaigns', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(draft()) }, e);
 
-describe('rep portrait', () => {
+describe('salesperson portrait', () => {
   it('needs a login', async () => {
     expect((await app.request('/api/me/photo', { method: 'POST', body: photoForm(PNG) }, anon)).status).toBe(503);
   });
@@ -79,10 +79,10 @@ describe('rep portrait', () => {
   });
 });
 
-describe('rep contact details', () => {
+describe('salesperson contact details', () => {
   const post = (body: unknown) => app.request('/api/me/sender', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }, authed());
 
-  it('saves the rep contact details, returns them on /me, and preserves the photo', async () => {
+  it('saves the salesperson contact details, returns them on /me, and preserves the photo', async () => {
     await app.request('/api/me/photo', { method: 'POST', body: photoForm(PNG) }, authed());
     const details = { displayName: 'Matt Wilson', jobTitle: 'Account Manager', phone: '01234 567890', whatsapp: '+447700900123', bookingUrl: 'https://outlook.office365.com/book/dl/', secondaryContacts: ['whatsapp', 'book'] };
     expect((await post(details)).status).toBe(200);

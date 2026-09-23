@@ -48,7 +48,7 @@ const CTA_OPTIONS: { kind: CtaKind; label: string; need?: 'phone' | 'whatsapp' |
 ];
 const ctaDefaultLabel = (kind: CtaKind): string => (CTA_DEFAULT_LABELS as Record<string, string>)[kind] ?? '';
 
-/** The secondary contact links the rep can add to their signature (a separate choice from the primary
+/** The secondary contact links the salesperson can add to their signature (a separate choice from the primary
  *  green button). `need` is the sender field that unlocks it; email is always available. */
 const SECONDARY_OPTIONS: { method: ContactMethod; label: string; need?: 'phone' | 'whatsapp' | 'booking'; needText?: string }[] = [
   { method: 'call', label: 'Call', need: 'phone', needText: 'a Direct phone' },
@@ -138,7 +138,7 @@ function SearchTrace({ search }: { search: BrochureSearch }) {
 const SEARCH_STAGES = ['Searching for the official UK brochure…', 'Opening the manufacturer’s site…', 'Reading the documents it links…', 'Checking the model, the market and the date…', 'Still checking — if there is no UK edition, looking for the European one in English…'];
 
 /**
- * Brief §5.8 "Include brochure". The finder searches, verifies and attaches by itself; the rep never picks
+ * Brief §5.8 "Include brochure". The finder searches, verifies and attaches by itself; the salesperson never picks
  * from a list. When nothing verifies the panel says so, shows what was checked, and offers: search the web,
  * upload a PDF, paste a link, accept the manufacturer's page / request form when there is one, or carry on
  * without. A search that FAILED is shown differently from one that found nothing, and offers a retry.
@@ -159,7 +159,7 @@ function BrochureControl({ item, onAttach, onToggle, onRemove }: { item: Item; o
   const [skipped, setSkipped] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  // the search is one request of 10–60s: walk the stage line so the rep can see it is working
+  // the search is one request of 10–60s: walk the stage line so the salesperson can see it is working
   useEffect(() => {
     if (!busy) return;
     setStage(0);
@@ -177,7 +177,7 @@ function BrochureControl({ item, onAttach, onToggle, onRemove }: { item: Item; o
       setSearch(res.search);
       setRemembered(!!res.remembered);
       if (res.brochure) {
-        // a European edition someone accepted earlier is shown, but NOT included until this rep ticks it
+        // a European edition someone accepted earlier is shown, but NOT included until this salesperson ticks it
         const european = res.brochure.market === 'eu';
         onAttach(res.brochure, !european);
         setManual(false);
@@ -217,7 +217,7 @@ function BrochureControl({ item, onAttach, onToggle, onRemove }: { item: Item; o
       onAttach(res.brochure);
       setManual(false);
       setMurl('');
-      setNote('Brochure attached. It is now the stored copy for this model, for every rep.');
+      setNote('Brochure attached. It is now the stored copy for this model, for every salesperson.');
     } catch (e) {
       setErr(errMsg(e));
     } finally {
@@ -343,7 +343,7 @@ function BrochureControl({ item, onAttach, onToggle, onRemove }: { item: Item; o
   );
 }
 
-/** Upload / manage the rep's portrait. Persists server-side and shows in the signature of every email. */
+/** Upload / manage the salesperson's portrait. Persists server-side and shows in the signature of every email. */
 function SenderPhoto({ base }: { base: string }) {
   const sameOrigin = (u: string): string => (base && u.startsWith(base) ? u.slice(base.length) || '/' : u);
   const [url, setUrl] = useState<string | null>(null);
@@ -419,7 +419,7 @@ export function Compose({ email, base, items, setItems }: { email: string; base:
   const [preheader, setPreheader] = useState('');
   const [intro, setIntro] = useState('Thanks for your time. As promised, here are the options that fit what we discussed.');
   // One offer per row, always (Matt, 21 Sept 2026): a single offer is the hero card, two or more are stacked
-  // rows. The two-up / three-up grids are no longer offered, so there is nothing for the rep to choose.
+  // rows. The two-up / three-up grids are no longer offered, so there is nothing for the salesperson to choose.
   const layout: LayoutChoice = 'auto';
   const [recipientFirst, setRecipientFirst] = useState('');
 
@@ -458,7 +458,7 @@ export function Compose({ email, base, items, setItems }: { email: string; base:
     setSenderName((n) => n || guess);
   }, [email]);
 
-  // Prefill the rep's saved contact details so they never re-enter them; they stay editable.
+  // Prefill the salesperson's saved contact details so they never re-enter them; they stay editable.
   useEffect(() => {
     api
       .me()
@@ -538,8 +538,8 @@ export function Compose({ email, base, items, setItems }: { email: string; base:
   const salsacNeedsFigures = items.some((x) => isSalsac(x.offer) && !salsacReady(x.offer));
   const ready = items.length > 0 && !!name.trim() && !!subject.trim() && !!intro.trim() && !!email && !salsacNeedsFigures && ctaAvailable(ctaKind);
 
-  // Auto-render the preview as soon as the first offer is added, so the rep sees the email straight away.
-  // Subsequent changes keep the preview but flag it stale (the rep presses Update preview to refresh).
+  // Auto-render the preview as soon as the first offer is added, so the salesperson sees the email straight away.
+  // Subsequent changes keep the preview but flag it stale (the salesperson presses Update preview to refresh).
   useEffect(() => {
     if (items.length === 1 && ready && !previewHtml && !previewing) void doPreview();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -573,7 +573,7 @@ export function Compose({ email, base, items, setItems }: { email: string; base:
   async function addOffer(e: React.FormEvent) {
     e.preventDefault();
     if (!url.trim()) {
-      document.getElementById('addoffer-url')?.focus(); // guide the rep to paste a URL instead of a dead click
+      document.getElementById('addoffer-url')?.focus(); // guide the salesperson to paste a URL instead of a dead click
       return;
     }
     setFetching(true);

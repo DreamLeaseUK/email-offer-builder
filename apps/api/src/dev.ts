@@ -2,7 +2,7 @@
  * Dev preview — renders the fixture campaigns so the template can be checked in real clients
  * before the editor exists (brief §8.2 step 2). Behind Access like the rest of /api.
  *
- *   /api/dev/preview?layout=stack&count=4&contract=personal&cta=book&brochure=pdf&sender=rep&format=html
+ *   /api/dev/preview?layout=stack&count=4&contract=personal&cta=book&brochure=pdf&sender=salesperson&format=html
  *   format: html (default) | hosted | text | eml | json
  *   publish=1 also writes the hosted page to R2 so /c/<slug> serves it.
  */
@@ -31,7 +31,7 @@ dev.get('/preview', async (c) => {
   if (cta) opts.cta = cta === 'link' ? { kind: 'link', url: 'https://www.dreamlease.co.uk/news/', label: q.label ?? 'Read the full review' } : q.label ? { kind: cta, label: q.label } : { kind: cta };
   const brochure = oneOf(q.brochure, ['none', 'pdf', 'gated'] as const);
   if (brochure) opts.brochure = brochure;
-  const sender = oneOf(q.sender, ['rep', 'shared'] as const);
+  const sender = oneOf(q.sender, ['salesperson', 'shared'] as const);
   if (sender) opts.sender = sender;
 
   const { campaign, brochures } = fixtureCampaign(opts);

@@ -12,24 +12,24 @@ I want a simple web tool that lets a DreamLease sales person or account manager 
 
 Three uses, in priority order:
 
-1. **Cold-lead follow-up.** A prospect showed interest in a deal and went quiet. The rep sends them the offer they were looking at, or a couple of alternatives, as a proper branded email rather than a plain-text reply.
+1. **Cold-lead follow-up.** A prospect showed interest in a deal and went quiet. The salesperson sends them the offer they were looking at, or a couple of alternatives, as a proper branded email rather than a plain-text reply.
 2. **Offer packs for an organisation.** An account manager assembles a set of offers (typically salary sacrifice EVs) and sends it to one contact at an employer, who then circulates it to their staff. This is always one recipient from our side; the fan-out happens inside the employer.
 3. **Renewals.** A new project that will live entirely in monday.com. Around 180 days before a lease ends, the renewals team does a triage call, captures what the customer wants next, and later sends tailored offers. In stage one the renewals person will use the tool by hand; later the tool should be opened from a monday.com item and pre-filled from it.
 
-Stage one is manual assembly and delivery through the rep's own Outlook. Two later evolutions must be cheap to add: integration with monday.com (open from an item, read triage fields, write back what was sent), and an AI offer selector that suggests offers from the library based on the triage notes. Neither is in scope now, but the architecture has to leave room for them so we're not refactoring in six months.
+Stage one is manual assembly and delivery through the salesperson's own Outlook. Two later evolutions must be cheap to add: integration with monday.com (open from an item, read triage fields, write back what was sent), and an AI offer selector that suggests offers from the library based on the triage notes. Neither is in scope now, but the architecture has to leave room for them so we're not refactoring in six months.
 
-Success looks like: reps actually using it every week, engagement stats I can report on (clicks and hosted-page views), and less marketing time per email.
+Success looks like: salespeople actually using it every week, engagement stats I can report on (clicks and hosted-page views), and less marketing time per email.
 
 ## 2. Users and constraints
 
-Users are DreamLease sales people, account managers and the renewals team. At most 15, realistically a handful. They are not technical. The rule for the UI is that a rep should be able to make an email from a vehicle URL in under two minutes on their first go, with no training beyond a one-page guide.
+Users are DreamLease sales people, account managers and the renewals team. At most 15, realistically a handful. They are not technical. The rule for the UI is that a salesperson should be able to make an email from a vehicle URL in under two minutes on their first go, with no training beyond a one-page guide.
 
 Hard constraints:
 
 - **Zero or near-zero running cost.** We have Cloudflare (with the dreamlease.co.uk zone), Supabase, Netlify and Surge. Everything in stage one must fit within free tiers. Firecrawl is the one metered service; budget is ~1,500 credits a month and volume will be low for at least a year.
-- **FCA.** DreamLease is an FCA-regulated credit broker. Every email is a financial promotion. Emma Airey is the human sign-off. The tool must make it impossible for a rep to send something without the approved wording, and must give Emma a way to approve templates rather than every email.
+- **FCA.** DreamLease is an FCA-regulated credit broker. Every email is a financial promotion. Emma Airey is the human sign-off. The tool must make it impossible for a salesperson to send something without the approved wording, and must give Emma a way to approve templates rather than every email.
 - **CAP IDs are never stored.** This is an existing rule across all DreamLease tooling. The website's image URLs contain a CAP ID; the tool must not persist those URLs or any CAP ID anywhere (database, logs, R2 keys, filenames). See §5.3 for how the image pipeline handles this.
-- **Outlook first.** Reps use New Outlook on Windows (Microsoft 365). Recipients could be on anything, including classic Outlook, Gmail and phones, and use case 2 emails get forwarded on by the employer, which is a second rendering pass. The HTML must be conservative email HTML.
+- **Outlook first.** Salespeople use New Outlook on Windows (Microsoft 365). Recipients could be on anything, including classic Outlook, Gmail and phones, and use case 2 emails get forwarded on by the employer, which is a second rendering pass. The HTML must be conservative email HTML.
 - **Sofia Pro is licensed** and won't render in email anyway. Email templates use the brand's fallback stack. The tool's own UI can use Sofia Pro from the design system.
 
 ## 3. What already exists and what to reuse
@@ -94,7 +94,7 @@ interface Offer {
   offerUrl: string;                 // dreamlease.co.uk page for the offer (UTM added at render)
   cta?: Cta;                        // defaults to { kind: 'view_offer' }; see §5.9
   validUntil: string;               // ISO date, required; defaults to the last day of the current month at lookup; library greys out expired offers, hosted page expires with it
-  brochure?: { brochureId: string; include: boolean };   // see §5.8; include = the rep's toggle
+  brochure?: { brochureId: string; include: boolean };   // see §5.8; include = the salesperson's toggle
   notes?: string;                   // internal, never rendered
   createdBy: string; createdAt: string; updatedAt: string;
 }
@@ -143,7 +143,7 @@ interface Campaign {
   templateId: string; templateVersion: number;
   subject: string;
   preheader?: string;
-  intro: string;                    // rep's personal message, plain text with line breaks
+  intro: string;                    // salesperson's personal message, plain text with line breaks
   layout: 'auto' | 'single' | 'stack' | 'grid2' | 'grid3';   // auto: 1 → single, 2 or 4 → grid2, else grid3
   offers: Offer[];                  // 1–6
   recipient?: RecipientContext;
@@ -180,20 +180,20 @@ Stage one implements `OfferSource`: `manual`, `url`. Stage one implements `Broch
 
 ### 5.3 Vehicle lookup and the image pipeline
 
-Flow when a rep pastes a dreamlease.co.uk offer URL:
+Flow when a salesperson pastes a dreamlease.co.uk offer URL:
 
 1. Server (Cloudflare Worker) validates the host is `www.dreamlease.co.uk`, normalises the URL, and reads the configuration from the query string.
 2. Fetch the page. Try a direct fetch from the Worker first (we control the Cloudflare zone, so a WAF skip rule for the Worker's header is free); fall back to Firecrawl `scrape` with `formats: ["html"]`, `onlyMainContent: false`. Structured extraction runs on our side from the HTML (cheaper and deterministic) rather than Firecrawl's JSON mode; keep JSON mode as an optional fallback. Parse with HTMLRewriter (streaming, cheap on Worker CPU), not a DOM library.
 3. Parse into an `Offer`. Extract: title (make/model/derivative), badges, monthly, VAT line, initial payment, processing fee, term, mileage, initial months, the four headline stats, and the image URL for viewPoint 1.
-4. Image: fetch the image server-side, resize to 1200px wide (so it's sharp at 600px on retina), convert to JPEG quality ~82 on a white background, store in R2 under `vehicles/<sha256-of-bytes>.jpg`. Persist only our R2 URL. **Strip the source image URL before anything is logged or saved.** If the fetch fails, the rep can upload an image by hand.
+4. Image: fetch the image server-side, resize to 1200px wide (so it's sharp at 600px on retina), convert to JPEG quality ~82 on a white background, store in R2 under `vehicles/<sha256-of-bytes>.jpg`. Persist only our R2 URL. **Strip the source image URL before anything is logged or saved.** If the fetch fails, the salesperson can upload an image by hand.
 5. Offer alternatives: the tool shows term (24/36/48) and mileage (5k/8k/10k/15k) chips; picking one refetches the page with the changed query parameters. Cache the parsed `Offer` (never the HTML) for 24 hours keyed on the normalised URL.
-6. Return the `Offer` to the browser for review. The rep can edit anything before adding it to the campaign; badges and hot badge are picked from the fixed list; the image can be swapped.
+6. Return the `Offer` to the browser for review. The salesperson can edit anything before adding it to the campaign; badges and hot badge are picked from the fixed list; the image can be swapped.
 
 Strip CAP IDs at the parser boundary: the parser's output type has no field that could hold one, and a unit test asserts no `capId` string survives into any persisted object.
 
 ### 5.4 Delivery
 
-**Primary — Outlook draft via Microsoft Graph.** The tool creates a draft in the sender's mailbox (`POST /users/{mailbox}/messages` with `body.contentType = "html"`), sets the recipient if known, and tells the rep "Your draft is in Outlook". The rep opens it in New Outlook, adds a line if they want, and sends. It lands in Sent Items and replies come back normally. Permissions: delegated `Mail.ReadWrite` for the user's own mailbox, `Mail.ReadWrite.Shared` for department mailboxes (sales@, renewals@) the user already has Send As (or Send on Behalf) rights to in Exchange. This is its own Entra app registration, separate from the one Cloudflare Access uses as its identity provider; IT consents to it once. We never send on the rep's behalf in stage one — creating a draft is deliberately the boundary, so a human always presses Send.
+**Primary — Outlook draft via Microsoft Graph.** The tool creates a draft in the sender's mailbox (`POST /users/{mailbox}/messages` with `body.contentType = "html"`), sets the recipient if known, and tells the salesperson "Your draft is in Outlook". The salesperson opens it in New Outlook, adds a line if they want, and sends. It lands in Sent Items and replies come back normally. Permissions: delegated `Mail.ReadWrite` for the user's own mailbox, `Mail.ReadWrite.Shared` for department mailboxes (sales@, renewals@) the user already has Send As (or Send on Behalf) rights to in Exchange. This is its own Entra app registration, separate from the one Cloudflare Access uses as its identity provider; IT consents to it once. We never send on the salesperson's behalf in stage one — creating a draft is deliberately the boundary, so a human always presses Send.
 
 **Fallback — Copy for Outlook.** A button that writes `text/html` and `text/plain` to the clipboard with the Clipboard API, plus a download of the `.html` file. For the day Graph is unavailable or IT hasn't consented yet.
 
@@ -203,13 +203,13 @@ Strip CAP IDs at the parser boundary: the parser's output type has no field that
 
 ### 5.5 Compliance
 
-- Each template carries one locked compliance block per contract type (personal, business, salary sacrifice). Reps cannot edit it. It is versioned; a campaign records which version it rendered with.
+- Each template carries one locked compliance block per contract type (personal, business, salary sacrifice). Salespeople cannot edit it. It is versioned; a campaign records which version it rendered with.
 - I will supply the approved wording. The site's existing lease statement and the DreamLease FCA/broker status line are the starting point; Emma reviews and approves the block in the tool (an "Approve template" action recorded with her name and date).
 - A campaign cannot be rendered against a template whose status isn't `approved`.
-- Every email shows: contract type wording (inc/ex VAT), initial payment, term, mileage, processing fee, "subject to status", broker status, offer validity date, and the rep's contact details. Salary sacrifice cards show both the 20% and 40% net figures with a line saying they are illustrative and depend on the employer scheme and personal circumstances.
-- The rep-authored parts of a promotion are the intro, the subject, the preheader and any CTA label override. They are not locked, so they are recorded: the promotions register carries them verbatim, and the archived rendered HTML is kept for every campaign. Badges are not free text (fixed list, §5.1). Optional, cheap: a warn-only phrase list Emma owns ("guaranteed", "cheapest", "no credit check") that flags the intro before draft creation without blocking it.
+- Every email shows: contract type wording (inc/ex VAT), initial payment, term, mileage, processing fee, "subject to status", broker status, offer validity date, and the salesperson's contact details. Salary sacrifice cards show both the 20% and 40% net figures with a line saying they are illustrative and depend on the employer scheme and personal circumstances.
+- The salesperson-authored parts of a promotion are the intro, the subject, the preheader and any CTA label override. They are not locked, so they are recorded: the promotions register carries them verbatim, and the archived rendered HTML is kept for every campaign. Badges are not free text (fixed list, §5.1). Optional, cheap: a warn-only phrase list Emma owns ("guaranteed", "cheapest", "no credit check") that flags the intro before draft creation without blocking it.
 - A "Promotions register" export: CSV of campaigns with subject, preheader, intro text, CTA labels, offers, template version, wording version, sender, date, hosted URL and a link to the archived HTML. Emma can pull this any time.
-- Unsubscribe: one-to-one business email doesn't need a list unsubscribe, but the hosted page and footer carry a plain "Don't want offers from DreamLease? Reply and tell us" line, and the tool logs a suppression list the rep sees when they enter an email address.
+- Unsubscribe: one-to-one business email doesn't need a list unsubscribe, but the hosted page and footer carry a plain "Don't want offers from DreamLease? Reply and tell us" line, and the tool logs a suppression list the salesperson sees when they enter an email address.
 
 ### 5.6 Engagement metrics
 
@@ -218,7 +218,7 @@ No open-tracking pixels; they're unreliable now that Apple and Microsoft prefetc
 - Every link in the email goes through `offers.dreamlease.co.uk/r/<campaign>/<link>` (Worker redirect) which logs the click (campaign, link, timestamp, coarse user agent — no IP stored) then redirects to the destination with UTMs (`utm_source=offer_mailer&utm_medium=email&utm_campaign=<campaignCode>&utm_content=<offerId>`) so GA4 sees the channel.
 - Hosted page views are logged the same way.
 - Link scanners (Microsoft Safe Links, Proofpoint, Mimecast) pre-click every URL in inbound mail, which inflates clicks the same way image prefetch inflates opens. The redirect drops hits from known scanner user agents, stats report unique clicks per link, and the weekly summary says the number is indicative.
-- A simple stats view in the tool per campaign and per rep: sent, clicks, hosted views, first and last activity. A weekly summary I can pull into the marketing report.
+- A simple stats view in the tool per campaign and per salesperson: sent, clicks, hosted views, first and last activity. A weekly summary I can pull into the marketing report.
 
 ### 5.7 Hosting, auth, storage
 
@@ -231,12 +231,12 @@ No open-tracking pixels; they're unreliable now that Apple and Microsoft prefetc
 
 ### 5.8 Brochures
 
-Each offer in the editor has an "Include brochure" toggle. When it's on, the email's offer card and the hosted page carry a "Download brochure (PDF)" link to our stored copy of the manufacturer's UK brochure for that model. Brochures are per model, not per offer: one current `Brochure` per `vehicleKey`, shared by every offer for that model, so a second rep sending the same car next week pays no crawl.
+Each offer in the editor has an "Include brochure" toggle. When it's on, the email's offer card and the hosted page carry a "Download brochure (PDF)" link to our stored copy of the manufacturer's UK brochure for that model. Brochures are per model, not per offer: one current `Brochure` per `vehicleKey`, shared by every offer for that model, so a second salesperson sending the same car next week pays no crawl.
 
-Flow when the rep switches the toggle on:
+Flow when the salesperson switches the toggle on:
 
 1. Look up the current `Brochure` for the offer's `vehicleKey`. If one exists and `expiresAt` is in the future, attach it. No crawl, no credits.
-2. If there is none, or it has expired, run a harvest. The old copy stays served and stays on every campaign that already used it; it is marked `superseded` only once a new copy verifies. If the harvest fails, keep the old one and tell the rep "This brochure is over 3 months old".
+2. If there is none, or it has expired, run a harvest. The old copy stays served and stays on every campaign that already used it; it is marked `superseded` only once a new copy verifies. If the harvest fails, keep the old one and tell the salesperson "This brochure is over 3 months old".
 3. Harvest (the `firecrawl` `BrochureSource`), cheapest step first, stop as soon as a PDF is found:
    - Firecrawl `search` for `<make> <model> brochure pdf`, location United Kingdom. Keep only results whose host is on the manufacturer UK domain allowlist (`config/manufacturer-uk-domains.json` in the repo, maintained by me: e.g. `kia.co.uk`, `bmw.co.uk`, `tesla.com/en_gb`, `byd.com/uk`). Prefer a direct `.pdf` result.
    - If the best result is a brochure page rather than a PDF, `scrape` it and take the first PDF link.
@@ -244,7 +244,7 @@ Flow when the rep switches the toggle on:
    - If the brochure page is on an allowlisted UK host but exposes no PDF (a "request a brochure" form), record it as `kind: 'gated'` with `sourceUrl` set to that page. Gated is a successful harvest, not a failure; it expires and re-checks on the same 90-day cycle, so a manufacturer that later opens up its PDF gets picked up.
    - Hard cap of ~15 credits per harvest. Past that, show "Not found — upload a PDF or paste a link".
 4. For `pdf`: download the PDF directly from the Worker (free, no Firecrawl). Require `application/pdf`, cap at 40 MB, store in R2 under the immutable key `brochures/<sha256>.pdf`. Persist the manufacturer `sourceUrl` (no CAP IDs are involved anywhere in this pipeline).
-5. UK verification. The domain allowlist is the primary guarantee: a brochure is only auto-attached if it came from an allowlisted UK host (`ukVerified.by = 'domain'`). As a secondary check when cheap, have Firecrawl parse the first two pages of the PDF and require `£` or "OTR" and no `€`; record `'content'` if it passes. The rep always sees "UK verified via kia.co.uk" and the source link, so a human can eyeball it. A brochure found only off the allowlist is never auto-attached; the rep can confirm it by hand and the record says `'user'`.
+5. UK verification. The domain allowlist is the primary guarantee: a brochure is only auto-attached if it came from an allowlisted UK host (`ukVerified.by = 'domain'`). As a secondary check when cheap, have Firecrawl parse the first two pages of the PDF and require `£` or "OTR" and no `€`; record `'content'` if it passes. The salesperson always sees "UK verified via kia.co.uk" and the source link, so a human can eyeball it. A brochure found only off the allowlist is never auto-attached; the salesperson can confirm it by hand and the record says `'user'`.
 6. Expiry is 90 days from `fetchedAt`. Re-harvest is lazy: it's triggered by the next "Include brochure" after expiry, never by a schedule, so credits are only spent on models people are actually sending.
 7. Manual path: upload a PDF or paste a URL (a PDF URL becomes `pdf`, a page URL becomes `gated`). Same `Brochure` record with `source: 'manual'`, `ukVerified.by: 'user'`.
 8. Delivery is a link, not an attachment. Both kinds go through `offers.dreamlease.co.uk/b/<brochureId>` and the click redirect, so they're tracked like every other link. For `pdf` the card says "Download brochure (PDF)" and the redirect serves our R2 copy; for `gated` it says "Request a brochure" and the redirect sends the recipient to the manufacturer's page. The email stays small either way, and use case 2 forwarding isn't carrying 20 MB. "Attach PDF to the draft" is an opt-in shown only when the file is under 3 MB (Graph's single-call attachment limit; larger files need an upload session, which stays out of stage one).
@@ -254,7 +254,7 @@ Storage note: R2's free tier is 10 GB and brochures run 5–30 MB each, so a few
 
 ### 5.9 Offer CTA
 
-The card's button defaults to "View this offer" pointing at `offerUrl`, but the rep can change it per offer, because the next step they want is often a conversation rather than a click-through. Presets, with default labels:
+The card's button defaults to "View this offer" pointing at `offerUrl`, but the salesperson can change it per offer, because the next step they want is often a conversation rather than a click-through. Presets, with default labels:
 
 | kind | default label | target at render | tracked |
 |---|---|---|---|
@@ -263,16 +263,16 @@ The card's button defaults to "View this offer" pointing at `offerUrl`, but the 
 | `call` | Call me on 01234 567890 | `tel:<sender.phone>` | no |
 | `whatsapp` | WhatsApp me | `https://wa.me/<sender.whatsapp>?text=Hi, I'm interested in the <vehicle> offer` | yes |
 | `book` | Book a time to talk | `sender.bookingUrl` (Microsoft Bookings, already in M365) | yes |
-| `link` | (required) | any `https` URL the rep enters | yes |
+| `link` | (required) | any `https` URL the salesperson enters | yes |
 
 Rules:
 
-- The label is short free text (30 chars) so "Call me" can become "Call Sarah". It's recorded in the promotions register with the intro, as it's rep-authored copy in a financial promotion.
+- The label is short free text (30 chars) so "Call me" can become "Call Sarah". It's recorded in the promotions register with the intro, as it's salesperson-authored copy in a financial promotion.
 - Targets for `email`, `call`, `whatsapp` and `book` come from the campaign's `Sender` at render, not from the offer, so switching the sender to sales@ repoints every CTA. A preset is only offered when the sender has the field it needs (no WhatsApp number, no WhatsApp CTA).
 - `mailto:` and `tel:` links go direct and are not tracked. Redirecting to non-http schemes is unreliable across email clients and the click is the phone ringing anyway. The other kinds go through `/r/` as normal.
 - When the CTA isn't `view_offer`, the card keeps a small "View this offer" text link under the button, so the offer page is always one click away and the compliance footer's reference to the full offer still holds.
 - Compose has "Apply to all offers" next to the CTA picker; the common case is one CTA for the whole email.
-- Salary sacrifice packs (use case 2) default to `view_offer` regardless, since the person clicking is an employee, not the rep's contact.
+- Salary sacrifice packs (use case 2) default to `view_offer` regardless, since the person clicking is an employee, not the salesperson's contact.
 
 ## 6. Stage one scope
 
@@ -294,9 +294,9 @@ Components:
 
 - **Header**: logo (light-background version, official vectors), optional "View these offers online" link right-aligned above it in small text.
 - **Intro block**: sender's message, plain paragraphs, generous line height, Graphite body colour. Optional greeting line using the recipient's first name.
-- **Offer card** — the core piece. Variants: personal (inc VAT), business (ex VAT), salary sacrifice (two net figures, 20% and 40%, with the illustrative note). Elements: image (4:3, white background, 1200×900 source), badges as fixed-width orange pills (`#FF8811`, white bold text, hot badge first, then up to two more; fixed widths per card size so the row looks balanced, a distinct treatment for the hot badge is deferred), make (eyebrow), model (heading), derivative (subheading), red price with "per month inc VAT", spec line (term · mileage · initial payment), up to four headline stats as small tiles (range, 0–62, battery, warranty — or MPG/CO2 for ICE), green pill CTA (default "View this offer"; the label is rep-editable and the action can be email, call, WhatsApp, book a call or a custom link per §5.9, so design the button for labels up to 30 chars and add a small "View this offer" text link beneath it for the non-default cases), an optional secondary text link under it ("Download brochure (PDF)" with a small PDF glyph, or "Request a brochure" with an external-link glyph when the manufacturer gates it, only when the offer includes one), and a small-print line (processing fee, validity date, brochure disclaimer when a brochure is included). Design the card at three sizes: full width (single offer, image on top or image left), half width (two-up grid), and a compact stacked row for three or more.
+- **Offer card** — the core piece. Variants: personal (inc VAT), business (ex VAT), salary sacrifice (two net figures, 20% and 40%, with the illustrative note). Elements: image (4:3, white background, 1200×900 source), badges as fixed-width orange pills (`#FF8811`, white bold text, hot badge first, then up to two more; fixed widths per card size so the row looks balanced, a distinct treatment for the hot badge is deferred), make (eyebrow), model (heading), derivative (subheading), red price with "per month inc VAT", spec line (term · mileage · initial payment), up to four headline stats as small tiles (range, 0–62, battery, warranty — or MPG/CO2 for ICE), green pill CTA (default "View this offer"; the label is salesperson-editable and the action can be email, call, WhatsApp, book a call or a custom link per §5.9, so design the button for labels up to 30 chars and add a small "View this offer" text link beneath it for the non-default cases), an optional secondary text link under it ("Download brochure (PDF)" with a small PDF glyph, or "Request a brochure" with an external-link glyph when the manufacturer gates it, only when the offer includes one), and a small-print line (processing fee, validity date, brochure disclaimer when a brochure is included). Design the card at three sizes: full width (single offer, image on top or image left), half width (two-up grid), and a compact stacked row for three or more.
 - **Layouts**: `single` (one hero offer), `stack` (2–4 full-width cards), `grid2` (two-up, wraps to one column on mobile), `grid3` (three compact cards, stacks on mobile).
-- **Rep signature**: name, job title, direct phone, email, small headshot optional. Department variant with no headshot.
+- **Salesperson signature**: name, job title, direct phone, email, small headshot optional. Department variant with no headshot.
 - **Compliance footer**: locked block on `#F6F6F7`, 12px, Graphite; contract-type wording, broker status, FCA line, validity, the "don't want offers" line, company address. Must look like part of the brand, not a legal afterthought.
 - **Hosted page**: the same campaign rendered in the full design system at desktop width, with the offer cards as proper `OfferCard`s, the intro, the signature and the same compliance block. This is what an employer will circulate, so it should feel like a DreamLease page rather than an email on a web page.
 
@@ -345,14 +345,14 @@ Ship 1–3 as a working "paste a URL, get a hosted page and an Outlook draft" ve
 
 ### 8.3 Acceptance tests (stage one done when all pass)
 
-- A rep with no training makes a two-offer email from two dreamlease.co.uk URLs and has a draft in Outlook in under two minutes.
+- A salesperson with no training makes a two-offer email from two dreamlease.co.uk URLs and has a draft in Outlook in under two minutes.
 - The same email renders acceptably in New Outlook, classic Outlook 2019/365 desktop, Gmail web, Outlook iOS, Apple Mail iOS; a draft opened, edited and sent from New Outlook and from classic Outlook arrives intact; forwarding from New Outlook to Gmail keeps the layout.
 - No CAP ID exists anywhere in D1, R2 keys, logs or rendered HTML (automated grep in CI over a full lookup and render), and no raw scraped HTML is persisted anywhere.
 - A template that is not `approved` cannot be rendered or drafted; the compliance block cannot be edited from the compose screen.
 - Clicking a link in a sent email records a click and lands on the offer page with the correct UTMs.
 - A hosted page opens for someone with no login; the tool does not open for someone outside the tenant.
 - Changing the term chip on a fetched offer updates the price without a new URL being entered.
-- Changing an offer's CTA to "Book a time to talk" renders a button pointing at the sender's Bookings page through the click redirect, keeps a "View this offer" text link on the card, and switching the sender to sales@ repoints an email CTA to sales@ without the rep touching the offer.
+- Changing an offer's CTA to "Book a time to talk" renders a button pointing at the sender's Bookings page through the click redirect, keeps a "View this offer" text link on the card, and switching the sender to sales@ repoints an email CTA to sales@ without the salesperson touching the offer.
 - Switching "Include brochure" on for a fetched offer attaches a brochure from an allowlisted UK manufacturer host and the card shows the download link. Switching it on for the same model a week later uses the stored copy and spends no Firecrawl credits. With `fetchedAt` set 91 days back, the next use triggers a re-harvest, and if that harvest is mocked to fail the old brochure is still attached with the "over 3 months old" warning.
 - Total monthly cost at expected volume: the Workers Paid plan (about £4) plus Firecrawl credits, nothing else, and Firecrawl usage under 300 credits/month at 100 lookups (cache hits excluded).
 
@@ -415,15 +415,15 @@ Where the implementation has departed from this brief, and why. `docs/status-202
 - **Brochure discovery is the finder, not §5.8's allowlist harvest** (18 Sept). No per-brand domain list: the
   official UK site is discovered from the search results, its brochure / download / model pages are read, and a
   document attaches only after it has been read and passes the checks (make and model, UK evidence, document type,
-  edition age). The rep never picks from a list. Outcomes are six statuses plus a `documentType`; a manufacturer's
+  edition age). The salesperson never picks from a list. Outcomes are six statuses plus a `documentType`; a manufacturer's
   own **web brochure** is accepted as a link (`Brochure.kind` gained `web`); "nothing found" carries a trace of what
   was checked. §5.8 steps 3 and 5 and the allowlist assumption in §9 no longer describe the build.
   The as-built rules and evidence are in `docs/status-2026-09-18.md` §2–§4 and `docs/status-2026-09-21.md` §3 and
-  §8; `docs/brochure-finder-brief.md` holds the problem statement and the ORIGINAL design (rep picks from a list),
+  §8; `docs/brochure-finder-brief.md` holds the problem statement and the ORIGINAL design (salesperson picks from a list),
   which was dropped — read its banner first.
 - **A European English-language brochure is the fallback** (21 Sept) when no UK edition verifies: same official
   source, brochure only (never a European price guide, never the rest of the world), in English. It is **offered to
-  the rep, never attached by itself**: they use it, put their own in its place, or send without. Accepted, it is
+  the salesperson, never attached by itself**: they use it, put their own in its place, or send without. Accepted, it is
   stored with `market: 'eu'`, titled "European edition", and the card's small print tells the recipient
   ("This is the manufacturer's European brochure; specification, equipment and prices may differ from UK models.").
   That sentence extends §5.8 step 9 and is Emma's to approve.
@@ -437,7 +437,7 @@ Where the implementation has departed from this brief, and why. `docs/status-202
   `[if mso]`: the wrapper is fluid, badges are not floated, the stack card's image column is fluid inline. **The flattened
   text colour and size** (the red 28px price and the red make name arriving black and body-sized) **is Outlook's
   Merge-formatting paste** (22 Sept; `status-2026-09-21.md` §11): with Keep source formatting the markup arrives as
-  designed, so the fix is the rep's paste mode, not the markup. The
+  designed, so the fix is the salesperson's paste mode, not the markup. The
   current target is Gmail and New Outlook (desktop and mobile); §8.3's full client list is not yet attempted.
 - **Test sends run on production storage** (`pnpm dev:live`): a campaign made on local storage points its images and
   links at production, which does not have them.
@@ -447,8 +447,8 @@ Where the implementation has departed from this brief, and why. `docs/status-202
 ## 9. Assumptions and open items
 
 - Salary sacrifice 20% and 40% figures are entered by hand for now. A `salsac.gross` field and a calculator hook are reserved so the HMRC-verified calculator logic can be plugged in later.
-- Reps' WhatsApp numbers and Microsoft Bookings pages are entered once in their sender profile; a rep without them simply doesn't get those CTA presets. Department senders (sales@) get the department number and a shared Bookings page if one exists.
-- Sender is usually the rep's own mailbox, with a department mailbox option (sales@, renewals@). Shared mailbox drafting needs `Mail.ReadWrite.Shared` and the user must already hold Send As (or Send on Behalf) on the mailbox in Exchange, otherwise the draft can't be sent from that address.
+- Salespeople' WhatsApp numbers and Microsoft Bookings pages are entered once in their sender profile; a salesperson without them simply doesn't get those CTA presets. Department senders (sales@) get the department number and a shared Bookings page if one exists.
+- Sender is usually the salesperson's own mailbox, with a department mailbox option (sales@, renewals@). Shared mailbox drafting needs `Mail.ReadWrite.Shared` and the user must already hold Send As (or Send on Behalf) on the mailbox in Exchange, otherwise the draft can't be sent from that address.
 - The offer feed exists but access is unconfirmed. Until then the URL scraper is the lookup; the `feed` adapter stays a stub.
 - Approved compliance wording is to be supplied by me and approved by Emma in the tool before the first real send.
 - Cloudflare Access with Entra ID as identity provider, and a second Entra app registration for Graph, are acceptable to the business; IT sets up both and consents to the Graph app once.

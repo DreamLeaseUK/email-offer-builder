@@ -22,7 +22,7 @@ export function Register() {
         <div className="list__head">
           <div>
             <h2 className="dl-h4">Promotions register</h2>
-            <p className="dl-small app__muted">Every campaign built in the tool — the rep-authored copy and the compliance metadata. All reps.</p>
+            <p className="dl-small app__muted">Every campaign built in the tool — the salesperson-authored copy and the compliance metadata. All salespeople.</p>
           </div>
           <a className="dl-small list__export" href="/api/register.csv" download>Export CSV</a>
         </div>

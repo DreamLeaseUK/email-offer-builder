@@ -79,7 +79,7 @@ describe('POST /api/campaigns', () => {
     const id = body.campaign.id;
 
     // stored snapshot has no recipient object, and none of the recipient's structured PII (e.g. their
-    // email) survives. (The campaign *name* is rep-authored internal metadata, not a recipient field.)
+    // email) survives. (The campaign *name* is salesperson-authored internal metadata, not a recipient field.)
     const row = await env.DB.prepare('select data from campaigns where id = ?').bind(id).first<{ data: string }>();
     const stored = JSON.parse(row!.data) as Record<string, unknown>;
     expect(stored.recipient).toBeUndefined();
@@ -87,7 +87,7 @@ describe('POST /api/campaigns', () => {
     const readBack = (await (await app.request(`/api/campaigns/${id}`, {}, authed())).json()) as { campaign: Record<string, unknown> };
     expect(readBack.campaign.recipient).toBeUndefined();
 
-    // the public hosted page carries no customer name, but the rep's email copy still greets them
+    // the public hosted page carries no customer name, but the salesperson's email copy still greets them
     const hosted = await (await app.request(`/c/${body.campaign.hostedPage.slug}`, {}, env)).text();
     expect(hosted).not.toContain('Hi Priya,');
     expect(body.html).toContain('Hi Priya,');

@@ -1,12 +1,12 @@
 /**
  * "Include brochure" flow — brief §5.8 steps 1 and 2. One current brochure per vehicleKey, shared by every
- * offer and every rep for that model.
+ * offer and every salesperson for that model.
  *
  *   stored   an unexpired copy whose edition is still inside the age limit: attached with no search.
  *   fresh    found just now.
  *   stale    the 90-day copy expired and the new search found nothing: the old copy stays (it stays served
- *            on every campaign that used it), flagged so the rep can replace it.
- *   none     nothing attachable. `search` says what was checked; the rep uploads, pastes, accepts an official
+ *            on every campaign that used it), flagged so the salesperson can replace it.
+ *   none     nothing attachable. `search` says what was checked; the salesperson uploads, pastes, accepts an official
  *            page, or sends without.
  *
  * A search that found nothing is remembered for 7 days so the same model is not searched on every click; a

@@ -37,7 +37,7 @@ The button label and target are now per offer. Presets and default labels:
 | `call` | Call me on 01234 567 890 |
 | `whatsapp` | WhatsApp me |
 | `book` | Book a time to talk |
-| `link` | rep supplies the label |
+| `link` | salesperson supplies the label |
 
 Design requirements:
 

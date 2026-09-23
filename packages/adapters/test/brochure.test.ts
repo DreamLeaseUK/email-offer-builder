@@ -465,7 +465,7 @@ describe('FirecrawlBrochureSource', () => {
     expect(search).toMatchObject({ status: 'official_page_only', assetRetrievable: false, assetUrl: PDF_URL });
   });
 
-  it('lets the rep accept an official page or a request form, taking the URL from the stored search', async () => {
+  it('lets the salesperson accept an official page or a request form, taking the URL from the stored search', async () => {
     const { search } = await source(scriptedClient({ fileOk: false }), directBlocked).find({ make: 'Kia', model: 'EV3' });
     const accepted = acceptSearchOutcome(search, { vehicle: { make: 'Kia', model: 'EV3' }, createdBy: BY, now: () => NOW });
     expect(accepted && Brochure.parse(accepted)).toMatchObject({ kind: 'web', documentType: 'brochure', ukVerified: { by: 'user' }, finder: { status: 'official_page_only' } });
@@ -585,7 +585,7 @@ describe('findBrochure: the European English-language fallback', () => {
     expect(priced.read).toEqual([plain]); // re-judged from the first reading: the document is never paid for twice
   });
 
-  it('OFFERS the European edition and attaches nothing: it is the rep’s to use, replace or leave out', async () => {
+  it('OFFERS the European edition and attaches nothing: it is the salesperson’s to use, replace or leave out', async () => {
     const { brochure, search } = await source(fallbackClient([{ url: EU_PDF, text: EU_TEXT }]), directOk).find({ make: 'Polestar', model: '2' });
     expect(brochure).toBeUndefined(); // found and checked, but never attached by itself (Matt, 21 Sept 2026)
     expect(BrochureSearch.parse(search)).toEqual(search);
@@ -605,7 +605,7 @@ describe('findBrochure: the European English-language fallback', () => {
     expect(find).toHaveBeenCalledTimes(1);
   });
 
-  it('fetches and stores the European edition only when the rep accepts it, and records it as what it is, never "(UK)"', async () => {
+  it('fetches and stores the European edition only when the salesperson accepts it, and records it as what it is, never "(UK)"', async () => {
     const { search } = await source(fallbackClient([{ url: EU_PDF, text: EU_TEXT }]), directOk).find({ make: 'Polestar', model: '2' });
     const download = vi.fn(directOk);
     const b = await acceptEuropeanOffer(search, { vehicle: { make: 'Polestar', model: '2' }, createdBy: BY, download, store, now: () => NOW, newId: () => 'b0000000-0000-4000-8000-000000000011' });
@@ -613,7 +613,7 @@ describe('findBrochure: the European English-language fallback', () => {
     expect(b && Brochure.parse(b)).toEqual(b);
     expect(b).toMatchObject({ kind: 'pdf', market: 'eu', title: 'Polestar 2 brochure (European edition)', sourceUrl: EU_PDF, editionDate: '2026-04-07', documentType: 'brochure', ukVerified: { by: 'user' }, createdBy: BY });
     expect(b?.finder?.flags).toEqual(['european_edition']); // no longer an offer
-    expect(b?.ukVerified.note).toMatch(/accepted by the rep: no UK edition verified/);
+    expect(b?.ukVerified.note).toMatch(/accepted by the salesperson: no UK edition verified/);
 
     // a file its host will not release is linked, never worked around
     const linked = await acceptEuropeanOffer(search, { vehicle: { make: 'Polestar', model: '2' }, createdBy: BY, download: directBlocked, store });

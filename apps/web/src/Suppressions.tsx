@@ -1,5 +1,5 @@
 /**
- * Suppression register — the opt-out list. Any signed-in rep can add an opt-out and check an address;
+ * Suppression register — the opt-out list. Any signed-in salesperson can add an opt-out and check an address;
  * removal (re-permitting contact) is admin-only. Plain text, behind Access, CSV-exportable for audit.
  */
 import { useEffect, useState } from 'react';

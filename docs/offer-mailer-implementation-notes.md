@@ -43,7 +43,7 @@ These are the constructs that make the email survive Outlook. Changing any of th
 
 `make`, `model`, `derivative`, image, `badge1`/`badge2`, price (or salsac `net20`/`net40` + gross), `priceLabel`, `specLine`/`specShort`, four stats (label + value), `validity`, `url`, CTA kind + label, brochure variant + href, small print.
 
-- **CTA kinds:** `view_offer`, `email`, `call`, `whatsapp`, `book`, `link`. Defaults: "View this offer", "Email me about this", "Call me on {phone}", "WhatsApp me", "Book a time to talk", rep-supplied. Labels must hold 30 characters. In grid2 the button has **no** `white-space:nowrap` so a long label wraps rather than clips; in grid3 a two-line button is acceptable.
+- **CTA kinds:** `view_offer`, `email`, `call`, `whatsapp`, `book`, `link`. Defaults: "View this offer", "Email me about this", "Call me on {phone}", "WhatsApp me", "Book a time to talk", salesperson-supplied. Labels must hold 30 characters. In grid2 the button has **no** `white-space:nowrap` so a long label wraps rather than clips; in grid3 a two-line button is acceptable.
 - **Any kind other than `view_offer`** must add a red "View this offer" text link under the button. Compliance requirement — the offer page is always one click away.
 - **Brochure:** `none` / `pdf` ("Download brochure (PDF)", document glyph) / `gated` ("Request a brochure", external-link glyph). When present, small print gains "Brochure figures are the manufacturer's and may differ from this offer."
 - **Sender fields:** `name`, `title`, `phone`, `email`, `whatsapp`, `bookingUrl`, headshot. The WhatsApp and booking links come from their own fields, **not** derived from the phone number — the mock derives them only so the preview has something to link to.

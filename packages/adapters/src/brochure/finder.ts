@@ -18,7 +18,7 @@
  * manufacturer's own EUROPEAN brochure, as long as it is in English: same official source, same model, type
  * and age checks, but the UK evidence is replaced by "the document or its address says Europe" plus a language
  * check. It comes back as verified_pdf / verified_web_brochure with market 'eu' and the flag european_edition,
- * so the rep and the email can say what it is. A European price & spec guide is never used (not the UK's
+ * so the salesperson and the email can say what it is. A European price & spec guide is never used (not the UK's
  * prices or trims), and the rest of the world (US, Australia, Asia…) is never a source.
  *
  * finder-1.4 (Matt, 21 Sept 2026: "you are not leveraging Firecrawl capability to its optimum"). Discovery was
@@ -278,7 +278,7 @@ export function labelledLinks(md: string, baseUrl: string): LabelledLink[] {
 /**
  * PDF addresses in a page's raw HTML, including the ones only its embedded data carries. Geely's UK model page
  * offers "Download Geely EX2 Brochure" as a BUTTON, not a link: the markdown has no link to read, and the file's
- * address sits in the page's JSON with its slashes escaped ("\u002F-\u002Fmedia\u002F…brochure.pdf"). A rep found
+ * address sits in the page's JSON with its slashes escaped ("\u002F-\u002Fmedia\u002F…brochure.pdf"). A salesperson found
  * it in 30 seconds; the finder, reading links only, saw nothing (Matt, 21 Sept 2026).
  */
 export function pdfUrlsInHtml(html: string, baseUrl: string): string[] {
@@ -851,7 +851,7 @@ export async function findBrochure(vehicle: Pick<Vehicle, 'make' | 'model'>, dep
     modelIn = modelMatcher(make, model);
     hintIn = modelHint(make, model);
 
-    // 4. the outcome: a UK PDF, then a UK web brochure, then the European fallback, then the things the rep can accept
+    // 4. the outcome: a UK PDF, then a UK web brochure, then the European fallback, then the things the salesperson can accept
     if (accepted) pdfOutcome(accepted);
     else {
       let webAsEuropean: (() => void) | undefined;

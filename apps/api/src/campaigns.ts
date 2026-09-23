@@ -7,7 +7,7 @@
  *   GET  /api/campaigns/:id/stats  clicks and hosted views, scanner hits excluded
  *   GET  /r/:slug/:link            public: resolve a stored link, log the click, redirect (was a stub)
  *
- * The rep supplies the parts they author (name, subject, intro, layout, offers, sender); the server
+ * The salesperson supplies the parts they author (name, subject, intro, layout, offers, sender); the server
  * owns identity, the hosted slug, the tracking code, the template and the compliance variant, so a
  * campaign can never be stored against an unapproved template or with mixed contract types. The link
  * map render() produces is stored so the redirect can resolve /r/<slug>/<linkId> without re-rendering.
@@ -86,7 +86,7 @@ function campaignsRepo(env: Env) {
     async save(campaign: CampaignT, links: Record<string, string>): Promise<void> {
       assertNoCapId({ campaign, links }, 'campaign');
       // Data minimisation (GDPR): the recipient is personalisation for the render only — it is used to
-      // build the rep's email copy and then never persisted. The stored snapshot (the FCA promotion
+      // build the salesperson's email copy and then never persisted. The stored snapshot (the FCA promotion
       // record) holds the offer, compliance, sender and metadata, but no customer PII.
       const { recipient: _recipientPii, ...persisted } = campaign;
       await d
@@ -154,7 +154,7 @@ const REGISTER_FIELDS = [
   ['sentVia', 'Sent via'],
 ] as const;
 
-/** One campaign flattened to the register's fields (the rep-authored copy plus the metadata). */
+/** One campaign flattened to the register's fields (the salesperson-authored copy plus the metadata). */
 function registerRow(c: CampaignT): Record<string, string> {
   return {
     created: c.createdAt,
@@ -239,7 +239,7 @@ async function assemble(env: Env, input: DraftCampaign, createdBy: string): Prom
   // An offer is a snapshot: one still open in Compose, or taken from the library, from before a parser fix
   // carries the site's entity ("Techno &#x2B; Comfort") into the email. Decode here, whatever the browser sent.
   input.offers = input.offers.map(decodeOfferText);
-  // The rep's saved portrait is authoritative for a user sender: inject it (and drop any client-supplied
+  // The salesperson's saved portrait is authoritative for a user sender: inject it (and drop any client-supplied
   // headshot), so it shows on every email and can't be spoofed with someone else's photo.
   if (input.sender.kind === 'user') {
     const saved = await sendersRepo(env).get(input.sender.email);
@@ -354,7 +354,7 @@ campaignsApi.get('/campaigns/:id/stats', async (c) => {
   });
 });
 
-/** The promotions register (brief §5.5): every campaign's rep-authored copy and metadata. */
+/** The promotions register (brief §5.5): every campaign's salesperson-authored copy and metadata. */
 campaignsApi.get('/register', async (c) => {
   const campaigns = await campaignsRepo(c.env).listAll();
   return c.json({ columns: REGISTER_FIELDS.map(([key, label]) => ({ key, label })), rows: campaigns.map(registerRow) });

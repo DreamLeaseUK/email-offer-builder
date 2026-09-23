@@ -235,7 +235,7 @@ function emailBody(campaign: Campaign, template: Template, cards: CardVM[], layo
     </td>
   </tr>`;
 
-  // The recipient greeting is personalisation for the rep's own email only — never on the public hosted
+  // The recipient greeting is personalisation for the salesperson's own email only — never on the public hosted
   // page (data minimisation: no customer name on a shareable URL).
   const greeting = !ctx.forHostedPage && campaign.recipient?.firstName ? `<p class="lock-ink" style="margin:0 0 14px 0; font-size:22px; line-height:28px; ${LH}; font-weight:bold; color:${C.black};">Hi ${esc(campaign.recipient.firstName)},</p>\n` : '';
   const intro = `  <!-- Intro -->
@@ -255,7 +255,7 @@ ${greeting}${paragraphs(campaign.intro, `margin:0 0 14px 0; font-size:16px; line
           </td>
           `
     : '';
-  // Secondary contact links (rep-chosen, §7.1): an optional row under the email in the signature.
+  // Secondary contact links (salesperson-chosen, §7.1): an optional row under the email in the signature.
   // Additive to the v5 reference — like the salsac blocks and the view-offer link — and opt-in, so the
   // fixture sender leaves it unset and diff-reference stays green. Render skips any method missing its field.
   const secondaryLink = (m: ContactMethod): { id: string; href: string } => {

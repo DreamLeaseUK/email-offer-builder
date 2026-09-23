@@ -22,7 +22,7 @@ export const carriesEntity = (value: unknown): boolean => /&(#x?[0-9a-f]{1,7}|[a
 /**
  * The offer with the site's display text decoded: the vehicle's names and stats, and the image's alt text.
  * Nothing else is touched: the offer URL goes back to the site exactly as written, and notes, badges and the
- * CTA label are ours or the rep's. A clean offer is returned as it came.
+ * CTA label are ours or the salesperson's. A clean offer is returned as it came.
  */
 export function decodeOfferText(offer: Offer): Offer {
   if (!carriesEntity(offer.vehicle) && !carriesEntity(offer.image?.alt)) return offer;

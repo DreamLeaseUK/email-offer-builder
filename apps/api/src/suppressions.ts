@@ -7,7 +7,7 @@
  * Delivery is manual (Copy-for-Outlook → Outlook), so the tool can't block the actual send; this is a
  * register staff add to, view, and check against — not a send gate.
  *
- *   POST   /api/suppressions          add an opt-out { email, note? }   (any signed-in rep)
+ *   POST   /api/suppressions          add an opt-out { email, note? }   (any signed-in salesperson)
  *   GET    /api/suppressions          the register, newest first
  *   POST   /api/suppressions/check    { email } -> { suppressed }       (email in the body, not the URL)
  *   POST   /api/suppressions/remove   { email }                          (admin only)

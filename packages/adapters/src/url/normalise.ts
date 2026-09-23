@@ -1,6 +1,6 @@
 /**
  * Offer URL validation and normalisation — brief §5.3 step 1.
- * A rep pastes any dreamlease.co.uk offer URL; we keep the contract type, the vehicle slug and the
+ * A salesperson pastes any dreamlease.co.uk offer URL; we keep the contract type, the vehicle slug and the
  * lease configuration, and drop everything else (tracking parameters, fragments, the derived
  * `offer=` code). The canonical form is the cache key and the base of the rendered offer link.
  */

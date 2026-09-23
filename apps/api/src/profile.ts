@@ -1,12 +1,12 @@
 /**
- * The signed-in rep's profile. Persists their sender record (in the `senders` table, keyed by email)
+ * The signed-in salesperson's profile. Persists their sender record (in the `senders` table, keyed by email)
  * so their portrait photo is remembered and shows in the signature of every email they build.
  *
  *   GET    /api/me            the user + publicBaseUrl + their saved headshotUrl (null if none)
  *   POST   /api/me/photo      upload a portrait (multipart `photo` or raw body) -> square headshot in R2
  *   DELETE /api/me/photo      clear the saved portrait
  *
- * The photo is injected into the campaign sender server-side at assemble (see campaigns.ts), so a rep
+ * The photo is injected into the campaign sender server-side at assemble (see campaigns.ts), so a salesperson
  * cannot be spoofed with someone else's headshot and it applies to every email without re-uploading.
  */
 import { ContactMethod, Sender, assertNoCapId, availableSecondaryContacts } from '@offer-mailer/schema';
@@ -21,7 +21,7 @@ import { roleFor } from './roles.js';
 
 const MAX_PHOTO_BYTES = 10 * 1024 * 1024;
 
-/** A minimal valid Sender to seed a rep's record when they upload a photo before anything else. */
+/** A minimal valid Sender to seed a salesperson's record when they upload a photo before anything else. */
 const baseSender = (email: string): SenderT => ({ kind: 'user', displayName: email.split('@')[0] || email, email, mailbox: email });
 
 /** JPEG / PNG / WebP by magic bytes; CDNs and pickers lie about content types. */
@@ -55,7 +55,7 @@ export function sendersRepo(env: Env) {
 export const profileApi = new Hono<AppEnv>();
 
 // The web app uses publicBaseUrl to rewrite our-origin asset/link URLs to same-origin for display.
-/** The rep-editable contact fields (everything on the sender except identity and the photo). */
+/** The salesperson-editable contact fields (everything on the sender except identity and the photo). */
 const savedSenderView = (s: SenderT) => ({ displayName: s.displayName, jobTitle: s.jobTitle ?? '', phone: s.phone ?? '', whatsapp: s.whatsapp ?? '', bookingUrl: s.bookingUrl ?? '', secondaryContacts: s.secondaryContacts ?? [] });
 
 profileApi.get('/me', async (c) => {
@@ -75,7 +75,7 @@ profileApi.get('/me', async (c) => {
   });
 });
 
-/** Save the rep's contact details so they prefill next time; the saved photo (if any) is preserved. */
+/** Save the salesperson's contact details so they prefill next time; the saved photo (if any) is preserved. */
 profileApi.post('/me/sender', async (c) => {
   const user = c.get('user');
   const body = (await c.req.json().catch(() => ({}))) as Record<string, unknown>;

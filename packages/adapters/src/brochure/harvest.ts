@@ -11,9 +11,9 @@
  * Either verified outcome may be the European English-language fallback (market 'eu', finder.ts). That one is
  * OFFERED, never attached by itself (Matt, 21 Sept 2026: "offered as fall back and optional for user to use /
  * replace or not show brochure link"): find() returns the search with the flag 'european_offer' and no brochure,
- * and the file is only fetched and stored when the rep accepts it (acceptEuropeanOffer). The record then carries
+ * and the file is only fetched and stored when the salesperson accepts it (acceptEuropeanOffer). The record then carries
  * the market and is titled "(European edition)", never "(UK)".
- * official_page_only and brochure_request are never attached automatically; the rep can accept them in one
+ * official_page_only and brochure_request are never attached automatically; the salesperson can accept them in one
  * click (acceptSearchOutcome). The manual path (upload / paste) always works.
  */
 import { BROCHURE_TTL_DAYS, vehicleKey } from '@offer-mailer/schema';
@@ -102,7 +102,7 @@ export class FirecrawlBrochureSource implements BrochureSource {
     let brochure: Brochure | undefined;
 
     if (r.market === 'eu' && (r.status === 'verified_pdf' || r.status === 'verified_web_brochure')) {
-      // found and checked, but it is not the UK's: the rep decides whether it goes in the email
+      // found and checked, but it is not the UK's: the salesperson decides whether it goes in the email
       r.flags.push(EUROPEAN_OFFER);
       r.reason = 'No UK edition could be verified. The manufacturer’s European brochure, in English, is available: use it, replace it, or send without a brochure.';
     } else if (r.status === 'verified_pdf' && r.url) {
@@ -150,7 +150,7 @@ export class FirecrawlBrochureSource implements BrochureSource {
   }
 }
 
-/** On a search: a European edition was found and checked, and is waiting for the rep to accept it. */
+/** On a search: a European edition was found and checked, and is waiting for the salesperson to accept it. */
 export const EUROPEAN_OFFER = 'european_offer';
 export const isEuropeanOffer = (s: Pick<BrochureSearch, 'market' | 'status' | 'url'>): boolean => s.market === 'eu' && !!s.url && (s.status === 'verified_pdf' || s.status === 'verified_web_brochure');
 
@@ -183,7 +183,7 @@ export function toSearchRecord(vehicle: Pick<Vehicle, 'make' | 'model'>, r: Find
 }
 
 /**
- * The rep accepts an outcome the finder would not attach by itself: an official page whose document is
+ * The salesperson accepts an outcome the finder would not attach by itself: an official page whose document is
  * protected or is a price page (→ `web`), or a request-a-brochure form (→ `gated`). The URL comes from the
  * stored search, never from the browser.
  */
@@ -200,7 +200,7 @@ export function acceptSearchOutcome(search: BrochureSearch, o: { vehicle: Pick<V
     kind: isRequest ? 'gated' : 'web',
     sourceUrl: toHttps(search.url),
     source: 'harvest',
-    ukVerified: { by: 'user', note: `accepted by the rep from a ${search.status} search result` },
+    ukVerified: { by: 'user', note: `accepted by the salesperson from a ${search.status} search result` },
     ...(isRequest ? {} : { documentType }),
     ...(search.market ? { market: search.market } : {}),
     finder: { version: search.finderVersion, status: search.status, ...(search.flags.length ? { flags: search.flags } : {}) },
@@ -212,7 +212,7 @@ export function acceptSearchOutcome(search: BrochureSearch, o: { vehicle: Pick<V
 }
 
 /**
- * The rep accepts the European edition the finder offered. Only now is the file fetched (direct, then Firecrawl)
+ * The salesperson accepts the European edition the finder offered. Only now is the file fetched (direct, then Firecrawl)
  * and stored; a file its host will not release is linked instead, never worked around. The address comes from the
  * stored search, never from the browser.
  */
@@ -237,7 +237,7 @@ export async function acceptEuropeanOffer(
     kind: file ? 'pdf' : 'web',
     sourceUrl: toHttps(search.url),
     source: 'harvest',
-    ukVerified: { by: 'user', note: 'European English-language edition, found and checked by the finder, accepted by the rep: no UK edition verified' },
+    ukVerified: { by: 'user', note: 'European English-language edition, found and checked by the finder, accepted by the salesperson: no UK edition verified' },
     documentType,
     market: 'eu',
     finder: { version: search.finderVersion, status: search.status, flags },
