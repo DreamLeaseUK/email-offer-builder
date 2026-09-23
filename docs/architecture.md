@@ -12,7 +12,7 @@ to resume see `PICKUP-PROMPT.md`. Brochure discovery (the finder) is designed an
 # Part A — Solution Design
 
 ## A1. What it is
-An internal, FCA-aware tool. A DreamLease sales rep pastes a `dreamlease.co.uk` vehicle URL, assembles a
+An internal, FCA-aware tool. A DreamLease sales salesperson pastes a `dreamlease.co.uk` vehicle URL, assembles a
 branded HTML email of one to six lease offers, and gets back **Outlook-ready HTML** (Copy-for-Outlook) plus a
 **hosted web page** of the same offers. The Worker never sends email — a human always presses Send.
 
@@ -23,7 +23,7 @@ Three audiences / lease products, each with its own compliance wording and terms
   + insurance) and shown as two net figures (20% and 40% taxpayer).
 
 ## A2. Core flows
-1. **Look up a vehicle.** Rep pastes a vehicle URL → normalise → HTMLRewriter page parse (identity/stats/
+1. **Look up a vehicle.** Salesperson pastes a vehicle URL → normalise → HTMLRewriter page parse (identity/stats/
    image) → the site's own pricing JSON prices the chosen term/mileage/initial → returns an `Offer` plus the
    configuration options (the "chips"). Cached 24 h. Prices are not in the page HTML. The site HTML-encodes text
    even inside its script block ("Techno &#x2B; Comfort Range"), so names, stats and spec lines are entity-decoded;
@@ -31,7 +31,7 @@ Three audiences / lease products, each with its own compliance wording and terms
    re-enters the server (library save and list, campaign preview and create), because a saved or open offer is a
    snapshot from before the fix (`packages/schema/src/text.ts`). The **configured terms
    are encoded into the offer URL**, so "View offer" opens the site pre-set to exactly what was quoted.
-2. **Configure & assemble.** Rep picks the audience and up to six offers, writes the intro/subject, picks
+2. **Configure & assemble.** Salesperson picks the audience and up to six offers, writes the intro/subject, picks
    the green-button CTA + optional secondary contact links, optionally attaches a brochure, previews live.
    There is no layout to choose: one offer is the hero card, two or more are one offer per row (B7).
 3. **Create.** The server assembles a `Campaign` (server-owned identity/slug/tracking/template/compliance),
@@ -47,27 +47,30 @@ Three audiences / lease products, each with its own compliance wording and terms
 ## A3. Feature inventory (built)
 - **Compose**: URL lookup → re-pricing chips → live preview → create → Copy-for-Outlook + hosted link. The
   first offer **auto-renders the preview**; later edits keep the preview visible but **flag it out-of-date**
-  (the rep presses Update preview) rather than blanking it; the Add button stays enabled and reads "Add
+  (the salesperson presses Update preview) rather than blanking it; the Add button stays enabled and reads "Add
   offer" / "Add another offer".
 - **Audience selector**: PCH / BCH / Salary sacrifice, driving compliance block, terms and (salsac) pricing.
 - **Offer-button CTA**: one primary green button per campaign — *View offer · Call · WhatsApp · Email · Book a
-  time to discuss* — each gated on the sender field it needs, with a rep-renamable label (≤30 chars).
-- **Secondary contact links**: an optional rep-chosen row (*Call · WhatsApp · Email · Book a call*) under the
+  time to discuss* — each gated on the sender field it needs, with a salesperson-renamable label (≤30 chars).
+- **Secondary contact links**: an optional salesperson-chosen row (*Call · WhatsApp · Email · Book a call*) under the
   signature, separate from the primary button, pruned to methods whose field is present.
-- **Rep profile (persisted)**: portrait photo (upload/replace/remove) + editable contact details, remembered
-  per rep and prefilled next time.
+- **Salesperson profile (persisted)**: portrait photo (upload/replace/remove) + editable contact details, remembered
+  per salesperson and prefilled next time.
 - **Brochures** (design in **B7b**): the finder searches, understands the manufacturer's site, operates the model's
   page and verifies what it finds; a verified **UK** brochure, price & spec guide or web brochure attaches by
   itself (our hosted PDF, or a link). No allowlist, no picking from a list. A manufacturer's **European brochure in
-  English** is only ever **offered**: the rep uses it, puts their own in its place, or sends without. An official
+  English** is only ever **offered**: the salesperson uses it, puts their own in its place, or sends without. An official
   page that holds a protected file, a price-list hub and a request-a-brochure form are offered for one click too.
-  When nothing is found the rep sees what was checked and can upload, paste a link, or send without.
+  When nothing is found the salesperson sees what was checked and can upload, paste a link, or send without.
 - **European-edition small print**: when the attached brochure is a European edition the card's small print says
   so ("This is the manufacturer's European brochure; specification, equipment and prices may differ from UK
   models."); grid3's shared footnote has a variant. Wording is Matt's; Emma has not approved it yet.
 - **One offer per row** (Matt, 21 Sept): a single offer renders as the hero card, two to six as stacked rows —
   image beside the details on a desktop, image above the details on a phone. The layout picker is gone.
-- **Offer library**; **Campaigns** (list + per-campaign stats); **Promotions register** (master table + CSV).
+- **Offer library** — a curated central repository (redesigned 23 Sept 2026; **B7c**): a salesperson's own shelf
+  plus admin-curated **shared shelves**, priced **live on use** (never a frozen price), with a **URL-health** flag
+  when a source page has moved/gone, a current/archived split, and a 6-month archive purge.
+- **Campaigns** (list + per-campaign stats); **Promotions register** (master table + CSV).
 - **Template admin (master-admin only)**: author the Emma-approved compliance templates, publish (self-
   approve), lock approved, new-version/retire. See A4 / B6.
 - **Suppression register**: the opt-out list — add / check / view / CSV export; admin-only removal. See A4.
@@ -82,14 +85,14 @@ Three audiences / lease products, each with its own compliance wording and terms
    persisted object, and the test suites assert that stored rows, link maps and rendered HTML carry no CAP ID or
    source image host (there is **no CI pipeline yet**: the check is `pnpm test`). No raw scraped HTML is ever
    persisted (24 h cache = parsed only).
-3. **Compliance is locked.** Each template carries one approved compliance block per contract type; reps can't
-   edit it; a campaign can't render against a template whose status is not `approved`. Rep-authored copy is
+3. **Compliance is locked.** Each template carries one approved compliance block per contract type; salespeople can't
+   edit it; a campaign can't render against a template whose status is not `approved`. Salesperson-authored copy is
    recorded verbatim in the promotions register.
 4. **Drafts only.** The Worker never sends email.
 
 ### PII posture — the plan is complete (16 Sept 2026)
-- **Staff (rep) data is business contact data** — name, work email/phone/WhatsApp, booking link, signature
-  photo — for the rep's own signature. Legitimate, minimal, expected; a signature headshot is not special-
+- **Staff (salesperson) data is business contact data** — name, work email/phone/WhatsApp, booking link, signature
+  photo — for the salesperson's own signature. Legitimate, minimal, expected; a signature headshot is not special-
   category. No minimisation/retention/encryption applied to it (Matt's call: it's business data).
 - **Customer (recipient) PII is minimised, not stored.** The recipient object is personalisation for the
   render only: it builds the email greeting and is **stripped at the persist boundary** — never reaches D1.
@@ -105,15 +108,15 @@ Three audiences / lease products, each with its own compliance wording and terms
   read is worse for a compliance register.
 - **Platform security:** Cloudflare encrypts D1 and R2 at rest; TLS in transit; behind Access/Entra; data in
   the **EU (WEUR)**.
-- **Residual, by design:** rep-authored free text (campaign name, subject, intro) is kept as the FCA record
-  and could contain a name if a rep types one — a training matter, not a schema one.
+- **Residual, by design:** salesperson-authored free text (campaign name, subject, intro) is kept as the FCA record
+  and could contain a name if a salesperson types one — a training matter, not a schema one.
 
 ## A5. The real send path, and what the email is built for (21 Sept 2026)
 **Scope (Matt, 21 Sept):** get it right in **Gmail (web + mobile app) and New Outlook (desktop + mobile)** first.
 Classic Outlook (Word's engine) and the full client matrix in the implementation notes are **not** the current
 target; the markup still carries the `[if mso]` ghost tables for it, untested.
 
-**The send path rewrites the email.** A rep copies the HTML and pastes it into a New Outlook message. Matt's real
+**The send path rewrites the email.** A salesperson copies the HTML and pastes it into a New Outlook message. Matt's real
 sends of 21 Sept (read in Gmail web, Gmail iOS, Outlook desktop, Outlook mobile) established what arrives:
 - **Survives:** table structure, widths and `max-width`, `display:inline-block`, background colours, borders,
   `border-radius`, bold, letter-spacing, link colours, images.
@@ -146,7 +149,7 @@ validation is Matt's own test sends.
 ## B1. High-level shape
 ```
                      ┌──────────────────────── Cloudflare Worker "offer-mailer" (Hono) ────────────────────────┐
-  Rep browser        │  /api/*  (behind Cloudflare Access → Entra SSO)                                          │
+  Salesperson browser        │  /api/*  (behind Cloudflare Access → Entra SSO)                                          │
   (mailer.…)      ──►│    me/profile · lookup · brochures · campaigns · library · register                     │
                      │    templates (admin) · suppressions (remove=admin) · dev-preview                         │
   Customer browser   │  PUBLIC (no login):  /health · /c/:slug (hosted) · /f/* · /b/:id · /r/:slug/:link · /a/* │
@@ -196,20 +199,21 @@ whichever is on 8787. Production `/api` itself stays 503 until Access is configu
 ### D1 tables (`apps/api/src/db/schema.ts`) — JSON snapshots validated by `@offer-mailer/schema`
 | Table | Holds | PII |
 |---|---|---|
-| `campaigns` | Campaign snapshot + slug, template id/version, `createdBy`, timestamps, `links` map | rep email + sender; **no recipient** (stripped at save) |
-| `offers` | Saved offer library | rep email |
+| `campaigns` | Campaign snapshot + slug, template id/version, `createdBy`, timestamps, `links` map | salesperson email + sender; **no recipient** (stripped at save) |
+| `library_entries` | The offer library (B7c): `LibraryEntry` JSON + facet columns (scope, category, status, url_health, make, model, fuel, body, contractType, monthly, validUntil, addedBy, addedAt, archivedAt, lastPricedAt) indexed for search and the future matcher | salesperson email |
+| `offers` | Legacy saved-offer table (pre-23 Sept); superseded by `library_entries`, kept until its rows are re-saved | salesperson email |
 | `templates` | Compliance templates (blocks, footer, markup/version, status, approvedBy/At) | approver email |
-| `brochures` | Brochure metadata (PDF bytes are in R2) | rep email (`createdBy`) |
-| `brochure_searches` | Latest completed brochure search per vehicle: outcome, market, edition, and the trace (queries, pages opened, every document with how it was discovered, the action taken and why it was kept or dropped). Also what `/brochures/accept` acts on: an official page, a request form, or an offered European edition. A "nothing found" is remembered 7 days; a search that never reached a page of the official site (`exhausted: false`) only 1 day; never a failed search, and never one made under an older `FINDER_VERSION` (a rules change re-runs, and re-pays for, those searches) | rep email |
-| `senders` | Rep profile (name/phone/WhatsApp/booking/secondary + headshot URL), keyed by email | rep business data |
+| `brochures` | Brochure metadata (PDF bytes are in R2) | salesperson email (`createdBy`) |
+| `brochure_searches` | Latest completed brochure search per vehicle: outcome, market, edition, and the trace (queries, pages opened, every document with how it was discovered, the action taken and why it was kept or dropped). Also what `/brochures/accept` acts on: an official page, a request form, or an offered European edition. A "nothing found" is remembered 7 days; a search that never reached a page of the official site (`exhausted: false`) only 1 day; never a failed search, and never one made under an older `FINDER_VERSION` (a rules change re-runs, and re-pays for, those searches) | salesperson email |
+| `senders` | Salesperson profile (name/phone/WhatsApp/booking/secondary + headshot URL), keyed by email | salesperson business data |
 | `clicks` | Click/view log: coarse uaClass + timestamp | **none — no IP/UA** |
 | `suppressions` | Opt-out **emails (plain text)** + addedBy/at/note | recipient email (lawful basis; admin-removable) |
-| `lookup_cache` | 24 h parsed lookup results — never raw HTML; purged daily | rep email (the cached `Offer` carries the `createdBy` of whoever looked it up first) |
+| `lookup_cache` | 24 h parsed lookup results — never raw HTML; purged daily | salesperson email (the cached `Offer` carries the `createdBy` of whoever looked it up first) |
 
 ### R2 objects
 | Bucket | Holds | Key | Served |
 |---|---|---|---|
-| `offer-mailer-images` | vehicle images + rep headshots | `vehicles/<sha256>.jpg`, `headshots/<sha256>.jpg` | `/f/vehicles/*`, `/f/headshots/*` |
+| `offer-mailer-images` | vehicle images + salesperson headshots | `vehicles/<sha256>.jpg`, `headshots/<sha256>.jpg` | `/f/vehicles/*`, `/f/headshots/*` |
 | `offer-mailer-hosted` | rendered hosted offer pages | `c/<slug>.html` | `/c/<slug>` (noindex, expiring) |
 | `offer-mailer-brochures` | brochure PDFs | `brochures/<sha256>.pdf` | `/f/brochures/*`, `/b/<id>` |
 
@@ -221,11 +225,15 @@ whichever is on 8787. Production `/api` itself stays 503 until Access is configu
 
 ## B5. Routing surface (`apps/api/src/index.ts`)
 **Public (no login):** `/health` · `/c/:slug` · `/f/*` · `/b/:id` · `/r/:slug/:link` · `/a/*`.
-**Behind Access (`/api/*`):** `/me`, `/me/photo`, `/me/sender` · `/offers/lookup`, `/offers/library` ·
+**Behind Access (`/api/*`):** `/me`, `/me/photo`, `/me/sender` · `/offers/lookup` · **library (B7c):**
+`/offers/library` (save · list current, `?scope=&category=&q=&maxMonthly=`), `/offers/library/archived`,
+`/offers/library/:id/reprice`, `/…/archive`, `/…/unarchive`, `/…/promote` **(admin)**, `/library/shelves` ·
 `/brochures/ensure`, `/brochures/accept` (an official page, a request form, or the European edition the finder offered), `/brochures/manual`, `/brochures/current` (the stored copy, no search) · `/campaigns*`, `/register`, `/register.csv` ·
 `/templates*` **(admin)** · `/suppressions`, `/suppressions.csv`, `/suppressions/check`,
 `/suppressions/remove` **(remove = admin)** · `/dev/*`.
-**Cron:** `scheduled()` → `runRetention()` + `recheckLinkedBrochures()` (a web / request brochure whose page is now 404/410 is superseded).
+**Cron:** `scheduled()` → `runRetention()` + `recheckLinkedBrochures()` (a web / request brochure whose page is now
+404/410 is superseded) + `recheckLibraryUrls()` (flag a library entry whose source URL moved/gone) +
+`purgeArchivedLibrary()` (archived library entries > 6 months).
 
 ## B6. Authentication & authorization
 - **Authentication** — Cloudflare Access with **Microsoft Entra ID** as IdP. Access stamps each request with a
@@ -292,7 +300,7 @@ Code: `packages/adapters/src/brochure/` — `finder.ts` (pure; Firecrawl and a p
 and Scrape understand the site, the page is operated, and strict validation happens only once a document is in
 hand.* The earlier versions judged documents from search metadata and threw the right ones away unopened.
 
-**When it runs** (`ensure.ts`): one current brochure per make/model, shared by every rep. A stored copy inside its
+**When it runs** (`ensure.ts`): one current brochure per make/model, shared by every salesperson. A stored copy inside its
 90 days and its edition limit is reused for nothing. Otherwise a remembered result is returned (7 days for "nothing
 found", 1 day for a search that never reached the official site, never a failed search, never one from an older
 `FINDER_VERSION`), or the finder runs. "Search again" forces it.
@@ -332,7 +340,7 @@ found", 1 day for a search that never reached the official site, never a failed 
    never a price guide, never dollar-priced) → official page only (protected file, image-only file, price-list hub)
    → request-a-brochure form → search failed (everything opened failed; never remembered) → nothing verified.
 
-| Status | Attaches by itself? | What the rep gets |
+| Status | Attaches by itself? | What the salesperson gets |
 |---|---|---|
 | `verified_pdf` / `verified_web_brochure`, market `uk` | **Yes** | Our hosted PDF, or a link to the manufacturer's web brochure |
 | the same with market `eu` (flag `european_offer`) | **No — offered** | Use it · open it first · use my own · search again · send without |
@@ -342,7 +350,7 @@ found", 1 day for a search that never reached the official site, never a failed 
 **After a find** (`harvest.ts`): the PDF is fetched directly, then through Firecrawl; it must be a real PDF of 40 MB or
 less; stored under its own hash; a file its host will not release is downgraded to "official page only" and never
 worked around. An accepted European edition is fetched and stored only at that moment, is titled "(European
-edition)", and a copy another rep accepted arrives **unticked**. Manual upload / paste always works and becomes the
+edition)", and a copy another salesperson accepted arrives **unticked**. Manual upload / paste always works and becomes the
 stored copy for everyone. Replaced copies keep serving sent emails; a daily job retires linked pages that now 404.
 
 **The trace** (`BrochureSearch`): queries, pages opened, why the site was taken to be official, whether the search
@@ -359,6 +367,46 @@ correct one-click offers, 1 correct nothing.
 offered as a page rather than followed to the model's file (Peugeot, Volvo); a variant can be taken for the model
 (Puma Gen-E); the rest of DreamLease's range has not been swept; production has no Firecrawl secret, so the finder
 only runs through `pnpm dev` / `dev:live` today.
+
+## B7c. Offer library — the curated repository (23 Sept 2026)
+Code: `packages/schema` (`LibraryEntry`, `libraryFacets`, `LIBRARY_ARCHIVE_PURGE_DAYS`), `apps/api/src/library.ts`
+(repo, routes, Cron helpers), `apps/api/src/db/schema.ts` (`library_entries`, migration `0003`),
+`config/library-shelves.json` (the shared shelves), `apps/web/src/Library.tsx` (the screen). Matt's decisions of
+23 Sept.
+
+**Principle:** the library is a curated *shortlist of vehicles + configurations*, not a frozen price list. An
+entry keeps only a "last known" price for the browse card; the **live price is re-fetched from the offer's own URL
+the moment it is used** (`/reprice`, then again as it is added to a campaign), so a stale price can never ship. It
+is the same silent-stale guard as the brochure finder, applied to prices.
+
+**Two surfaces / roles**
+- **Personal shelf** — a salesperson's own saved offers (`scope: 'personal'`, `addedBy` = them); only they see them.
+- **Shared shelves** — the central curated ones (`scope: 'shared'`, a `category`), that everyone pulls from. Only an
+  **admin** curates them (`/promote` and shared-scope deletes are admin-gated; the button only renders for admins).
+  Shelves come from `config/library-shelves.json` (admin-extensible): **PCH latest deals, BCH latest deals, EVs**
+  (manual), and **Deals under £300 per month** (a **smart** shelf filtered live on the `monthly` facet).
+
+**Promote = copy** (not move): promoting a salesperson's entry creates an independent shared entry (a new id, the
+admin as owner); the salesperson keeps their own. Promoting never removes anyone's saved offer.
+
+**Lifecycle**
+- **current / archived.** Archived entries drop out of the working list; the daily Cron **purges archived entries
+  older than 6 months** (`LIBRARY_ARCHIVE_PURGE_DAYS = 183`). Auto-archive on expiry / dead URL is the intent (plus
+  manual archive); the manual archive/unarchive routes are built, the auto trigger is wired via the URL recheck.
+- **URL health.** Dealer offer URLs move. Each entry has `urlHealth` (ok / moved / gone). `/reprice` and the daily
+  `recheckLibraryUrls()` resolve the source; if it no longer prices the vehicle the entry is flagged and **blocked
+  from use** with a hard "URL not current — update with the latest" (the salesperson re-fetches from Compose and
+  re-saves). A transient failure changes nothing.
+
+**Future matcher (not built, factored in):** the facet columns (make, model, fuel, body, contractType, monthly,
+validUntil) are indexed so the planned personalised **offer matcher** — which will pick shared offers to fit a
+customer's held details — is a query over `library_entries`, not a refactor. `libraryFacets(offer)` is the single
+place those columns are derived.
+
+**Tests:** `apps/api/test/library.test.ts` — personal vs shared, save/list/delete, archive/unarchive, admin
+promote (copy), the smart shelf's price filter, most-recent-first + search, the dead-URL 409 flag, the 6-month
+purge, and entity-decoding on read. Proven live through the tool (Renault 5 name decoded, Polestar 2 promoted to
+the EVs shelf while kept on the personal shelf).
 
 ## B8. External dependencies
 - **Firecrawl** — the only metered/external service. Two jobs: the **fallback HTML fetch for the vehicle lookup**
@@ -390,8 +438,8 @@ re-render a campaign).
 
 **Open from the 21 Sept test sends (in priority order):**
 - **Flattened text colour and size on the paste path** (A5) — cause found 22 Sept: Outlook's Merge-formatting paste.
-  The fix is the rep's paste mode (Keep source formatting), confirmed by Matt's real sends to Gmail and Outlook on
-  22 Sept. The Copy for Outlook screen tells the rep (helper line under the button, 22 Sept).
+  The fix is the salesperson's paste mode (Keep source formatting), confirmed by Matt's real sends to Gmail and Outlook on
+  22 Sept. The Copy for Outlook screen tells the salesperson (helper line under the button, 22 Sept).
 - **Small print before the offer on a phone** — done 22 Sept (B7, deviation d): the stacked card now reads name,
   picture, price, button, small print. Confirmed by Matt's real sends to Gmail and Outlook, 22 Sept.
 - **Grid code deleted** (22 Sept) once Matt confirmed the stacked layout in Gmail and Outlook: `halfCard`,
@@ -400,11 +448,11 @@ re-render a campaign).
 - **Rendering assurance** (A5): certification on real clients + an automatic pre-send check. Proposed, not built.
 
 **Queued / open decisions (from the 16 Sept UX pass — pick up next session):**
-- **Badge control (rep-editable).** Reps want website-level control over the offer-card badge/tags — a
+- **Badge control (salesperson-editable).** Salespeople want website-level control over the offer-card badge/tags — a
   Show-badge toggle, an editable badge with two-line `\n`, a tags editor with a ★ "hot" tag. **One decision
   first (touches rule 3): fixed approved list vs free text.** Today rule 3, the brief and the schema all say fixed list
   (`config/badges.json`). Free-text-but-recorded-in-the-register (with an optional claim-word denylist) was floated on
-  16 Sept; it would mean rewriting rule 3, so it is Matt’s call, not a default. Not built. Today badges are auto-derived from the vehicle page only (no rep control), which is why a car the
+  16 Sept; it would mean rewriting rule 3, so it is Matt’s call, not a default. Not built. Today badges are auto-derived from the vehicle page only (no salesperson control), which is why a car the
   site didn't flag (e.g. the Golf) shows no pill.
 - **Email cross-client validation.** Superseded by the approach in A5 (certify per markup version, certify the
   send path, pre-send check in the tool). Assessed and rejected earlier: mailpeek (Vue) and Mailpit (SMTP
@@ -420,7 +468,7 @@ IT — Access + a Cloudflare-served subdomain (parked; `mailer.` occupied) + the
 secret + confirming the Workers Paid plan; Tawk webchat (parked, renewals-only stage one).
 
 ## B10. Testing & verification
-- `pnpm test` — **214 tests**: schema 23, render 37, adapters 92, api 62. The adapter suite replays 18 recorded
+- `pnpm test` — **217 tests**: schema 23, render 34, adapters 92, api 68 (library: 9). The adapter suite replays 18 recorded
   manufacturer sites through the brochure finder at zero credits (added 21 Sept: Polestar 2, the European fallback;
   Renault 4 and Geely EX2, the two misses of that afternoon; Toyota C-HR, Škoda Kodiaq and Hyundai Kona from the
   finder-1.4 sweep). `packages/adapters/scripts/finder-sweep.mts` runs the finder LIVE over a list of cars (real

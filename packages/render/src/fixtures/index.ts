@@ -162,7 +162,7 @@ export interface FixtureOptions {
   layout?: Campaign['layout'];
   cta?: Offer['cta'];
   brochure?: 'none' | 'pdf' | 'gated';
-  sender?: 'rep' | 'shared';
+  sender?: 'salesperson' | 'shared';
   preheader?: string;
 }
 

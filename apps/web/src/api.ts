@@ -2,7 +2,14 @@
  * Thin client for the Worker API (apps/api). Everything is same-origin: Vite proxies /api, /c, /r,
  * /f, /b and /a to the Worker in dev, and in production the Worker serves the built app too.
  */
-import type { Brochure, BrochureSearch, Campaign, ComplianceBlock, ContractType, Offer, Sender, Template } from '@offer-mailer/schema';
+import type { Brochure, BrochureSearch, Campaign, ComplianceBlock, ContractType, LibraryEntry, Offer, Sender, Template } from '@offer-mailer/schema';
+
+/** A shared library shelf (config/library-shelves.json). 'smart' shelves filter live, e.g. price under a cap. */
+export interface LibraryShelf {
+  name: string;
+  kind: 'manual' | 'smart';
+  rule?: { maxMonthly?: number };
+}
 
 /** The admin-authored parts of a template; identity/version/markupVersion/status are server-owned. */
 export interface TemplateInput {
@@ -36,12 +43,12 @@ export type LayoutChoice = 'auto' | 'single' | 'stack';
 export type UseCase = 'follow_up' | 'offer_pack' | 'renewal';
 /** The audience / lease product. Drives the compliance block, terms and (for salsac) the pricing shape. */
 export type Audience = 'personal' | 'business' | 'salary_sacrifice';
-/** A contact method the rep can surface as a secondary link in their signature. */
+/** A contact method the salesperson can surface as a secondary link in their signature. */
 export type ContactMethod = 'call' | 'whatsapp' | 'email' | 'book';
 /** The signed-in user's role. Master admins get the template admin; everyone else is a salesperson. */
 export type Role = 'salesperson' | 'admin';
 
-/** The rep's saved, editable sender contact details (the photo persists separately). */
+/** The salesperson's saved, editable sender contact details (the photo persists separately). */
 export interface SavedSender {
   displayName: string;
   jobTitle: string;
@@ -127,9 +134,9 @@ const jsonPost = (url: string, data: unknown) => fetch(url, { method: 'POST', he
 
 export const api = {
   me: () => fetch('/api/me').then((r) => jsonOrThrow<{ email: string; sub: string; role: Role; publicBaseUrl: string; headshotUrl: string | null; savedSender: SavedSender | null }>(r)),
-  /** Save the rep's contact details so they prefill next time. */
+  /** Save the salesperson's contact details so they prefill next time. */
   saveSender: (details: SavedSender) => jsonPost('/api/me/sender', details).then((r) => jsonOrThrow<{ ok: boolean; savedSender: SavedSender }>(r)),
-  /** Upload the rep's portrait; returns the stored (square) headshot URL. */
+  /** Upload the salesperson's portrait; returns the stored (square) headshot URL. */
   uploadPhoto: (file: File) => {
     const fd = new FormData();
     fd.set('photo', file);
@@ -143,7 +150,7 @@ export const api = {
   stats: (id: string) => fetch(`/api/campaigns/${id}/stats`).then((r) => jsonOrThrow<CampaignStats>(r)),
   /** Attach a brochure for a vehicle: the stored copy, or a search. Throws only when search is not configured (503). */
   ensureBrochure: (make: string, model: string, force = false) => jsonPost('/api/brochures/ensure', { make, model, ...(force ? { force: true } : {}) }).then((r) => jsonOrThrow<EnsureBrochureResponse>(r)),
-  /** The rep accepts the official page / request form the finder found but would not attach by itself. */
+  /** The salesperson accepts the official page / request form the finder found but would not attach by itself. */
   acceptBrochure: (make: string, model: string) => jsonPost('/api/brochures/accept', { make, model }).then((r) => jsonOrThrow<{ brochure: Brochure; state: string }>(r)),
   /** The manual path: a pasted PDF/brochure-page link, or an uploaded PDF (multipart). */
   manualBrochure: (make: string, model: string, opts: { url?: string; file?: File }) => {
@@ -157,8 +164,28 @@ export const api = {
     }
     return jsonPost('/api/brochures/manual', { make, model, url: opts.url }).then((r) => jsonOrThrow<{ brochure: Brochure; state: string }>(r));
   },
-  saveOffer: (offer: Offer) => jsonPost('/api/offers/library', { offer }).then((r) => jsonOrThrow<{ offer: Offer }>(r)),
-  listLibrary: () => fetch('/api/offers/library').then((r) => jsonOrThrow<{ offers: Offer[] }>(r)),
+  // ---- offer library (the curated repository) ----
+  saveOffer: (offer: Offer) => jsonPost('/api/offers/library', { offer }).then((r) => jsonOrThrow<{ entry: LibraryEntry; offer: Offer }>(r)),
+  libraryShelves: () => fetch('/api/library/shelves').then((r) => jsonOrThrow<{ shelves: LibraryShelf[] }>(r)),
+  listLibrary: (p: { scope?: 'personal' | 'shared'; category?: string; q?: string; maxMonthly?: number } = {}) => {
+    const qs = new URLSearchParams();
+    if (p.scope) qs.set('scope', p.scope);
+    if (p.category) qs.set('category', p.category);
+    if (p.q) qs.set('q', p.q);
+    if (p.maxMonthly) qs.set('maxMonthly', String(p.maxMonthly));
+    const s = qs.toString();
+    return fetch(`/api/offers/library${s ? `?${s}` : ''}`).then((r) => jsonOrThrow<{ entries: LibraryEntry[]; offers: Offer[] }>(r));
+  },
+  listArchivedLibrary: (scope: 'personal' | 'shared' = 'personal') => fetch(`/api/offers/library/archived?scope=${scope}`).then((r) => jsonOrThrow<{ entries: LibraryEntry[] }>(r)),
+  /** Re-fetch the live price from the source. On a dead URL the Worker answers 409; the caller shows the flag. */
+  repriceLibrary: (id: string): Promise<{ ok: true; entry: LibraryEntry; offer: Offer; message: string } | { ok: false; error: string; entry?: LibraryEntry }> =>
+    jsonPost(`/api/offers/library/${id}/reprice`, {}).then(async (r) => {
+      const body = (await r.json().catch(() => ({}))) as { entry?: LibraryEntry; offer?: Offer; message?: string; error?: string };
+      return r.ok && body.offer ? { ok: true as const, entry: body.entry!, offer: body.offer, message: body.message ?? '' } : { ok: false as const, error: body.error ?? `Re-pricing failed (HTTP ${r.status}).`, ...(body.entry ? { entry: body.entry } : {}) };
+    }),
+  archiveLibrary: (id: string) => jsonPost(`/api/offers/library/${id}/archive`, {}).then((r) => jsonOrThrow<{ entry: LibraryEntry }>(r)),
+  unarchiveLibrary: (id: string) => jsonPost(`/api/offers/library/${id}/unarchive`, {}).then((r) => jsonOrThrow<{ entry: LibraryEntry }>(r)),
+  promoteLibrary: (id: string, category: string) => jsonPost(`/api/offers/library/${id}/promote`, { category }).then((r) => jsonOrThrow<{ entry: LibraryEntry }>(r)),
   deleteLibraryOffer: (id: string) => fetch(`/api/offers/library/${id}`, { method: 'DELETE' }).then((r) => jsonOrThrow<{ ok: boolean }>(r)),
   register: () => fetch('/api/register').then((r) => jsonOrThrow<RegisterData>(r)),
   // ---- template admin (master admin only) ----

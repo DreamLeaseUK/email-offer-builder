@@ -51,6 +51,44 @@ export const offers = sqliteTable(
   (t) => [index('offers_vehicle_key').on(t.vehicleKey), index('offers_valid_until').on(t.validUntil)],
 );
 
+/**
+ * The offer library — a curated repository (LibraryEntry JSON in `data`). The columns beside it are the facets we
+ * search, filter and (in a later iteration) match on, indexed so the future offer matcher is a query, not a
+ * refactor. Prices are re-fetched live on use, so `monthly` here is only "last known" for the browse card.
+ */
+export const libraryEntries = sqliteTable(
+  'library_entries',
+  {
+    id: text('id').primaryKey(),
+    scope: text('scope').notNull(), // personal | shared
+    category: text('category'), // shelf, shared entries
+    status: text('status').notNull(), // current | archived
+    urlHealth: text('url_health').notNull(), // ok | moved | gone | unchecked
+    make: text('make').notNull(),
+    model: text('model').notNull(),
+    fuelType: text('fuel_type'),
+    bodyStyle: text('body_style'),
+    contractType: text('contract_type').notNull(),
+    monthly: integer('monthly').notNull(), // £/mo, rounded — price-band queries
+    vehicleKey: text('vehicle_key').notNull(),
+    validUntil: text('valid_until').notNull(),
+    addedBy: text('added_by').notNull(),
+    addedAt: text('added_at').notNull(),
+    archivedAt: text('archived_at'),
+    lastPricedAt: text('last_priced_at'),
+    updatedAt: text('updated_at').notNull(),
+    /** LibraryEntry JSON */
+    data: text('data', { mode: 'json' }).notNull(),
+  },
+  (t) => [
+    index('library_scope_status_added').on(t.scope, t.status, t.addedAt),
+    index('library_owner_status').on(t.addedBy, t.status),
+    index('library_facets').on(t.make, t.model, t.contractType),
+    index('library_category_status').on(t.category, t.status),
+    index('library_archived').on(t.status, t.archivedAt),
+  ],
+);
+
 export const templates = sqliteTable(
   'templates',
   {
@@ -84,7 +122,7 @@ export const brochures = sqliteTable(
 
 /**
  * The latest completed brochure search per vehicle: what was checked and why something did or did not
- * attach. It lets a "nothing found" answer be remembered for a few days and shown to the rep. A search that
+ * attach. It lets a "nothing found" answer be remembered for a few days and shown to the salesperson. A search that
  * failed to run is never written here.
  */
 export const brochureSearches = sqliteTable('brochure_searches', {

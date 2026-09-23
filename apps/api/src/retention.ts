@@ -8,7 +8,9 @@
  * When set, a purged campaign takes its click log and its hosted page (R2) with it.
  *
  * Not touched: senders (staff business data), suppressions (kept to honour opt-outs), templates
- * (compliance records), the offer library (rep-managed). Recipient PII is never stored (see campaigns.ts).
+ * (compliance records). Recipient PII is never stored (see campaigns.ts). The offer library is housekept
+ * separately from the same Cron (library.ts: recheckLibraryUrls + purgeArchivedLibrary) — its archive is
+ * purged after 6 months so the list does not grow without bound.
  */
 import type { Env } from './env.js';
 import { hostedKey } from './hosted.js';

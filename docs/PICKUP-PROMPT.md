@@ -7,7 +7,7 @@ not re-checked). Verify before you act: run the pickup-verify skill if it is ava
 
 ---
 
-You are resuming the **DreamLease Offer Mailer**: an internal tool where a sales rep pastes a dreamlease.co.uk
+You are resuming the **DreamLease Offer Mailer**: an internal tool where a sales salesperson pastes a dreamlease.co.uk
 vehicle URL, assembles a branded HTML email of one to six lease offers, and gets Outlook-ready HTML plus a hosted
 web page. It is an FCA-regulated financial-promotions tool (compliance matters).
 
@@ -40,7 +40,9 @@ web page. It is an FCA-regulated financial-promotions tool (compliance matters).
 3. **`docs/architecture.md`** — the authoritative Solution Design & System Architecture. **A5 (the real send path),
    B7 (rendering and the deviations from the v5 reference) and B7b (the brochure finder, in one place) are the parts
    that changed most recently.**
-4. **`docs/status-2026-09-21.md`** — the current build log, one long day in five parts. §0 is the summary; §1–§6 the
+4. **`docs/status-2026-09-23.md`** — the current build log (the offer library rebuilt as a curated repository; the
+   `architecture.md` B7c design). It also summarises the 22 Sept render/paste work. Then `docs/status-2026-09-21.md`
+   — the finder day in five parts. §0 is the summary; §1–§6 the
    European brochure fallback; §7 the real test sends and one offer per row; §8 the first finder misses (Renault 4,
    Geely EX2); §9 finder-1.4 and the 17-car sweep; §10 the European edition becoming an OFFER, and the name-entity
    fix. Older status files are history.
@@ -92,7 +94,7 @@ web page. It is an FCA-regulated financial-promotions tool (compliance matters).
 |---|---|
 | 1 Scaffold, schema, D1, Worker, Access middleware, deploy | Done, deployed |
 | 2 `render()`, layouts, hosted page | Done. **One offer per row since 21 Sept** (1 → hero, 2+ → stacked rows); the grid cards were deleted 22 Sept |
-| 3 URL lookup, image pipeline, brochures | Done. Brochures are the **finder** (no allowlist, `finder-1.4`: Map + the model's page operated inside Firecrawl), with a **European English-language fallback that is only ever OFFERED to the rep** |
+| 3 URL lookup, image pipeline, brochures | Done. Brochures are the **finder** (no allowlist, `finder-1.4`: Map + the model's page operated inside Firecrawl), with a **European English-language fallback that is only ever OFFERED to the salesperson** |
 | 4 Web app | Core screens built; runs locally only, **not yet served from the production Worker** |
 | 5 Graph draft / Copy for Outlook | Copy-for-Outlook done and is the only send path; Graph draft parked (IT Entra app) |
 | 6 Redirects, click logging, stats | Done |
@@ -112,7 +114,7 @@ Scope is **Gmail (web + app) and New Outlook (desktop + mobile)** only, for now 
   red price and red make name arrive black and body-sized; white badge text arrives black — because Outlook pastes
   "from other apps" with **Merge formatting**, its default (Settings → Mail → Compose and reply → Cut, copy and
   paste). Proven from the sent `.eml` and through Outlook's own editor: no markup survives Merge formatting, and
-  with **Keep source formatting** the same markup arrives red and 28px. The fix is the rep's paste mode, per paste
+  with **Keep source formatting** the same markup arrives red and 28px. The fix is the salesperson's paste mode, per paste
   (the "(Ctrl)" paste-options button) or as the default. `status-2026-09-21.md` §11.
 
 So **nothing may depend on the media query or on `[if mso]`**. What was changed for that (all in `main`): fluid
@@ -122,7 +124,7 @@ card; auto layout 1 → single, 2+ → stack; layout picker removed. Matt's verd
 ## 5. Open items, in the order I would take them
 
 1. **Flattened colour / size on the paste path** (§4) — CLOSED 22 Sept: cause found, the Copy for Outlook screen tells
-   the rep to paste with Keep source formatting, and Matt's real sends to Gmail and Outlook look right.
+   the salesperson to paste with Keep source formatting, and Matt's real sends to Gmail and Outlook look right.
 2. **Reading order on a phone** — done 22 Sept (Matt's instruction): the stacked card is now heading row (badge,
    make, model, derivative), then image beside price / stats / button, then the small print as the last row; on a
    phone that reads name, picture, price, button, small print. Deviation d in `cards.ts`. CLOSED 22 Sept: Matt's
@@ -143,7 +145,7 @@ card; auto layout 1 → single, 2+ → stack; layout picker removed. Matt's verd
      offered as a page rather than followed to the model's file (Peugeot, Volvo); a variant taken for the model
      (Puma Gen-E). Most of DreamLease's range has not been swept.
    - **Matt's ruling (final):** a European English-language edition is **offered, never attached by itself**; a copy
-     another rep accepted arrives unticked. Three calls from that morning he can still overturn: brochures only in
+     another salesperson accepted arrives unticked. Three calls from that morning he can still overturn: brochures only in
      the fallback; a euro-priced European brochure is still offered, flagged; a document that does not say its
      market is refused.
 5. **Badge control** — a decision first: fixed approved list (what `CLAUDE.md` rule 3, the brief and the schema all
@@ -169,9 +171,9 @@ card; auto layout 1 → single, 2+ → stack; layout picker removed. Matt's verd
 - The car image renders on black only in plain local `wrangler dev`; production (and `dev:live`) render white.
 - Links inside a *preview* iframe 404 ("Link not found.") — expected; only a created campaign has links.
 - Copy for Outlook copies the campaign **as created**. Since 22 Sept any change to the offers, including a Library
-  add, drops the created result so the button cannot hand out a stale email; the rep presses Create again
+  add, drops the created result so the button cannot hand out a stale email; the salesperson presses Create again
   (`status-2026-09-21.md` §13).
-- "View offer" already deep-links with the rep's configured terms. No change needed.
+- "View offer" already deep-links with the salesperson's configured terms. No change needed.
 - Template admin needs all three audience blocks; the seeded default template is a **placeholder, not Emma-approved**,
   and seeds itself into an empty database on first use.
 - A brochure "nothing found" is remembered 7 days; a search that never reached the official site only 1 day; a

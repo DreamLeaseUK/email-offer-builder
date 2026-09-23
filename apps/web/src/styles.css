@@ -428,6 +428,112 @@ body {
   display: flex;
   gap: 8px;
   align-items: center;
+  flex-wrap: wrap;
+}
+/* library: header, scope segments, shelves, controls, entry meta and the dead-URL flag */
+.lib-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.lib-segs {
+  display: inline-flex;
+  border: 1px solid var(--dl-border, #e1e0e4);
+  border-radius: 999px;
+  padding: 2px;
+  background: var(--dl-panel, #f6f6f7);
+}
+.lib-seg {
+  border: 0;
+  background: transparent;
+  border-radius: 999px;
+  padding: 6px 14px;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  color: var(--dl-graphite, #787580);
+}
+.lib-seg.is-on {
+  background: #fff;
+  color: #000;
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+.lib-shelves {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+.lib-chip {
+  border: 1px solid var(--dl-border, #e1e0e4);
+  background: #fff;
+  border-radius: 999px;
+  padding: 5px 12px;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.lib-chip.is-on {
+  border-color: var(--dl-cta-green, #31bd51);
+  background: #eafaef;
+  font-weight: 600;
+}
+.lib-chip__smart {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--dl-flashpoint-orange, #ff8811);
+  border: 1px solid currentColor;
+  border-radius: 4px;
+  padding: 0 3px;
+}
+.lib-controls {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin: 14px 0 4px;
+  flex-wrap: wrap;
+}
+.lib-search {
+  padding: 8px 12px;
+  border: 1px solid var(--dl-border, #e1e0e4);
+  border-radius: 8px;
+  font: inherit;
+  font-size: 14px;
+  min-width: 220px;
+}
+.lib-archtoggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--dl-graphite, #787580);
+}
+.lib-meta {
+  margin: 0;
+}
+.lib-item--dead {
+  opacity: 0.96;
+}
+.lib-dead {
+  font-size: 12px;
+  line-height: 1.4;
+  padding: 8px 10px;
+  border-left: 3px solid var(--dl-ignition-red, #e30613);
+  background: #fdecee;
+  border-radius: 4px;
+}
+.lib-promote {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 .list__head {
   display: flex;

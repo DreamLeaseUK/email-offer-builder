@@ -6,7 +6,7 @@ import type { AppEnv, Env } from './env.js';
 import { runRetention } from './retention.js';
 import { files } from './files.js';
 import { hosted } from './hosted.js';
-import { libraryApi } from './library.js';
+import { libraryApi, purgeArchivedLibrary, recheckLibraryUrls } from './library.js';
 import { lookup } from './lookup.js';
 import { requireAccess } from './middleware/access.js';
 import { profileApi } from './profile.js';
@@ -40,7 +40,7 @@ app.route('/', redirect); // /r/:slug/:link — resolves a stored campaign's lin
 
 const api = new Hono<AppEnv>();
 api.use('*', requireAccess());
-api.route('/', profileApi); // /me + /me/photo — the rep's profile and portrait
+api.route('/', profileApi); // /me + /me/photo — the salesperson's profile and portrait
 api.route('/', lookup);
 api.route('/', brochuresApi);
 api.route('/', campaignsApi);
@@ -74,6 +74,17 @@ handler.scheduled = (_controller, env, ctx) => {
     recheckLinkedBrochures(env)
       .then((r) => console.log('brochure links:', JSON.stringify(r)))
       .catch((e) => console.error('brochure link re-check failed:', e instanceof Error ? e.message : String(e))),
+  );
+  // library entries: flag any whose source offer URL has moved or gone (a dealer changed it), and purge the archive
+  ctx.waitUntil(
+    recheckLibraryUrls(env)
+      .then((r) => console.log('library urls:', JSON.stringify(r)))
+      .catch((e) => console.error('library url re-check failed:', e instanceof Error ? e.message : String(e))),
+  );
+  ctx.waitUntil(
+    purgeArchivedLibrary(env, new Date())
+      .then((n) => console.log('library archive purged:', n))
+      .catch((e) => console.error('library archive purge failed:', e instanceof Error ? e.message : String(e))),
   );
 };
 

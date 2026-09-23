@@ -19,7 +19,7 @@ export function App() {
   const [role, setRole] = useState<Role>('salesperson');
   const [meError, setMeError] = useState('');
   const [view, setView] = useState<View>('compose');
-  // The offer tray is shared so the Library can add to the campaign the rep is composing.
+  // The offer tray is shared so the Library can add to the campaign the salesperson is composing.
   const [items, setItems] = useState<Item[]>([]);
 
   useEffect(() => {
@@ -74,7 +74,7 @@ export function App() {
         <Compose email={email} base={base} items={items} setItems={setItems} />
       </div>
       {view === 'campaigns' && <Campaigns />}
-      {view === 'library' && <Library base={base} onAdd={addFromLibrary} />}
+      {view === 'library' && <Library base={base} role={role} onAdd={addFromLibrary} />}
       {view === 'register' && <Register />}
       {view === 'suppressions' && <Suppressions role={role} />}
       {view === 'templates' && role === 'admin' && <Templates />}

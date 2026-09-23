@@ -1,0 +1,9 @@
+{
+  "_comment": "Shared curated library shelves. Maintained by Matt; add more here at any time (admin-extensible). A 'manual' shelf holds the offers an admin puts on it. A 'smart' shelf is filled automatically from the live facts (e.g. price), so it stays correct as offers re-price. 'category' on a library entry is a free label, so nothing here is a hard limit — this is the working set the tool offers.",
+  "shelves": [
+    { "name": "PCH latest deals", "kind": "manual" },
+    { "name": "BCH latest deals", "kind": "manual" },
+    { "name": "EVs", "kind": "manual" },
+    { "name": "Deals under £300 per month", "kind": "smart", "rule": { "maxMonthly": 300 } }
+  ]
+}

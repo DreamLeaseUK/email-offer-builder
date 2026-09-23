@@ -14,7 +14,7 @@ export const OfferSourceKind = z.enum(['manual', 'url', 'feed', 'monday', 'ai'])
 export const StockStatus = z.enum(['in_stock', 'factory_order', 'limited']);
 export const CtaKind = z.enum(['view_offer', 'email', 'call', 'whatsapp', 'book', 'link']);
 export type CtaKind = z.infer<typeof CtaKind>;
-/** Contact methods a rep can surface as secondary links in their signature (§7.1). */
+/** Contact methods a salesperson can surface as secondary links in their signature (§7.1). */
 export const ContactMethod = z.enum(['call', 'whatsapp', 'email', 'book']);
 export type ContactMethod = z.infer<typeof ContactMethod>;
 
@@ -60,7 +60,7 @@ const e164 = z.string().regex(/^\+[1-9]\d{6,14}$/, 'E.164 phone number required'
 export const Cta = z
   .object({
     kind: CtaKind,
-    /** Overrides the kind's default label. Rep-authored copy: recorded in the promotions register. */
+    /** Overrides the kind's default label. Salesperson-authored copy: recorded in the promotions register. */
     label: z.string().trim().min(1).max(30).optional(),
     /** 'link' only. */
     url: httpsUrl.optional(),
@@ -76,7 +76,7 @@ export const CTA_DEFAULT_LABELS: Record<Exclude<CtaKind, 'link'>, string> = {
   book: 'Book a time to talk',
 };
 
-/** Fixed labels for the signature's secondary contact links (not rep-renamable; the primary button is). */
+/** Fixed labels for the signature's secondary contact links (not salesperson-renamable; the primary button is). */
 export const SECONDARY_CONTACT_LABELS: Record<ContactMethod, string> = {
   call: 'Call',
   whatsapp: 'WhatsApp',
@@ -159,7 +159,7 @@ export const Offer = z.object({
   cta: Cta.optional(),
   /** Required. The library greys out expired offers; the hosted page expires with it. */
   validUntil: isoDate,
-  /** §5.8. include = the rep's toggle. */
+  /** §5.8. include = the salesperson's toggle. */
   brochure: z.object({ brochureId: uuid, include: z.boolean() }).optional(),
   /** Internal, never rendered. */
   notes: z.string().optional(),
@@ -227,13 +227,13 @@ export const BROCHURE_MAX_AGE_MONTHS: Record<BrochureDocumentType, number> = { b
  * …unless the manufacturer's own UK site is serving it today (on its host, or linked from its pages): that IS its
  * current edition, however long ago it was printed. Toyota's C-HR brochure and Kia's EV3 brochure were both about
  * two years old and the only ones their makers offered (sweep of 21 Sept 2026). Such a record carries the flag
- * 'older_edition' once it is past the ordinary limit, and the rep is told.
+ * 'older_edition' once it is past the ordinary limit, and the salesperson is told.
  */
 export const BROCHURE_MAX_AGE_MONTHS_OFFICIAL: Record<BrochureDocumentType, number> = { brochure: 36, price_spec_guide: 12 };
 
 // ---------- Brochure search trace ----------
 
-/** One document or page the finder considered, with why it was kept or dropped. Shown to the rep as "what we checked". */
+/** One document or page the finder considered, with why it was kept or dropped. Shown to the salesperson as "what we checked". */
 export const BrochureCandidateTrace = z.object({
   url: z.string(),
   via: z.enum(['search', 'site-search', 'official-page', 'model-page']),
@@ -246,7 +246,7 @@ export const BrochureCandidateTrace = z.object({
   evidence: z.record(z.string(), z.union([z.string(), z.number(), z.boolean()])).optional(),
   /** Every way this document turned up: search, site-search, map, a link on a page, a control that was pressed. */
   discoveredBy: z.array(z.string()).optional(),
-  /** What was done to reach it, in the rep's words: 'pressed "Download Geely EX2 Brochure"'. */
+  /** What was done to reach it, in the salesperson's words: 'pressed "Download Geely EX2 Brochure"'. */
   action: z.string().optional(),
 });
 export type BrochureCandidateTrace = z.infer<typeof BrochureCandidateTrace>;
@@ -285,6 +285,85 @@ export const BrochureSearch = z.object({
 });
 export type BrochureSearch = z.infer<typeof BrochureSearch>;
 
+// ---------- Library (central offer repository) ----------
+
+/**
+ * The offer library is a curated repository, not a frozen price list. An entry stores the vehicle and its
+ * configuration; the PRICE on the entry is only "last known" (for the browse card, with `lastPricedAt`) and is
+ * re-fetched live from `offer.offerUrl` the moment a salesperson adds it to a campaign — so a stale price can never ship
+ * (Matt, 23 Sept 2026). Dealer URLs move, so `urlHealth` tracks whether the source still resolves; a `moved`/`gone`
+ * entry is hard-blocked from use until the salesperson re-points it. Entries are `current` or `archived`; archived ones are
+ * purged after 6 months so the list does not grow without bound.
+ */
+export const LibraryScope = z.enum(['personal', 'shared']);
+export type LibraryScope = z.infer<typeof LibraryScope>;
+/** current = in the working repository; archived = kept out of the way, purged after LIBRARY_ARCHIVE_PURGE_DAYS. */
+export const LibraryStatus = z.enum(['current', 'archived']);
+export type LibraryStatus = z.infer<typeof LibraryStatus>;
+/** Does the source offer URL still resolve to this vehicle? ok / moved (redirected or lost its data) / gone (404). */
+export const UrlHealthState = z.enum(['ok', 'moved', 'gone', 'unchecked']);
+export type UrlHealthState = z.infer<typeof UrlHealthState>;
+
+export const UrlHealth = z.object({
+  state: UrlHealthState,
+  /** When the source URL was last resolved. */
+  checkedAt: isoDateTime.optional(),
+  /** Plain-words reason when not ok, shown to the salesperson ("URL not current — update with the latest"). */
+  note: z.string().optional(),
+});
+export type UrlHealth = z.infer<typeof UrlHealth>;
+
+export const LibraryEntry = z.object({
+  id: uuid,
+  /** The vehicle + configuration + last-known price. Priced live from `offer.offerUrl` when used. */
+  offer: Offer,
+  /** personal = the salesperson's own shelf; shared = the curated central shelves (an admin promotes to these). */
+  scope: LibraryScope,
+  /** The shelf a shared entry sits on ("Salary sacrifice EVs", "Latest deals", "Business"). */
+  category: z.string().trim().min(1).max(60).optional(),
+  status: LibraryStatus,
+  urlHealth: UrlHealth,
+  addedBy: email,
+  addedAt: isoDateTime,
+  /** Set when status is archived; the 6-month purge runs off this. */
+  archivedAt: isoDateTime.optional(),
+  /** When the price was last confirmed live against the source (re-price on use / the URL recheck). */
+  lastPricedAt: isoDateTime.optional(),
+  updatedAt: isoDateTime,
+});
+export type LibraryEntry = z.infer<typeof LibraryEntry>;
+
+/** Archived entries older than this are purged (retention Cron). Six months. */
+export const LIBRARY_ARCHIVE_PURGE_DAYS = 183;
+
+/**
+ * The attributes pulled out of an entry for search, filtering and the future offer matcher, so they are indexed
+ * columns rather than buried in the JSON blob. The matcher (a later iteration) is then a query over these, not a
+ * refactor. `monthly` is rounded to whole pounds for price-band queries.
+ */
+export interface LibraryFacets {
+  make: string;
+  model: string;
+  fuelType?: string;
+  bodyStyle?: string;
+  contractType: ContractType;
+  monthly: number;
+  vehicleKey: string;
+  validUntil: string;
+}
+export function libraryFacets(offer: Offer): LibraryFacets {
+  return {
+    make: offer.vehicle.make,
+    model: offer.vehicle.model,
+    ...(offer.vehicle.fuelType ? { fuelType: offer.vehicle.fuelType } : {}),
+    ...(offer.vehicle.bodyStyle ? { bodyStyle: offer.vehicle.bodyStyle } : {}),
+    contractType: offer.contractType,
+    monthly: Math.round(offer.pricing.monthly),
+    vehicleKey: vehicleKey(offer.vehicle),
+    validUntil: offer.validUntil,
+  };
+}
+
 // ---------- Recipient, Sender ----------
 
 export const RecipientContext = z.object({
@@ -318,7 +397,7 @@ export const Sender = z.object({
   whatsapp: e164.optional(),
   /** Microsoft Bookings page. Enables the "Book a call" CTA. */
   bookingUrl: httpsUrl.optional(),
-  /** Which contact methods to show as a secondary row of links in the signature. The rep chooses one
+  /** Which contact methods to show as a secondary row of links in the signature. The salesperson chooses one
    *  primary green button per offer and, separately, any of these to surface here. Render skips a
    *  method whose underlying field is absent. */
   secondaryContacts: z.array(ContactMethod).optional(),
@@ -357,10 +436,10 @@ export const Campaign = z.object({
   useCase: CampaignUseCase,
   templateId: uuid,
   templateVersion: z.number().int().positive(),
-  /** Rep-authored: recorded in the register. */
+  /** Salesperson-authored: recorded in the register. */
   subject: z.string().min(1).max(150),
   preheader: z.string().max(150).optional(),
-  /** Rep's personal message, plain text with line breaks. Recorded in the register. */
+  /** Salesperson's personal message, plain text with line breaks. Recorded in the register. */
   intro: z.string().min(1).max(4000),
   /** 'auto' picks single for 1 offer, stack for 2 or more; grid2 / grid3 are accepted for stored campaigns and render as stack (resolveLayout in packages/render). */
   layout: z.enum(['auto', 'single', 'stack', 'grid2', 'grid3']),
@@ -399,7 +478,7 @@ export const Template = z.object({
    * code (the v4 design translated to template functions); this pins which generation Emma saw.
    */
   markupVersion: z.number().int().positive(),
-  /** One block per contract type. Reps cannot edit these. */
+  /** One block per contract type. Salespeople cannot edit these. */
   complianceBlocks: z.record(ContractType, ComplianceBlock),
   footer: z.object({
     /** "Don't want offers from DreamLease? Reply to this email and tell us, and we'll stop." */
