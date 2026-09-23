@@ -57,6 +57,8 @@ export interface ComposeSeed {
   ctaKind: CtaKindChoice;
   ctaLabel: string;
   sender: { name: string; title: string; phone: string; whatsapp: string; booking: string; secondary: ContactMethod[] };
+  /** The campaign's offers; Compose loads them into the tray and re-prices each one live from its source URL. */
+  offers: Offer[];
 }
 /** A contact method the salesperson can surface as a secondary link in their signature. */
 export type ContactMethod = 'call' | 'whatsapp' | 'email' | 'book';

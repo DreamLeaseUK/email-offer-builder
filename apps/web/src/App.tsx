@@ -45,7 +45,7 @@ export function App() {
   const copyCampaign = (c: Campaign) => {
     const first = c.offers[0]?.cta;
     const layout: LayoutChoice = c.layout === 'single' || c.layout === 'stack' ? c.layout : 'auto';
-    setItems(c.offers.map((o) => ({ offer: o })).slice(0, 6));
+    // Compose loads the offers into the tray and re-prices each live; it owns the tray, so we don't setItems here.
     setSeed({
       name: c.name,
       audience: c.compliance.variant,
@@ -57,6 +57,7 @@ export function App() {
       ctaKind: first?.kind ?? 'view_offer',
       ctaLabel: first?.label ?? '',
       sender: { name: c.sender.displayName, title: c.sender.jobTitle ?? '', phone: c.sender.phone ?? '', whatsapp: c.sender.whatsapp ?? '', booking: c.sender.bookingUrl ?? '', secondary: c.sender.secondaryContacts ?? [] },
+      offers: c.offers.slice(0, 6),
     });
     setView('compose');
   };

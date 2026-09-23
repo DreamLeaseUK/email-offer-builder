@@ -442,6 +442,7 @@ export function Compose({ email, base, items, setItems, seed, onSeedApplied }: {
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
   const [addError, setAddError] = useState('');
   const [warnings, setWarnings] = useState<string[]>([]);
+  const [repricing, setRepricing] = useState(false);
 
   const [previewHtml, setPreviewHtml] = useState('');
   const [previewStale, setPreviewStale] = useState(false);
@@ -475,8 +476,9 @@ export function Compose({ email, base, items, setItems, seed, onSeedApplied }: {
       .catch(() => {});
   }, []);
 
-  // Copying a past campaign: pre-fill the reusable parts (never the recipient). Applied after the saved-sender
-  // effect above so the copied sender wins, then cleared so it applies once.
+  // Copying a past campaign: pre-fill the reusable parts (never the recipient), load its offers into the tray,
+  // and re-price each one live from its source URL so the copy never carries a stale price. Applied after the
+  // saved-sender effect above so the copied sender wins, then cleared so it applies once.
   useEffect(() => {
     if (!seed) return;
     setName(seed.name);
@@ -494,9 +496,36 @@ export function Compose({ email, base, items, setItems, seed, onSeedApplied }: {
     setCtaKind(seed.ctaKind);
     setCtaLabel(seed.ctaLabel);
     setRecipientFirst('');
+    setItems(seed.offers.map((o) => ({ offer: o }))); // show the copied offers at once…
+    void repriceCopied(seed.offers); // …then refresh each price live
     onSeedApplied?.();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [seed]);
+
+  /**
+   * Re-price the offers of a copied campaign live from each offer's own source URL, so the new campaign never
+   * ships a stale price. Salary-sacrifice nets are hand-entered, so they are kept (like reLook). A source page
+   * that has moved keeps its copied price and is reported, so nothing silently goes out wrong.
+   */
+  async function repriceCopied(offers: Offer[]) {
+    setRepricing(true);
+    setWarnings([]);
+    setAddError('');
+    const out: Item[] = [];
+    const failed: string[] = [];
+    for (const o of offers) {
+      try {
+        const res = await api.lookup(o.offerUrl);
+        out.push({ offer: isSalsac(o) ? toSalsac(res.offer, o) : res.offer, options: res.options });
+      } catch {
+        failed.push(`${o.vehicle.make} ${o.vehicle.model}`);
+        out.push({ offer: o }); // keep the copied price rather than lose the offer
+      }
+    }
+    setItems(out);
+    setRepricing(false);
+    setWarnings(failed.length ? [`Couldn't re-price ${failed.join(', ')} — the copied price is shown. That offer page may have changed; re-fetch it (the chips reload it) or remove it before sending. Brochures are not carried over — re-attach any you need.`] : []);
+  }
 
   /** Is a secondary contact method usable yet — its underlying sender field filled? (Email always is.) */
   const secondaryReady = (m: ContactMethod): boolean =>
@@ -811,7 +840,7 @@ export function Compose({ email, base, items, setItems, seed, onSeedApplied }: {
 
       {/* ---- offers ---- */}
       <section className="panel">
-        <h2 className="dl-h4">Offers <span className="dl-small">{items.length}/6</span></h2>
+        <h2 className="dl-h4">Offers <span className="dl-small">{items.length}/6</span>{repricing && <span className="dl-small app__muted"> · re-pricing the copied offers…</span>}</h2>
         <form onSubmit={addOffer} className="addoffer">
           <Input id="addoffer-url" placeholder="Paste a dreamlease.co.uk vehicle URL" value={url} onChange={(e) => setUrl(e.target.value)} disabled={items.length >= 6} />
           <Button type="submit" size="sm" disabled={fetching || items.length >= 6}>{fetching ? 'Fetching…' : items.length ? 'Add another offer' : 'Add offer'}</Button>
