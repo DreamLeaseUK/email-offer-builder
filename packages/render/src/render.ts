@@ -10,7 +10,7 @@ import type { ContactMethod } from '@offer-mailer/schema';
 import { heroCard, rowCard } from './cards.js';
 import { C, FF, FONT, LH, esc, mso, paragraphs, table } from './html.js';
 import { EMAIL_WIDTH, HEADSHOT, LOGO_H, LOGO_W, SIDE } from './layout.js';
-import { Links } from './links.js';
+import { Links, campaignUtm, withUtm } from './links.js';
 import { RenderError, buildCards, type CardVM } from './viewmodel.js';
 
 export { RenderError };
@@ -120,11 +120,26 @@ const MSO_HEAD = `<!--[if mso]>
 </style>
 <![endif]-->`;
 
+/**
+ * The inbox preview line. An explicit preheader wins; otherwise it is derived from the intro's first
+ * ~100 characters. The compose form no longer offers a preheader field, and a blank one would let the
+ * client fall back to the first visible text (the "View these offers online" link), so we synthesise
+ * a sensible preview from the intro instead. Email only — the hosted page has no preheader.
+ */
+function introPreview(intro: string, max = 100): string {
+  const flat = intro.replace(/\s+/g, ' ').trim();
+  if (flat.length <= max) return flat;
+  const cut = flat.slice(0, max);
+  const lastSpace = cut.lastIndexOf(' ');
+  return (lastSpace > 40 ? cut.slice(0, lastSpace) : cut).trimEnd() + '…';
+}
+
 function preheader(campaign: Campaign): string {
-  if (!campaign.preheader) return '';
+  const text = campaign.preheader?.trim() || introPreview(campaign.intro);
+  if (!text) return '';
   return `<!-- Preheader -->
 <div style="display:none; font-size:1px; line-height:1px; max-height:0; max-width:0; opacity:0; overflow:hidden; mso-hide:all;">
-  ${esc(campaign.preheader)}
+  ${esc(text)}
   ${'&nbsp;&zwnj;'.repeat(30)}
 </div>
 `;
@@ -237,7 +252,7 @@ function emailBody(campaign: Campaign, template: Template, cards: CardVM[], layo
 
   // The recipient greeting is personalisation for the salesperson's own email only — never on the public hosted
   // page (data minimisation: no customer name on a shareable URL).
-  const greeting = !ctx.forHostedPage && campaign.recipient?.firstName ? `<p class="lock-ink" style="margin:0 0 14px 0; font-size:22px; line-height:28px; ${LH}; font-weight:bold; color:${C.black};">Hi ${esc(campaign.recipient.firstName)},</p>\n` : '';
+  const greeting = !ctx.forHostedPage && campaign.recipient?.firstName ? `<p class="lock-ink" style="margin:0 0 14px 0; font-size:22px; line-height:28px; ${LH}; color:${C.black};">Hi ${esc(campaign.recipient.firstName)},</p>\n` : '';
   const intro = `  <!-- Intro -->
   <tr>
     <td class="gutter" style="padding:28px ${SIDE}px 8px ${SIDE}px; ${FF}">
@@ -304,7 +319,9 @@ ${greeting}${paragraphs(campaign.intro, `margin:0 0 14px 0; font-size:16px; line
     </td>
   </tr>`;
 
-  const siteHref = ctx.links.track('footer-site', 'https://www.dreamlease.co.uk');
+  // the footer homepage link is a link back to our website too, so it carries the same attribution (minus the
+  // per-offer utm_content): source/medium/campaign + the salesperson's utm_term.
+  const siteHref = ctx.links.track('footer-site', withUtm('https://www.dreamlease.co.uk', campaignUtm(campaign.tracking.campaignCode, campaign.tracking.utm)));
   const footer = `  <!-- Compliance footer — locked block, do not edit per send -->
   <tr>
     <td class="gutter" style="padding:0 ${SIDE}px ${SIDE}px ${SIDE}px;">

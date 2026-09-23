@@ -31,8 +31,9 @@
  *
  * Knowing deviations of 21 and 22 Sept 2026 (Matt's tests: HTML pasted into New Outlook, read in Gmail and
  * Outlook mobile). The paste drops the <style> block and the conditional comments, so nothing may depend on either.
- * diff-reference reports 82 lines in all: 8 pre-date 21 Sept (2 the logo width, 6 the third hero pill), 10 are
- * a (6) and b (4), and 64 are d (50 the row card, 14 the hero); c sits outside the sections the script compares:
+ * diff-reference reports 84 lines in all: 8 pre-date 21 Sept (2 the logo width, 6 the third hero pill), 10 are
+ * a (6) and b (4), 64 are d (50 the row card, 14 the hero), and 2 are e (the plain recipient greeting, in
+ * render.ts's intro); c sits outside the sections the script compares:
  *  a. pills are inline-block tables, not align="left" floats: the clearing spacer did not survive, and the
  *     make name ran beside the pill and broke in Gmail ("VOLKSWA / GEN").
  *  b. the row card's image column is calc()-fluid (its desktop width beside the details, the full card width
@@ -45,6 +46,9 @@
  *     phone, where the columns wrap, the reader met the legal line between the picture and the car's name (Matt's
  *     Gmail and Outlook screenshots, 22 Sept). Hero: the same heading row sits above the full-width image, carrying
  *     the card's rounded top corners; the image is square below it (Matt: "it should match").
+ *  e. (23 Sept) the recipient greeting ("Hi {name},") is plain, not bold: the v5 reference has it font-weight:bold
+ *     in the intro section (which diff-reference compares). Matt asked for it plain; it is email-only
+ *     personalisation in render.ts, not card markup.
  * And the tool sends one offer per row (auto: 1 → single, 2+ → stack).
  */
 import { C, FF, LH, esc, mso, spacer, table } from './html.js';

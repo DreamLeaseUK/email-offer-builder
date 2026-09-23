@@ -56,6 +56,16 @@ const newId = (): string => crypto.randomUUID();
 const newSlug = (): string => crypto.randomUUID().replace(/-/g, '');
 const newCampaignCode = (): string => `C-${crypto.randomUUID().slice(0, 8)}`;
 
+/**
+ * A stable, readable tag that identifies the salesperson in a website UTM, derived from their work email's
+ * local part — unique per person, generated with no setup. e.g. matt.wilson@dreamlease.co.uk → "matt-wilson".
+ * It rides on the offer links as utm_term, so a web enquiry started from the email attributes to them in GA.
+ */
+export function salespersonTag(email: string): string {
+  const local = (email.split('@')[0] ?? email).toLowerCase();
+  return local.replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'unknown';
+}
+
 // ---------- repositories ----------
 
 function templatesRepo(env: Env) {
@@ -211,7 +221,8 @@ function buildCampaign(input: DraftCampaign, template: TemplateT, createdBy: str
     sender: input.sender,
     compliance: { variant, approvedWordingVersion: template.version },
     hostedPage: { slug, url: `${base}/c/${slug}`, enabled: true },
-    tracking: { campaignCode: newCampaignCode(), utm: {} },
+    // utm_term identifies the salesperson (auto, no setup); the offer links already carry source/medium/campaign/content.
+    tracking: { campaignCode: newCampaignCode(), utm: { utm_term: salespersonTag(createdBy) } },
     status: 'draft' as const,
     createdBy,
     createdAt: nowIso,

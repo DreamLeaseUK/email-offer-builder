@@ -278,7 +278,7 @@ edition** (`Brochure.market === 'eu'`), the small print adds "This is the manufa
 specification, equipment and prices may differ from UK models."
 
 **Deviations from the v5 reference, all for the paste path of A5** (recorded in the header of `cards.ts`;
-`diff-reference` reports 82 lines: 8 pre-date 21 Sept (2 the logo width, 6 the third hero pill), 10 are the inline-block pills (6) and the stack card’s image column (4), and 64 are the name-before-picture reorder of 22 Sept (50 the stacked card, 14 the hero); the fluid wrapper sits outside the sections the script compares). **`MARKUP_VERSION` was not bumped for them (still 2)**, so templates approved against it — including the
+`diff-reference` reports 84 lines: 8 pre-date 21 Sept (2 the logo width, 6 the third hero pill), 10 are the inline-block pills (6) and the stack card’s image column (4), 64 are the name-before-picture reorder of 22 Sept (50 the stacked card, 14 the hero), and 2 are the plain recipient greeting (23 Sept, render.ts’s intro); the fluid wrapper sits outside the sections the script compares). **`MARKUP_VERSION` was not bumped for them (still 2)**, so templates approved against it — including the
 seeded placeholder — keep rendering (`render()` refuses a mismatch); whether Emma should re-approve the changed
 markup is undecided:
 - **Fluid wrapper** — `width:100%; max-width:600px`, not a fixed 600px. Outlook mobile shrank the fixed layout to

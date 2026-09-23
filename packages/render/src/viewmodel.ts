@@ -5,7 +5,7 @@
 import { CTA_DEFAULT_LABELS, availableCtaKinds } from '@offer-mailer/schema';
 import type { Brochure, Campaign, Offer, Sender } from '@offer-mailer/schema';
 import { gbp, gbpPence, longDate, number } from './format.js';
-import { Links, withUtm } from './links.js';
+import { Links, campaignUtm, withUtm } from './links.js';
 
 export class RenderError extends Error {
   constructor(message: string) {
@@ -106,14 +106,7 @@ export function buildCards(campaign: Campaign, opts: VmOptions): CardVM[] {
     const isSalsac = offer.contractType === 'salary_sacrifice';
     if (isSalsac && !offer.pricing.salsac) throw new RenderError(`offer ${n}: salary sacrifice offer has no salsac figures`);
 
-    const utm = {
-      utm_source: 'offer_mailer',
-      utm_medium: 'email',
-      utm_campaign: campaign.tracking.campaignCode,
-      utm_content: offer.id,
-      ...campaign.tracking.utm,
-    };
-    const offerUrl = withUtm(offer.offerUrl, utm);
+    const offerUrl = withUtm(offer.offerUrl, campaignUtm(campaign.tracking.campaignCode, { utm_content: offer.id, ...campaign.tracking.utm }));
     const cta = ctaFor(offer, campaign.sender, i, links, offerUrl);
     const viewHref = (offer.cta?.kind ?? 'view_offer') === 'view_offer' ? undefined : links.track(`o${n}-view`, offerUrl);
 

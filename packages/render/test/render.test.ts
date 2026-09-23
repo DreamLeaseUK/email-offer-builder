@@ -27,6 +27,19 @@ describe('render()', () => {
     expect(out.layout).toBe('stack');
   });
 
+  it('derives the inbox preview from the intro when no preheader is set; an explicit preheader still wins', () => {
+    const preheaderOf = (html: string): string => html.match(/mso-hide:all;">\s*([\s\S]*?)\s*&nbsp;/)?.[1]?.trim() ?? '';
+
+    const derived = preheaderOf(r({ preheader: '' }).out.html);
+    expect(derived.startsWith('Thanks for your time on the call yesterday.')).toBe(true);
+    expect(derived.endsWith('…')).toBe(true); // truncated at a word boundary
+    expect(derived.length).toBeLessThanOrEqual(101); // ~100 chars + the ellipsis
+    expect(derived).not.toContain('Prices move quickly'); // never the whole intro, only its opening
+
+    const explicit = preheaderOf(r({ preheader: 'Hand-written preview line.' }).out.html);
+    expect(explicit).toBe('Hand-written preview line.');
+  });
+
   it('refuses a template that is not approved', () => {
     const { campaign } = fixtureCampaign();
     expect(() => render(campaign, { ...fixtureTemplate, status: 'draft' }, { publicBaseUrl: BASE })).toThrow(TemplateNotApprovedError);

@@ -8,6 +8,7 @@ import { findCapIdLeak } from '@offer-mailer/schema';
 import type { Campaign } from '@offer-mailer/schema';
 import { fixtureCampaign } from '@offer-mailer/render/fixtures';
 import app from '../src/index.js';
+import { salespersonTag } from '../src/campaigns.js';
 import type { Env } from '../src/env.js';
 
 const USER = 'matt.wilson@dreamlease.co.uk';
@@ -40,6 +41,14 @@ async function createCampaign(e = authed()): Promise<{ campaign: Campaign; hoste
   return (await res.json()) as { campaign: Campaign; hostedUrl: string; layout: string };
 }
 
+describe('salespersonTag', () => {
+  it('derives a stable, readable tag from the work email local part', () => {
+    expect(salespersonTag('matt.wilson@dreamlease.co.uk')).toBe('matt-wilson');
+    expect(salespersonTag('Jo.Bloggs+sales@dreamlease.co.uk')).toBe('jo-bloggs-sales');
+    expect(salespersonTag('weird@@x')).toBe('weird');
+  });
+});
+
 describe('POST /api/campaigns', () => {
   it('needs a login', async () => {
     expect((await post(draft(), anon)).status).toBe(503);
@@ -50,6 +59,7 @@ describe('POST /api/campaigns', () => {
     expect(layout).toBe('stack'); // the draft names grid2 (accepted for stored campaigns); the grids were deleted 22 Sept, it renders stacked
     expect(campaign.hostedPage.slug).toMatch(/^[A-Za-z0-9_-]{16,}$/);
     expect(campaign.createdBy).toBe(USER);
+    expect(campaign.tracking.utm.utm_term).toBe('matt-wilson'); // salesperson attribution tag, auto-generated
     expect(campaign.status).toBe('draft');
     expect(hostedUrl).toBe(campaign.hostedPage.url);
     expect(findCapIdLeak(campaign)).toBeNull();
@@ -69,6 +79,9 @@ describe('POST /api/campaigns', () => {
     const links = JSON.parse(row!.links) as Record<string, string>;
     expect(links['hosted']).toBe(campaign.hostedPage.url);
     expect(Object.keys(links)).toContain('o1-cta');
+    // the footer homepage link back to the website carries the salesperson attribution too
+    expect(links['footer-site']).toContain('utm_term=matt-wilson');
+    expect(links['footer-site']).toContain('utm_campaign=');
     expect(row!.links).not.toMatch(/capId|motorleaseplatform/i);
   });
 
@@ -152,6 +165,7 @@ describe('GET /r/:slug/:link', () => {
     const dest = res.headers.get('location')!;
     expect(dest).toContain('dreamlease.co.uk');
     expect(dest).toContain('utm_source=offer_mailer');
+    expect(dest).toContain('utm_term=matt-wilson'); // the salesperson is identifiable for enquiry attribution
 
     const click = await env.DB.prepare("select kind, ua_class from clicks where campaign_id = ? and link_id = 'o1-cta'").bind(campaign.id).first<{ kind: string; ua_class: string }>();
     expect(click?.kind).toBe('click');

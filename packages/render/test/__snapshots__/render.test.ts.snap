@@ -92,7 +92,7 @@ exports[`render() > matches the snapshot for the default fixture 1`] = `
   <!-- Intro -->
   <tr>
     <td class="gutter" style="padding:28px 24px 8px 24px; font-family:Arial, Helvetica, sans-serif;">
-<p class="lock-ink" style="margin:0 0 14px 0; font-size:22px; line-height:28px; mso-line-height-rule:exactly; font-weight:bold; color:#000000;">Hi Priya,</p>
+<p class="lock-ink" style="margin:0 0 14px 0; font-size:22px; line-height:28px; mso-line-height-rule:exactly; color:#000000;">Hi Priya,</p>
 <p class="lock-body" style="margin:0 0 14px 0; font-size:16px; line-height:26px; mso-line-height-rule:exactly; color:#787580;">Thanks for your time on the call yesterday. As promised, here are the electric options that fit the budget we talked about, all on 36 months with 8,000 miles a year.</p>
 <p class="lock-body" style="margin:0 0 14px 0; font-size:16px; line-height:26px; mso-line-height-rule:exactly; color:#787580;">Prices move quickly on these, so if one stands out let me know this week and I&#39;ll hold the quote for you.</p>
     </td>

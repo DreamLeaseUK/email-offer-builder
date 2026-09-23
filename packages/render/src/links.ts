@@ -29,3 +29,12 @@ export function withUtm(url: string, utm: Record<string, string>): string {
   for (const [k, v] of Object.entries(utm)) u.searchParams.set(k, v);
   return u.toString();
 }
+
+/**
+ * The campaign-level UTM base for our own dreamlease.co.uk links: identifies the tool, the medium and the
+ * campaign, plus — via `extra` (from `campaign.tracking.utm`) — the salesperson (`utm_term`). Offer links add
+ * `utm_content` (the offer id) on top; the footer homepage link uses the base as-is.
+ */
+export function campaignUtm(campaignCode: string, extra: Record<string, string> = {}): Record<string, string> {
+  return { utm_source: 'offer_mailer', utm_medium: 'email', utm_campaign: campaignCode, ...extra };
+}
