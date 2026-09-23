@@ -18,11 +18,12 @@
  *   DELETE /api/offers/library/:id
  */
 import { LookupError, OfferBuildError, OfferPageError, OfferUrlError, PricingError } from '@offer-mailer/adapters';
-import { LIBRARY_ARCHIVE_PURGE_DAYS, LibraryEntry, Offer, assertNoCapId, decodeOfferText, libraryFacets } from '@offer-mailer/schema';
-import type { LibraryEntry as LibraryEntryT, LibraryFacets, Offer as OfferT, UrlHealth } from '@offer-mailer/schema';
+import { LIBRARY_ARCHIVE_PURGE_DAYS, LibraryEntry, Offer, assertNoCapId, decodeOfferText, libraryFacets, vehicleKey } from '@offer-mailer/schema';
+import type { Brochure, LibraryEntry as LibraryEntryT, LibraryFacets, Offer as OfferT, UrlHealth } from '@offer-mailer/schema';
 import { and, desc, eq, like, lt, or } from 'drizzle-orm';
 import { Hono } from 'hono';
 import shelvesConfig from '../../../config/library-shelves.json' with { type: 'json' };
+import { d1BrochureRepo } from './brochures.js';
 import { db } from './db/index.js';
 import { libraryEntries } from './db/schema.js';
 import type { AppEnv, Env } from './env.js';
@@ -112,6 +113,18 @@ export function newLibraryEntry(o: NewEntry, now: Date): LibraryEntryT {
   };
 }
 
+/**
+ * Re-attach the model's shared brochure to an offer being priced for use (library add / re-price). A live lookup
+ * never carries a brochure, so without this the stored copy is silently dropped every time a saved offer is used
+ * — the bug Matt hit with the Renault 5 (23 Sept 2026). The brochure is shared by vehicleKey; a European edition
+ * stays offered, unticked (`market === 'eu'`), matching the finder's rule, and a prior explicit include wins.
+ */
+export function withStoredBrochure(offer: OfferT, brochure: Brochure | undefined, priorInclude?: boolean): OfferT {
+  if (!brochure) return offer;
+  const include = priorInclude ?? brochure.market !== 'eu';
+  return { ...offer, brochure: { brochureId: brochure.id, include } };
+}
+
 export const libraryApi = new Hono<AppEnv>();
 
 libraryApi.post('/offers/library', async (c) => {
@@ -161,9 +174,13 @@ libraryApi.post('/offers/library/:id/reprice', async (c) => {
   try {
     // re-fetch the live price from the source page at the saved terms; the URL is the offer's own canonical URL
     const fresh = await urlSource(c.env).lookupFull({ url: entry.offer.offerUrl, createdBy: entry.addedBy });
-    const updated: LibraryEntryT = { ...entry, offer: { ...fresh.offer, id: entry.offer.id, createdBy: entry.addedBy }, urlHealth: { state: 'ok', checkedAt: now.toISOString() }, lastPricedAt: now.toISOString(), updatedAt: now.toISOString() };
+    // …and re-attach the model's shared brochure the same way: the lookup drops it, so without this a saved offer
+    // loses its brochure every time it is used. The record rides back in the response so the tray can show it.
+    const brochure = await d1BrochureRepo(c.env).findCurrent(vehicleKey(fresh.offer.vehicle));
+    const offer = withStoredBrochure({ ...fresh.offer, id: entry.offer.id, createdBy: entry.addedBy }, brochure, entry.offer.brochure?.include);
+    const updated: LibraryEntryT = { ...entry, offer, urlHealth: { state: 'ok', checkedAt: now.toISOString() }, lastPricedAt: now.toISOString(), updatedAt: now.toISOString() };
     await repo.save(updated);
-    return c.json({ entry: updated, offer: updated.offer, message: fresh.message });
+    return c.json({ entry: updated, offer: updated.offer, ...(brochure ? { brochure } : {}), message: fresh.message });
   } catch (err) {
     // the source no longer resolves to this vehicle: flag it, do not guess a price
     const gone = err instanceof OfferPageError || err instanceof LookupError || err instanceof OfferUrlError;

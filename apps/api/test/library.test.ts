@@ -8,7 +8,7 @@ import { LIBRARY_ARCHIVE_PURGE_DAYS, findCapIdLeak, libraryFacets } from '@offer
 import type { LibraryEntry, Offer } from '@offer-mailer/schema';
 import { fixtureCampaign } from '@offer-mailer/render/fixtures';
 import app from '../src/index.js';
-import { purgeArchivedLibrary } from '../src/library.js';
+import { purgeArchivedLibrary, withStoredBrochure } from '../src/library.js';
 import type { Env } from '../src/env.js';
 
 const USER = 'matt.wilson@dreamlease.co.uk'; // the configured master admin
@@ -131,6 +131,15 @@ describe('offer library', () => {
     expect(body.error).toMatch(/URL not current — update with the latest/);
     expect(body.entry.urlHealth.state).toBe('gone');
     expect(body.entry.urlHealth.note).toBeTruthy();
+  });
+
+  it('re-attaches the model’s stored brochure to an offer priced for use; a European edition stays unticked', () => {
+    const pdf = Object.values(fixtureCampaign({ offerCount: 1, brochure: 'pdf' }).brochures)[0]!;
+    const o = anOffer();
+    expect(withStoredBrochure(o, pdf).brochure).toEqual({ brochureId: pdf.id, include: true }); // UK: attached and included
+    expect(withStoredBrochure(o, { ...pdf, market: 'eu' }).brochure).toEqual({ brochureId: pdf.id, include: false }); // EU: offered, unticked
+    expect(withStoredBrochure(o, pdf, false).brochure).toEqual({ brochureId: pdf.id, include: false }); // a prior explicit choice wins
+    expect(withStoredBrochure(o, undefined).brochure).toBeUndefined(); // nothing stored → the offer is unchanged
   });
 
   it('purges archived entries older than six months, keeping recent archived and all current', async () => {
