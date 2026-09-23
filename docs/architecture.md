@@ -1,18 +1,21 @@
 # DreamLease Offer Mailer — Solution Design & System Architecture
 
-**Status:** current as of 21 Sept 2026 (session 5; production Worker v0.5.0). This is the authoritative technical
-design document. For product requirements see `dreamlease-offer-mailer-brief.md` (v1.1, with an as-built log in
-§9a); for the email-markup reference see `offer-mailer-implementation-notes.md` (and the deviations from it in
-B7); for the build log see `status-2026-09-21.md` (`-09-18`, `-09-16`, `-09-15`, `-09-14` are history); for how
-to resume see `PICKUP-PROMPT.md`. Brochure discovery (the finder) is designed and evidenced in
-`brochure-finder-brief.md`. Where this document and the code disagree, the code wins — fix this document.
+**Status:** current as of 23 Sept 2026 (session 7). This is the authoritative technical design document. The
+**production Worker is still v0.5.0** (21 Sept): the offer-library rebuild (**B7c**) and the campaign copy /
+copy-reprice work of sessions 6–7 are in `main` and run through `pnpm dev:live`, **not yet deployed** (the
+`library_entries` table was applied to production D1, migration `0003`, so `dev:live` works). For product
+requirements see `dreamlease-offer-mailer-brief.md` (v1.1, with an as-built log in §9a); for the email-markup
+reference see `offer-mailer-implementation-notes.md` (and the deviations from it in B7); for the build log see
+`status-2026-09-23.md` (`-09-21`, `-09-18`, `-09-16`, `-09-15`, `-09-14` are history); for how to resume see
+`PICKUP-PROMPT.md`. Brochure discovery (the finder) is designed and evidenced in `brochure-finder-brief.md`.
+Where this document and the code disagree, the code wins — fix this document.
 
 ---
 
 # Part A — Solution Design
 
 ## A1. What it is
-An internal, FCA-aware tool. A DreamLease sales salesperson pastes a `dreamlease.co.uk` vehicle URL, assembles a
+An internal, FCA-aware tool. A DreamLease salesperson pastes a `dreamlease.co.uk` vehicle URL, assembles a
 branded HTML email of one to six lease offers, and gets back **Outlook-ready HTML** (Copy-for-Outlook) plus a
 **hosted web page** of the same offers. The Worker never sends email — a human always presses Send.
 
@@ -70,7 +73,14 @@ Three audiences / lease products, each with its own compliance wording and terms
 - **Offer library** — a curated central repository (redesigned 23 Sept 2026; **B7c**): a salesperson's own shelf
   plus admin-curated **shared shelves**, priced **live on use** (never a frozen price), with a **URL-health** flag
   when a source page has moved/gone, a current/archived split, and a 6-month archive purge.
-- **Campaigns** (list + per-campaign stats); **Promotions register** (master table + CSV).
+- **Campaigns** — an **identifiable list** (each row shows its vehicles, a draft/sent badge, the audience and the
+  subject; the recipient is never stored so it never identifies a row), an in-place **Details** expander (every
+  offer with price and terms, intro, sender), and per-campaign stats. **Copy a past campaign** starts a fresh
+  draft in Compose from it: the offers and the reusable parts (name, subject, preheader, intro, audience, sender,
+  CTA) carry over, the **recipient never does**, and **every offer is re-priced live from its own source URL** on
+  copy (the same silent-stale guard as the library — B7c). A campaign **never** flows into the library. Client-only
+  (`apps/web/src/Campaigns.tsx`, `App.tsx` `copyCampaign`, `Compose.tsx` `repriceCopied`) — no API change.
+- **Promotions register** (master table + CSV).
 - **Template admin (master-admin only)**: author the Emma-approved compliance templates, publish (self-
   approve), lock approved, new-version/retire. See A4 / B6.
 - **Suppression register**: the opt-out list — add / check / view / CSV export; admin-only removal. See A4.
@@ -377,7 +387,9 @@ Code: `packages/schema` (`LibraryEntry`, `libraryFacets`, `LIBRARY_ARCHIVE_PURGE
 **Principle:** the library is a curated *shortlist of vehicles + configurations*, not a frozen price list. An
 entry keeps only a "last known" price for the browse card; the **live price is re-fetched from the offer's own URL
 the moment it is used** (`/reprice`, then again as it is added to a campaign), so a stale price can never ship. It
-is the same silent-stale guard as the brochure finder, applied to prices.
+is the same silent-stale guard as the brochure finder, applied to prices. **Copying a past campaign reuses the
+same guard** (A3): `Compose.tsx` `repriceCopied` re-fetches every copied offer from its source URL, keeps the
+copied price only when the source has moved (and flags it), and preserves hand-entered salary-sacrifice nets.
 
 **Two surfaces / roles**
 - **Personal shelf** — a salesperson's own saved offers (`scope: 'personal'`, `addedBy` = them); only they see them.
@@ -436,6 +448,13 @@ European fallback and the European-edition small print are live. The one-offer-p
 what `pnpm dev:live` renders, so it is in use without a deploy (production serves what was stored; it does not
 re-render a campaign).
 
+**In `main` since v0.5.0 (sessions 6–7, not deployed — they run through `dev:live`):** the 22 Sept
+render/paste work (grid cards deleted, name-before-picture reorder, the Keep-source-formatting paste fix); the
+**offer-library rebuild as a curated repository** (B7c) with its `library_entries` table (migration `0003`,
+applied to production D1); the **"rep" → "salesperson"** terminology sweep; and the **identifiable campaigns list
++ Copy a past campaign** with live re-pricing on copy (A3). Redeploying the Worker would ship all of it; it is
+deferred with the rest of go-live behind Access + the subdomain.
+
 **Open from the 21 Sept test sends (in priority order):**
 - **Flattened text colour and size on the paste path** (A5) — cause found 22 Sept: Outlook's Merge-formatting paste.
   The fix is the salesperson's paste mode (Keep source formatting), confirmed by Matt's real sends to Gmail and Outlook on
@@ -484,5 +503,6 @@ secret + confirming the Workers Paid plan; Tawk webchat (parked, renewals-only s
 - Worker: `apps/api/src/index.ts` (routes + Cron), `campaigns.ts`, `profile.ts`, `templates.ts`,
   `suppressions.ts`, `retention.ts`, `roles.ts`, `files.ts`, `brochures.ts`, `lookup.ts`, `library.ts`,
   `hosted.ts`, `tracking.ts`, `middleware/access.ts`, `db/schema.ts`
-- Web: `apps/web/src/App.tsx`, `Compose.tsx`, `Templates.tsx`, `Suppressions.tsx`, `api.ts`
-- Config: `apps/api/wrangler.jsonc`, `config/` (badges, admins)
+- Web: `apps/web/src/App.tsx`, `Compose.tsx` (incl. `repriceCopied`), `Campaigns.tsx`, `Library.tsx`,
+  `Register.tsx`, `Suppressions.tsx`, `Templates.tsx`, `api.ts`, `styles.css`
+- Config: `apps/api/wrangler.jsonc`, `config/` (`badges.json`, `admins.json`, `library-shelves.json`)
