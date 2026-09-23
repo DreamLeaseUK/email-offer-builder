@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Badge, Button, Field, Input, OfferCard, Select, Textarea } from 'dreamlease-design-system';
 import type { Brochure, BrochureSearch, CtaKind, Offer, Sender } from '@offer-mailer/schema';
 import { CTA_DEFAULT_LABELS } from '@offer-mailer/schema';
-import { api, type Audience, type ContactMethod, type CreateResponse, type Draft, type Item, type LayoutChoice, type LeaseOption, type UseCase } from './api';
+import { api, type Audience, type ComposeSeed, type ContactMethod, type CreateResponse, type Draft, type Item, type LayoutChoice, type LeaseOption, type UseCase } from './api';
 
 const gbp = (n: number): string => '£' + Math.round(n).toLocaleString('en-GB');
 const errMsg = (e: unknown): string => (e instanceof Error ? e.message : String(e));
@@ -405,7 +405,7 @@ function SenderPhoto({ base }: { base: string }) {
   );
 }
 
-export function Compose({ email, base, items, setItems }: { email: string; base: string; items: Item[]; setItems: React.Dispatch<React.SetStateAction<Item[]>> }) {
+export function Compose({ email, base, items, setItems, seed, onSeedApplied }: { email: string; base: string; items: Item[]; setItems: React.Dispatch<React.SetStateAction<Item[]>>; seed?: ComposeSeed | null; onSeedApplied?: () => void }) {
   // Our-origin asset/link URLs are stamped absolute (the email needs that), but they only resolve on
   // the public origin. For in-app display, strip our origin so they become same-origin (served by the
   // Vite proxy in dev, the Worker in production). The Copy-for-Outlook HTML stays absolute.
@@ -474,6 +474,29 @@ export function Compose({ email, base, items, setItems }: { email: string; base:
       })
       .catch(() => {});
   }, []);
+
+  // Copying a past campaign: pre-fill the reusable parts (never the recipient). Applied after the saved-sender
+  // effect above so the copied sender wins, then cleared so it applies once.
+  useEffect(() => {
+    if (!seed) return;
+    setName(seed.name);
+    setAudience(seed.audience);
+    setUseCase(seed.useCase);
+    setSubject(seed.subject);
+    setPreheader(seed.preheader);
+    setIntro(seed.intro);
+    setSenderName(seed.sender.name);
+    setSenderTitle(seed.sender.title);
+    setSenderPhone(seed.sender.phone);
+    setSenderWhatsapp(seed.sender.whatsapp);
+    setSenderBooking(seed.sender.booking);
+    setSecondary(seed.sender.secondary);
+    setCtaKind(seed.ctaKind);
+    setCtaLabel(seed.ctaLabel);
+    setRecipientFirst('');
+    onSeedApplied?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [seed]);
 
   /** Is a secondary contact method usable yet — its underlying sender field filled? (Email always is.) */
   const secondaryReady = (m: ContactMethod): boolean =>

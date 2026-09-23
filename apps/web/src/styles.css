@@ -566,12 +566,50 @@ body {
   margin: 0 0 2px;
   font-weight: 700;
   color: var(--dl-ink, #000);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.camp__veh {
+  margin: 0 0 2px;
+  font-size: 14px;
+  color: var(--dl-ink, #000);
 }
 .camp__actions {
   display: flex;
   align-items: center;
   gap: 12px;
   white-space: nowrap;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+/* campaign detail, revealed in place */
+.camp-detail {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--dl-border, #e1e0e4);
+  display: grid;
+  gap: 8px;
+}
+.camp-detail__offers {
+  display: grid;
+  gap: 4px;
+}
+.camp-offer {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--dl-panel, #f6f6f7);
+}
+.camp-offer__price {
+  color: var(--dl-graphite, #787580);
+  white-space: nowrap;
+}
+.camp-detail__intro {
+  white-space: pre-wrap;
+  margin: 0;
 }
 .camp__actions a {
   color: var(--dl-ignition-red, #e30613);

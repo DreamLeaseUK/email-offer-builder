@@ -43,6 +43,21 @@ export type LayoutChoice = 'auto' | 'single' | 'stack';
 export type UseCase = 'follow_up' | 'offer_pack' | 'renewal';
 /** The audience / lease product. Drives the compliance block, terms and (for salsac) the pricing shape. */
 export type Audience = 'personal' | 'business' | 'salary_sacrifice';
+export type CtaKindChoice = 'view_offer' | 'email' | 'call' | 'whatsapp' | 'book' | 'link';
+
+/** A campaign's reusable parts, to pre-fill Compose when copying a past campaign (the recipient is never copied). */
+export interface ComposeSeed {
+  name: string;
+  audience: Audience;
+  useCase: UseCase;
+  subject: string;
+  preheader: string;
+  intro: string;
+  layout: LayoutChoice;
+  ctaKind: CtaKindChoice;
+  ctaLabel: string;
+  sender: { name: string; title: string; phone: string; whatsapp: string; booking: string; secondary: ContactMethod[] };
+}
 /** A contact method the salesperson can surface as a secondary link in their signature. */
 export type ContactMethod = 'call' | 'whatsapp' | 'email' | 'book';
 /** The signed-in user's role. Master admins get the template admin; everyone else is a salesperson. */
