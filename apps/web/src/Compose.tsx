@@ -343,8 +343,9 @@ function BrochureControl({ item, onAttach, onToggle, onRemove }: { item: Item; o
   );
 }
 
-/** Upload / manage the salesperson's portrait. Persists server-side and shows in the signature of every email. */
-function SenderPhoto({ base }: { base: string }) {
+/** Upload / manage the salesperson's portrait. Persists server-side and shows in the signature of every email.
+ *  `onChange` reports the current headshot URL up so the app header can show it too. */
+function SenderPhoto({ base, onChange }: { base: string; onChange?: (url: string | null) => void }) {
   const sameOrigin = (u: string): string => (base && u.startsWith(base) ? u.slice(base.length) || '/' : u);
   const [url, setUrl] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
@@ -355,16 +356,22 @@ function SenderPhoto({ base }: { base: string }) {
   useEffect(() => {
     api
       .me()
-      .then((m) => setUrl(m.headshotUrl))
+      .then((m) => {
+        setUrl(m.headshotUrl);
+        onChange?.(m.headshotUrl);
+      })
       .catch(() => {})
       .finally(() => setLoaded(true));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function upload(file: File) {
     setBusy(true);
     setErr('');
     try {
-      setUrl((await api.uploadPhoto(file)).headshotUrl);
+      const u = (await api.uploadPhoto(file)).headshotUrl;
+      setUrl(u);
+      onChange?.(u);
     } catch (e) {
       setErr(errMsg(e));
     } finally {
@@ -377,6 +384,7 @@ function SenderPhoto({ base }: { base: string }) {
     try {
       await api.deletePhoto();
       setUrl(null);
+      onChange?.(null);
     } catch (e) {
       setErr(errMsg(e));
     } finally {
@@ -405,7 +413,7 @@ function SenderPhoto({ base }: { base: string }) {
   );
 }
 
-export function Compose({ email, base, items, setItems, seed, onSeedApplied }: { email: string; base: string; items: Item[]; setItems: React.Dispatch<React.SetStateAction<Item[]>>; seed?: ComposeSeed | null; onSeedApplied?: () => void }) {
+export function Compose({ email, base, items, setItems, seed, onSeedApplied, onHeadshotChange }: { email: string; base: string; items: Item[]; setItems: React.Dispatch<React.SetStateAction<Item[]>>; seed?: ComposeSeed | null; onSeedApplied?: () => void; onHeadshotChange?: (url: string | null) => void }) {
   // Our-origin asset/link URLs are stamped absolute (the email needs that), but they only resolve on
   // the public origin. For in-app display, strip our origin so they become same-origin (served by the
   // Vite proxy in dev, the Worker in production). The Copy-for-Outlook HTML stays absolute.
@@ -452,6 +460,55 @@ export function Compose({ email, base, items, setItems, seed, onSeedApplied }: {
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState('');
   const [copied, setCopied] = useState(false);
+
+  // Resizable Compose columns: the salesperson drags the dividers to widen whichever panel they are working in.
+  // Two px widths (campaign, offers) are remembered per browser; the preview takes the rest. Wide screens only —
+  // below 1100px the panels stack and the dividers hide (styles.css).
+  const COLS_KEY = 'dl-compose-cols';
+  const [cols, setCols] = useState<{ a: number; b: number }>(() => {
+    try {
+      const p = JSON.parse(localStorage.getItem(COLS_KEY) ?? 'null') as { a?: unknown; b?: unknown } | null;
+      if (p && typeof p.a === 'number' && typeof p.b === 'number') return { a: p.a, b: p.b };
+    } catch {
+      /* private mode / blocked storage: fall back to the defaults */
+    }
+    return { a: 340, b: 460 };
+  });
+  useEffect(() => {
+    try {
+      localStorage.setItem(COLS_KEY, JSON.stringify(cols));
+    } catch {
+      /* ignore */
+    }
+  }, [cols]);
+  const composeRef = useRef<HTMLDivElement>(null);
+  const startResize = (key: 'a' | 'b') => (e: React.PointerEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const handle = e.currentTarget;
+    handle.setPointerCapture(e.pointerId);
+    let last = e.clientX;
+    const min = key === 'a' ? 260 : 300;
+    const move = (ev: PointerEvent) => {
+      const dx = ev.clientX - last;
+      last = ev.clientX;
+      setCols((c) => {
+        const width = composeRef.current?.clientWidth ?? 1280;
+        const other = key === 'a' ? c.b : c.a;
+        const max = Math.max(min, width - other - 32 - 300); // keep the preview ≥ 300px, less the two 16px dividers
+        return { ...c, [key]: Math.min(max, Math.max(min, c[key] + dx)) };
+      });
+    };
+    const stop = (ev: PointerEvent) => {
+      handle.releasePointerCapture(ev.pointerId);
+      handle.removeEventListener('pointermove', move);
+      handle.removeEventListener('pointerup', stop);
+      handle.removeEventListener('pointercancel', stop);
+    };
+    handle.addEventListener('pointermove', move);
+    handle.addEventListener('pointerup', stop);
+    handle.addEventListener('pointercancel', stop);
+  };
+  const gridStyle = { '--col-a': `${cols.a}px`, '--col-b': `${cols.b}px` } as React.CSSProperties;
 
   useEffect(() => {
     if (!email) return;
@@ -516,7 +573,12 @@ export function Compose({ email, base, items, setItems, seed, onSeedApplied }: {
     for (const o of offers) {
       try {
         const res = await api.lookup(o.offerUrl);
-        out.push({ offer: isSalsac(o) ? toSalsac(res.offer, o) : res.offer, options: res.options });
+        const offer = isSalsac(o) ? toSalsac(res.offer, o) : res.offer;
+        // Re-attach the model's stored brochure so the copied campaign carries it (like the library). Uses the
+        // stored copy only — never a search — keeps the prior include, and a European edition stays unticked.
+        const b = await api.currentBrochure(offer.vehicle.make, offer.vehicle.model);
+        if (b) out.push({ offer: { ...offer, brochure: { brochureId: b.id, include: o.brochure?.include ?? b.market !== 'eu' } }, options: res.options, brochure: b });
+        else out.push({ offer, options: res.options });
       } catch {
         failed.push(`${o.vehicle.make} ${o.vehicle.model}`);
         out.push({ offer: o }); // keep the copied price rather than lose the offer
@@ -524,7 +586,7 @@ export function Compose({ email, base, items, setItems, seed, onSeedApplied }: {
     }
     setItems(out);
     setRepricing(false);
-    setWarnings(failed.length ? [`Couldn't re-price ${failed.join(', ')} — the copied price is shown. That offer page may have changed; re-fetch it (the chips reload it) or remove it before sending. Brochures are not carried over — re-attach any you need.`] : []);
+    setWarnings(failed.length ? [`Couldn't re-price ${failed.join(', ')} — the copied price is shown and its brochure was not re-attached. That offer page may have changed; re-fetch it (the chips reload it) or remove it before sending.`] : []);
   }
 
   /** Is a secondary contact method usable yet — its underlying sender field filled? (Email always is.) */
@@ -776,7 +838,7 @@ export function Compose({ email, base, items, setItems, seed, onSeedApplied }: {
   }
 
   return (
-    <div className="compose">
+    <div className="compose" ref={composeRef} style={gridStyle}>
       {/* ---- details ---- */}
       <section className="panel">
         <h2 className="dl-h4">Campaign</h2>
@@ -796,9 +858,8 @@ export function Compose({ email, base, items, setItems, seed, onSeedApplied }: {
           </Select>
         )}</Field>
         <Field label="Subject line" help="Shown as the email subject.">{(id) => <Input id={id} value={subject} onChange={(e) => setSubject(e.target.value)} />}</Field>
-        <Field label="Preheader" help="Optional preview text after the subject.">{(id) => <Input id={id} value={preheader} onChange={(e) => setPreheader(e.target.value)} />}</Field>
-        <Field label="Intro message">{(id) => <Textarea id={id} rows={5} value={intro} onChange={(e) => setIntro(e.target.value)} />}</Field>
         <Field label="Recipient first name" help="Optional greeting.">{(id) => <Input id={id} value={recipientFirst} onChange={(e) => setRecipientFirst(e.target.value)} />}</Field>
+        <Field label="Intro message">{(id) => <Textarea id={id} rows={5} value={intro} onChange={(e) => setIntro(e.target.value)} />}</Field>
         <Field label="Offer button (CTA)" help="What the green button on every offer does.">{(id) => (
           <Select id={id} value={ctaKind} onChange={(e) => setCtaKind(e.target.value as CtaKind)}>
             {CTA_OPTIONS.map((o) => (
@@ -835,8 +896,10 @@ export function Compose({ email, base, items, setItems, seed, onSeedApplied }: {
           <span className="dl-small app__muted">Saves your name and contact details for next time — edit them anytime. (Your photo saves when you upload it.)</span>
           {detailsError && <span className="dl-small brochure__err">{detailsError}</span>}
         </div>
-        <SenderPhoto base={base} />
+        <SenderPhoto base={base} onChange={onHeadshotChange} />
       </section>
+
+      <div className="compose__resizer" onPointerDown={startResize('a')} role="separator" aria-orientation="vertical" aria-label="Drag to resize the campaign panel" title="Drag to resize" />
 
       {/* ---- offers ---- */}
       <section className="panel">
@@ -893,6 +956,8 @@ export function Compose({ email, base, items, setItems, seed, onSeedApplied }: {
           ))}
         </div>
       </section>
+
+      <div className="compose__resizer" onPointerDown={startResize('b')} role="separator" aria-orientation="vertical" aria-label="Drag to resize the offers panel" title="Drag to resize" />
 
       {/* ---- preview + send ---- */}
       <section className="panel">

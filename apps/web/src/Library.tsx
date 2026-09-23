@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Alert, Button, OfferCard } from 'dreamlease-design-system';
-import type { LibraryEntry, Offer } from '@offer-mailer/schema';
+import type { Brochure, LibraryEntry, Offer } from '@offer-mailer/schema';
 import { api, type LibraryShelf, type Role } from './api';
 
 const gbp = (n: number): string => '£' + Math.round(n).toLocaleString('en-GB');
@@ -19,7 +19,7 @@ function offerTerms(o: Offer): string {
  * shared shelves an admin curates. Prices are re-fetched live when an offer is added to a campaign, so nothing
  * stale ships; an entry whose source URL has moved or gone is flagged and cannot be used until it is re-pointed.
  */
-export function Library({ base, role, onAdd }: { base: string; role: Role; onAdd: (o: Offer) => void }) {
+export function Library({ base, role, onAdd }: { base: string; role: Role; onAdd: (o: Offer, brochure?: Brochure) => void }) {
   const [scope, setScope] = useState<'personal' | 'shared'>('personal');
   const [shelf, setShelf] = useState<LibraryShelf | null>(null); // selected shared shelf; null = all shared
   const [showArchived, setShowArchived] = useState(false);
@@ -69,8 +69,8 @@ export function Library({ base, role, onAdd }: { base: string; role: Role; onAdd
     try {
       const r = await api.repriceLibrary(e.id); // priced live the moment it is used
       if (r.ok) {
-        onAdd(r.offer);
-        setNote(`${e.offer.vehicle.make} ${e.offer.vehicle.model} added to the campaign — priced live at ${gbp(r.offer.pricing.monthly)}/mo${r.message ? ` (${r.message})` : ''}.`);
+        onAdd(r.offer, r.brochure);
+        setNote(`${e.offer.vehicle.make} ${e.offer.vehicle.model} added to the campaign — priced live at ${gbp(r.offer.pricing.monthly)}/mo${r.brochure ? ', brochure attached' : ''}${r.message ? ` (${r.message})` : ''}.`);
       } else {
         setError(r.error);
         if (r.entry) patch(r.entry); // show the dead-URL flag on the card

@@ -167,6 +167,13 @@ export const api = {
   stats: (id: string) => fetch(`/api/campaigns/${id}/stats`).then((r) => jsonOrThrow<CampaignStats>(r)),
   /** Attach a brochure for a vehicle: the stored copy, or a search. Throws only when search is not configured (503). */
   ensureBrochure: (make: string, model: string, force = false) => jsonPost('/api/brochures/ensure', { make, model, ...(force ? { force: true } : {}) }).then((r) => jsonOrThrow<EnsureBrochureResponse>(r)),
+  /** The stored current brochure for a vehicle, WITHOUT triggering a search (404 → null). Used to re-attach on copy. */
+  currentBrochure: (make: string, model: string): Promise<Brochure | null> =>
+    fetch(`/api/brochures/current?make=${encodeURIComponent(make)}&model=${encodeURIComponent(model)}`).then(async (r) => {
+      if (!r.ok) return null;
+      const body = (await r.json().catch(() => ({}))) as { brochure?: Brochure | null };
+      return body.brochure ?? null;
+    }),
   /** The salesperson accepts the official page / request form the finder found but would not attach by itself. */
   acceptBrochure: (make: string, model: string) => jsonPost('/api/brochures/accept', { make, model }).then((r) => jsonOrThrow<{ brochure: Brochure; state: string }>(r)),
   /** The manual path: a pasted PDF/brochure-page link, or an uploaded PDF (multipart). */
@@ -195,10 +202,10 @@ export const api = {
   },
   listArchivedLibrary: (scope: 'personal' | 'shared' = 'personal') => fetch(`/api/offers/library/archived?scope=${scope}`).then((r) => jsonOrThrow<{ entries: LibraryEntry[] }>(r)),
   /** Re-fetch the live price from the source. On a dead URL the Worker answers 409; the caller shows the flag. */
-  repriceLibrary: (id: string): Promise<{ ok: true; entry: LibraryEntry; offer: Offer; message: string } | { ok: false; error: string; entry?: LibraryEntry }> =>
+  repriceLibrary: (id: string): Promise<{ ok: true; entry: LibraryEntry; offer: Offer; brochure?: Brochure; message: string } | { ok: false; error: string; entry?: LibraryEntry }> =>
     jsonPost(`/api/offers/library/${id}/reprice`, {}).then(async (r) => {
-      const body = (await r.json().catch(() => ({}))) as { entry?: LibraryEntry; offer?: Offer; message?: string; error?: string };
-      return r.ok && body.offer ? { ok: true as const, entry: body.entry!, offer: body.offer, message: body.message ?? '' } : { ok: false as const, error: body.error ?? `Re-pricing failed (HTTP ${r.status}).`, ...(body.entry ? { entry: body.entry } : {}) };
+      const body = (await r.json().catch(() => ({}))) as { entry?: LibraryEntry; offer?: Offer; brochure?: Brochure; message?: string; error?: string };
+      return r.ok && body.offer ? { ok: true as const, entry: body.entry!, offer: body.offer, ...(body.brochure ? { brochure: body.brochure } : {}), message: body.message ?? '' } : { ok: false as const, error: body.error ?? `Re-pricing failed (HTTP ${r.status}).`, ...(body.entry ? { entry: body.entry } : {}) };
     }),
   archiveLibrary: (id: string) => jsonPost(`/api/offers/library/${id}/archive`, {}).then((r) => jsonOrThrow<{ entry: LibraryEntry }>(r)),
   unarchiveLibrary: (id: string) => jsonPost(`/api/offers/library/${id}/unarchive`, {}).then((r) => jsonOrThrow<{ entry: LibraryEntry }>(r)),

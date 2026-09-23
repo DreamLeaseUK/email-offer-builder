@@ -58,7 +58,17 @@ body {
   flex: 1;
 }
 .app__user {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   color: var(--dl-graphite-grey, #787580);
+}
+.app__avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid var(--dl-grey-200, #e1e0e4);
 }
 .app__muted {
   color: var(--dl-text-muted, #928f99);
@@ -69,14 +79,47 @@ body {
 
 .compose {
   display: grid;
-  grid-template-columns: 340px 1fr 1fr;
-  gap: 16px;
+  grid-template-columns: var(--col-a, 340px) 16px var(--col-b, 460px) 16px minmax(300px, 1fr);
+  gap: 16px 0;
   padding: 16px 20px 40px;
   align-items: start;
 }
+
+/* Draggable divider between two Compose panels (wide screens only). */
+.compose__resizer {
+  align-self: stretch;
+  min-height: 140px;
+  position: relative;
+  cursor: col-resize;
+  touch-action: none;
+}
+.compose__resizer::before {
+  content: '';
+  position: absolute;
+  top: 6px;
+  bottom: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 3px;
+  border-radius: 3px;
+  background: var(--dl-grey-200, #e1e0e4);
+  transition:
+    background 0.15s,
+    width 0.15s;
+}
+.compose__resizer:hover::before,
+.compose__resizer:active::before {
+  background: #31bd51;
+  width: 4px;
+}
+
 @media (max-width: 1100px) {
   .compose {
     grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  .compose__resizer {
+    display: none;
   }
 }
 
