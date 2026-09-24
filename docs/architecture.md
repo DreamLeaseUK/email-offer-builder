@@ -108,8 +108,8 @@ Three audiences / lease products, each with its own compliance wording and terms
 2. **CAP IDs are never stored** — not in D1, R2 keys, filenames, logs or HTML. Images/brochures/headshots are
    content-addressed by the sha256 of our own bytes; only our R2 URL is kept. `assertNoCapId()` guards every
    persisted object, and the test suites assert that stored rows, link maps and rendered HTML carry no CAP ID or
-   source image host (**CI is not on `main` yet**, its workflows are ready on branch `ci/baseline` since 24 Sept, so
-   today the check is `pnpm test`). No raw scraped HTML is ever
+   source image host (`pnpm test`, which GitHub Actions has run on every pull request and push to `main` since
+   24 Sept: `.github/workflows/ci.yml`, plus the gitleaks secret scan in `security.yml`). No raw scraped HTML is ever
    persisted (24 h cache = parsed only).
 3. **Compliance is locked.** Each template carries one approved compliance block per contract type; salespeople can't
    edit it; a campaign can't render against a template whose status is not `approved`. Salesperson-authored copy is
@@ -572,7 +572,7 @@ secret + confirming the Workers Paid plan; Tawk webchat (parked, renewals-only s
   credits) and is how a change to the finder is proven. `apps/api` runs inside workerd with
   real local D1/R2/Images; adapter tests use the wasm HTMLRewriter.
 - `pnpm typecheck` clean (incl. `apps/web`); `apps/web` builds. `packages/render/scripts/diff-reference.ts` guards markup
-  fidelity. The test suites assert no CAP-ID leak (no CI on `main` yet; workflows ready on branch `ci/baseline`). `.dev.vars` is git-ignored and must never be committed.
+  fidelity. The test suites assert no CAP-ID leak (CI: `ci.yml` + `security.yml`, since 24 Sept). `.dev.vars` is git-ignored and must never be committed.
 
 ## B11. Key files index
 - Model & guard: `packages/schema/src/model.ts`, `capid.ts`, `text.ts` (the site's HTML entities, decoded at lookup and again wherever an offer reaches the server)

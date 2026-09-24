@@ -66,15 +66,16 @@ web page. It is an FCA-regulated financial-promotions tool (compliance matters).
 ## 2. Repo & live state
 
 - **Git [verified 24 Sept]:** branch `main`, `origin` = `https://github.com/DreamLeaseUK/email-offer-builder`
-  (private). **HEAD `7ae069e`, pushed.** Session 8's code commits: `ac10c47` (badge "!"), `dd8de0d` (auto-preheader,
+  (private), everything pushed. Session 8's code commits: `ac10c47` (badge "!"), `dd8de0d` (auto-preheader,
   plain greeting, salesperson UTM), `666d2ad` (library brochure re-attach), `7ae069e` (web: brochure carry-over,
-  Compose form, resizable panels, header photo). **Uncommitted when this was written:** the session-8 doc updates
-  (this file, CLAUDE.md, architecture, brief, status-09-23/-09-24, runbook), `apps/web/vite.config.ts` (tunnel
-  `allowedHosts`) and `.claude/launch.json` (untracked) — check `git status`; commit them if Matt says so.
+  Compose form, resizable panels, header photo). Then on 24 Sept: `4edec9c` (session-8 docs, review fixes, the tunnel
+  `allowedHosts`, `.claude/launch.json`), PR #1 merged as `399c86b` (CI), and a docs commit recording CI. Check
+  `git status` and `git log --oneline -5` for anything newer.
 - **Tests [verified 24 Sept]:** `pnpm test` → **220 pass** (schema 23, render 35, adapters 92, api 70);
-  `pnpm typecheck` clean (incl. `apps/web`); `apps/web` builds. No CI on `main` yet: two GitHub Actions workflows
-  (typecheck + tests + web build; a full-history gitleaks secret scan) are ready on branch `ci/baseline` (pushed 24
-  Sept, PR not yet opened), so today the tests are the only gate. `diff-reference`
+  `pnpm typecheck` clean (incl. `apps/web`); `apps/web` builds. **CI [verified 24 Sept]:** since PR #1 (merged
+  24 Sept), GitHub Actions runs `ci.yml` (typecheck, tests, web build, and a guard that `DEV_USER_EMAIL` never
+  reaches the committed vars) and `security.yml` (gitleaks, full history) on every pull request and push to `main`.
+  `.gitleaks.toml` allowlists one verified false positive (`vehicleKey` slugs); any new entry there needs a reason. `diff-reference`
   reports **84** differing lines (2 logo width, 6 the third hero pill, 10 inline-block pills + the stack image column,
   64 the name-before-picture reorder, 2 the plain greeting of 23 Sept), all recorded in the `cards.ts` header.
   `MARKUP_VERSION` is still 2.
