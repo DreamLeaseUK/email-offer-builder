@@ -1,13 +1,14 @@
 # DreamLease Offer Mailer — Solution Design & System Architecture
 
-**Status:** current as of 23 Sept 2026 (session 7). This is the authoritative technical design document. The
-**production Worker is still v0.5.0** (21 Sept): the offer-library rebuild (**B7c**) and the campaign copy /
-copy-reprice work of sessions 6–7 are in `main` and run through `pnpm dev:live`, **not yet deployed** (the
+**Status:** current as of 24 Sept 2026 (session 8). This is the authoritative technical design document. The
+**production Worker is still v0.5.0** (21 Sept): everything of sessions 6–8 — the offer-library rebuild (**B7c**),
+campaign copy, the brochure carry-over on library use and copy, the salesperson UTM, the auto-preheader and the
+Compose changes — is in `main` (pushed to `origin`) and runs through `pnpm dev:live`, **not yet deployed** (the
 `library_entries` table was applied to production D1, migration `0003`, so `dev:live` works). For product
 requirements see `dreamlease-offer-mailer-brief.md` (v1.1, with an as-built log in §9a); for the email-markup
 reference see `offer-mailer-implementation-notes.md` (and the deviations from it in B7); for the build log see
-`status-2026-09-23.md` (`-09-21`, `-09-18`, `-09-16`, `-09-15`, `-09-14` are history); for how to resume see
-`PICKUP-PROMPT.md`. Brochure discovery (the finder) is designed and evidenced in `brochure-finder-brief.md`.
+`status-2026-09-24.md` (`-09-23`, `-09-21`, `-09-18`, `-09-16`, `-09-15`, `-09-14` are history); for how to resume see
+`PICKUP-PROMPT.md`; for sign-in set-up see `it-runbook-sign-in.md`. Brochure discovery (the finder) is designed and evidenced in `brochure-finder-brief.md`.
 Where this document and the code disagree, the code wins — fix this document.
 
 ---
@@ -40,25 +41,34 @@ Three audiences / lease products, each with its own compliance wording and terms
 3. **Create.** The server assembles a `Campaign` (server-owned identity/slug/tracking/template/compliance),
    strips any recipient PII, validates, renders, writes the hosted page to R2, stores a snapshot in D1, and
    returns the email HTML/text for Copy-for-Outlook plus the hosted URL.
-4. **Deliver.** Copy-for-Outlook (clipboard `text/html` + `text/plain`), or the hosted link. Graph "create
-   draft in Outlook" is designed but **parked** (needs IT's Entra app). A human sends. **The paste into New
+4. **Deliver.** Copy-for-Outlook (clipboard `text/html` + `text/plain`), or the hosted link. The Outlook/Graph
+   "create draft" was **removed from the plan** (24 Sept 2026); the next delivery path is monday.com's email tool. A human sends. **The paste into New
    Outlook is the real send path today, and Outlook rewrites what is pasted** — see A5; the email is built for
    what survives it.
 5. **Track.** Every http link routes through `/r/<slug>/<linkId>` (logs a click, redirects); hosted-page views
-   are logged. Stats per campaign. **No IP, no full user-agent.**
+   are logged. Stats per campaign. **No IP, no full user-agent.** Every link back to dreamlease.co.uk also carries
+   UTMs naming the tool, the campaign, the offer and — automatically, as `utm_term` — **the salesperson**, so a web
+   enquiry started from the email is attributable to them in GA (B7, "Attribution").
 
 ## A3. Feature inventory (built)
 - **Compose**: URL lookup → re-pricing chips → live preview → create → Copy-for-Outlook + hosted link. The
   first offer **auto-renders the preview**; later edits keep the preview visible but **flag it out-of-date**
   (the salesperson presses Update preview) rather than blanking it; the Add button stays enabled and reads "Add
-  offer" / "Add another offer".
+  offer" / "Add another offer". Since 23 Sept there is **no preheader field** (the email's inbox preview is derived
+  from the intro — B7) and the **recipient's first name sits above the intro**. The three Compose panels (Campaign,
+  Offers, Preview) are **resizable**: two draggable dividers set the Campaign and Offers widths, the preview takes the
+  rest, with minimum widths (260 / 300 / 300 px), the widths remembered per browser (`localStorage`
+  `dl-compose-cols`), and the panels stacking with the dividers hidden below 1100 px.
 - **Audience selector**: PCH / BCH / Salary sacrifice, driving compliance block, terms and (salsac) pricing.
 - **Offer-button CTA**: one primary green button per campaign — *View offer · Call · WhatsApp · Email · Book a
   time to discuss* — each gated on the sender field it needs, with a salesperson-renamable label (≤30 chars).
 - **Secondary contact links**: an optional salesperson-chosen row (*Call · WhatsApp · Email · Book a call*) under the
   signature, separate from the primary button, pruned to methods whose field is present.
 - **Salesperson profile (persisted)**: portrait photo (upload/replace/remove) + editable contact details, remembered
-  per salesperson and prefilled next time.
+  per salesperson and prefilled next time. The portrait also shows in the **app header** beside the signed-in email,
+  updated live on upload or removal.
+- **Salesperson attribution** (23 Sept): an automatic `utm_term=<salesperson>` on every link back to the website —
+  no set-up by the salesperson (B7, "Attribution").
 - **Brochures** (design in **B7b**): the finder searches, understands the manufacturer's site, operates the model's
   page and verifies what it finds; a verified **UK** brochure, price & spec guide or web brochure attaches by
   itself (our hosted PDF, or a link). No allowlist, no picking from a list. A manufacturer's **European brochure in
@@ -72,14 +82,19 @@ Three audiences / lease products, each with its own compliance wording and terms
   image beside the details on a desktop, image above the details on a phone. The layout picker is gone.
 - **Offer library** — a curated central repository (redesigned 23 Sept 2026; **B7c**): a salesperson's own shelf
   plus admin-curated **shared shelves**, priced **live on use** (never a frozen price), with a **URL-health** flag
-  when a source page has moved/gone, a current/archived split, and a 6-month archive purge.
+  when a source page has moved/gone, a current/archived split, and a 6-month archive purge. **An offer pulled from
+  the library arrives with the model's stored brochure attached** (23 Sept), shown in the tray with Remove /
+  Replace (upload or paste a link) / Search again.
 - **Campaigns** — an **identifiable list** (each row shows its vehicles, a draft/sent badge, the audience and the
   subject; the recipient is never stored so it never identifies a row), an in-place **Details** expander (every
   offer with price and terms, intro, sender), and per-campaign stats. **Copy a past campaign** starts a fresh
   draft in Compose from it: the offers and the reusable parts (name, subject, preheader, intro, audience, sender,
   CTA) carry over, the **recipient never does**, and **every offer is re-priced live from its own source URL** on
-  copy (the same silent-stale guard as the library — B7c). A campaign **never** flows into the library. Client-only
-  (`apps/web/src/Campaigns.tsx`, `App.tsx` `copyCampaign`, `Compose.tsx` `repriceCopied`) — no API change.
+  copy (the same silent-stale guard as the library — B7c). Since 23 Sept the copy also **re-attaches each model's
+  stored brochure** (`api.currentBrochure` → `GET /api/brochures/current`, the stored copy only, never a search); an
+  offer that cannot be re-priced keeps its copied price and is not re-brochured, and the warning says so. A campaign
+  **never** flows into the library. Client-only (`apps/web/src/Campaigns.tsx`, `App.tsx` `copyCampaign`,
+  `Compose.tsx` `repriceCopied`) — no API change.
 - **Promotions register** (master table + CSV).
 - **Template admin (master-admin only)**: author the Emma-approved compliance templates, publish (self-
   approve), lock approved, new-version/retire. See A4 / B6.
@@ -93,7 +108,8 @@ Three audiences / lease products, each with its own compliance wording and terms
 2. **CAP IDs are never stored** — not in D1, R2 keys, filenames, logs or HTML. Images/brochures/headshots are
    content-addressed by the sha256 of our own bytes; only our R2 URL is kept. `assertNoCapId()` guards every
    persisted object, and the test suites assert that stored rows, link maps and rendered HTML carry no CAP ID or
-   source image host (there is **no CI pipeline yet**: the check is `pnpm test`). No raw scraped HTML is ever
+   source image host (**CI is not on `main` yet**, its workflows are ready on branch `ci/baseline` since 24 Sept, so
+   today the check is `pnpm test`). No raw scraped HTML is ever
    persisted (24 h cache = parsed only).
 3. **Compliance is locked.** Each template carries one approved compliance block per contract type; salespeople can't
    edit it; a campaign can't render against a template whose status is not `approved`. Salesperson-authored copy is
@@ -168,12 +184,15 @@ validation is Matt's own test sends.
                           D1 (SQL)      R2 (objects)    Images (TRANSFORM)   Firecrawl (metered, external)
 ```
 Two hosting surfaces on one Worker:
-- **`mailer.dreamlease.co.uk`** — tool UI + `/api`, staff-only behind Cloudflare Access.
+- **`marketingtools.dreamlease.co.uk`** (Matt, 24 Sept 2026) — tool UI + `/api`, staff-only behind Cloudflare Access.
 - **`offers.dreamlease.co.uk`** — hosted pages, redirects, images, brochures — public (noindex, expiring).
 
-Until IT attaches the custom domains + Access, both run on `offer-mailer.matt-wilson-9b8.workers.dev` and
-`/api/*` returns **503** (fails closed). **Domain note:** `mailer.` is already occupied (found 16 Sept: `status-2026-09-16.md` §4 and §7 /
-memory); a free Cloudflare-served subdomain is needed — proposed `offer-mailer.` / `offers.`.
+Until the custom domains are attached, both run on `offer-mailer.matt-wilson-9b8.workers.dev`, and `/api/*` returns
+**503** (fails closed) until Access is configured there (runbook Part B: the Access application on that hostname,
+path `api`); that is enough for go-live. **Domain note:** `mailer.` is already occupied (found 16 Sept:
+`status-2026-09-16.md` §4 and §7 / memory), so the tool moves to `marketingtools.` (free in DNS, checked 24 Sept).
+DNS is at GoDaddy, so it must become Cloudflare-served first (runbook Part C). `TOOL_BASE_URL` in `wrangler.jsonc`
+still says `mailer.`; nothing reads it at runtime yet.
 
 ## B2. Monorepo layout (pnpm workspaces)
 | Package | Responsibility |
@@ -192,7 +211,9 @@ memory); a free Cloudflare-served subdomain is needed — proposed `offer-mailer
 - **R2** (WEUR): `offer-mailer-images` (`IMAGES`), `offer-mailer-hosted` (`HOSTED`), `offer-mailer-brochures`
   (`BROCHURES`).
 - **Images** binding `TRANSFORM` (vehicle → 1200px JPEG; headshot → 256px square).
-- **Access** — `ACCESS_TEAM_DOMAIN` + `ACCESS_AUD` gate prod; empty locally.
+- **Access** — `ACCESS_TEAM_DOMAIN` + `ACCESS_AUD` gate prod; empty locally, and **still empty in production**
+  until IT returns the Entra values. Cloudflare Zero Trust is enabled on the account with team name **`dreamlease`**
+  (team domain `dreamlease.cloudflareaccess.com`, confirmed 24 Sept), which is what `ACCESS_TEAM_DOMAIN` becomes.
 - **Vars/secrets** — `FIRECRAWL_API_KEY` (secret; **not set in production**: `/health` reports `firecrawl:false`);
   optional `ADMIN_EMAILS`, `RETENTION_CAMPAIGN_DAYS`; locally `.dev.vars` (git-ignored, `DEV_USER_EMAIL`).
 
@@ -204,6 +225,22 @@ memory); a free Cloudflare-served subdomain is needed — proposed `offer-mailer
 
 Both take the dev sign-in from `.dev.vars`; the Vite UI (`pnpm --filter @offer-mailer/web dev`, port 5173) proxies to
 whichever is on 8787. Production `/api` itself stays 503 until Access is configured.
+
+**Starting the servers (24 Sept).** `.claude/launch.json` defines `api-live` (`pnpm dev:live`, port 8787) and `web`
+(the Vite UI, port 5173) so the Claude desktop app can start and manage both. It calls `pnpm` by its full path
+(`%AppData%\npm\pnpm.cmd`) because `pnpm` is installed but not on Matt's PowerShell `PATH`. Servers started this way
+are stopped by the app when its Browser pane is closed; a `dev:live` session also drops after a few hours.
+
+**Sharing the running tool without a deploy (23–24 Sept).** There is no LAN, so a colleague off-machine reaches the
+local tool through a **Cloudflare quick tunnel**: `cloudflared tunnel --url http://localhost:5173` (the binary is at
+`C:\Users\MatthewWilson\cloudflared.exe`; no Cloudflare login needed). It prints a random
+`https://<words>.trycloudflare.com` address, which is **new every time the tunnel starts** and dies with the tunnel,
+the local servers or a sleeping PC; a stable address needs a named tunnel on a Cloudflare-served domain (the parked
+subdomain work). `apps/web/vite.config.ts` lists the tunnel domains in `server.allowedHosts` (`.trycloudflare.com`,
+`.ngrok-free.app`, `.ngrok.app`, `.ngrok.io`, `.loca.lt`) so Vite answers them; localhost and IPs are allowed by Vite
+anyway. **Security:** the dev bypass means **anyone with the link is signed in as `DEV_USER_EMAIL` (Matt, admin) on
+production data** through `dev:live` — share narrowly, briefly, and wipe test data after. It must never be replaced
+by setting `DEV_USER_EMAIL` in production (CLAUDE.md).
 
 ## B4. Data model & storage
 ### D1 tables (`apps/api/src/db/schema.ts`) — JSON snapshots validated by `@offer-mailer/schema`
@@ -251,6 +288,12 @@ whichever is on 8787. Production `/api` itself stays 503 until Access is configu
   `ACCESS_AUD`; the verified **email** becomes the user identity, used as `createdBy` everywhere. No passwords
   stored. Local dev: with `ACCESS_AUD` empty, `DEV_USER_EMAIL` is accepted; with it set the bypass is inert
   (misconfigured prod fails closed 503).
+- **Entra set-up (status 24 Sept)** — **one** app registration, sign-in only (delegated `openid`, `email`,
+  `profile`, `offline_access`, `User.Read`; a 12-month client secret; redirect
+  `https://dreamlease.cloudflareaccess.com/cdn-cgi/access/callback`). Matt is not the Entra administrator: the
+  click-by-click instructions for IT are `it-runbook-sign-in.md` Part A (revised 24 Sept to Microsoft's current menu
+  names) and a matching Word document outside the repo. Waiting on IT; then Cloudflare Part B and a deploy with
+  `ACCESS_TEAM_DOMAIN` + `ACCESS_AUD` set.
 - **Authorization (roles, built — `roles.ts`)** — two roles, approver parked:
   - **Salesperson** — the default; uses the tool.
   - **Master admin** — template admin + admin-only actions; **self-approves** templates (rule 3's approved-
@@ -276,6 +319,21 @@ tiles** (the common count across the offers, floored to even) so the cards read 
 hero keeps its natural count. A third (21 Sept): when the attached brochure is the manufacturer's **European
 edition** (`Brochure.market === 'eu'`), the small print adds "This is the manufacturer's European brochure;
 specification, equipment and prices may differ from UK models."
+
+**Inbox preview (23 Sept).** The Compose preheader field was removed. `render.ts` `preheader()` uses an explicit
+`campaign.preheader` if there is one (a copied older campaign may carry one), otherwise it derives the hidden preview
+text from the intro: whitespace collapsed, the first ~100 characters cut at a word boundary with "…". Without it the
+inbox would fall back to the first visible text, the "View these offers online" link. Email only; the hosted page has
+no preheader. Tested in `render.test.ts`.
+
+**Attribution (23 Sept).** `links.ts` `campaignUtm(code, extra)` is the one UTM base for our own website links:
+`utm_source=offer_mailer`, `utm_medium=email`, `utm_campaign=<campaign code>`, plus `campaign.tracking.utm`. The server
+sets `tracking.utm = { utm_term: salespersonTag(createdBy) }` in `buildCampaign` (`apps/api/src/campaigns.ts`): the
+salesperson's work-email local part, lower-cased and hyphenated (`matt.wilson@…` → `matt-wilson`), so it needs no
+set-up and is stored with the campaign. Offer links add `utm_content=<offer id>`; the footer's dreamlease.co.uk link
+takes the base alone. The tags sit on the **destination** in the stored link map, so the email HTML is unchanged and
+`diff-reference` is unaffected; `/r` delivers them to the site, where GA4 records `utm_term` without site-side set-up.
+Matt, 23 Sept: "whatever works as salesperson identifier", so `utm_term` stands.
 
 **Deviations from the v5 reference, all for the paste path of A5** (recorded in the header of `cards.ts`;
 `diff-reference` reports 84 lines: 8 pre-date 21 Sept (2 the logo width, 6 the third hero pill), 10 are the inline-block pills (6) and the stack card’s image column (4), 64 are the name-before-picture reorder of 22 Sept (50 the stacked card, 14 the hero), and 2 are the plain recipient greeting (23 Sept, render.ts’s intro); the fluid wrapper sits outside the sections the script compares). **`MARKUP_VERSION` was not bumped for them (still 2)**, so templates approved against it — including the
@@ -391,6 +449,15 @@ is the same silent-stale guard as the brochure finder, applied to prices. **Copy
 same guard** (A3): `Compose.tsx` `repriceCopied` re-fetches every copied offer from its source URL, keeps the
 copied price only when the source has moved (and flags it), and preserves hand-entered salary-sacrifice nets.
 
+**Brochures ride along on use (23 Sept).** A brochure is shared by `vehicleKey`, not stored on the entry, and a
+live lookup never carries one — so before this, every re-price silently dropped the offer's brochure (Matt's Renault
+5: the `renault/5` PDF was stored, the library entry's `offer.brochure` was null, and the campaign went out without
+it). Now `/reprice` looks up the current brochure for the vehicle and re-attaches it through `withStoredBrochure()`
+(`library.ts`): `include` keeps the entry's prior choice, else it is on for a UK edition and **off for a European
+edition** (the finder's "offered, never attached by itself" rule). The response carries the brochure record so
+`App.tsx` `addFromLibrary` puts it in the tray and `BrochureControl` shows it attached. Copy-a-campaign does the
+same client-side from `GET /api/brochures/current`.
+
 **Two surfaces / roles**
 - **Personal shelf** — a salesperson's own saved offers (`scope: 'personal'`, `addedBy` = them); only they see them.
 - **Shared shelves** — the central curated ones (`scope: 'shared'`, a `category`), that everyone pulls from. Only an
@@ -417,7 +484,8 @@ place those columns are derived.
 
 **Tests:** `apps/api/test/library.test.ts` — personal vs shared, save/list/delete, archive/unarchive, admin
 promote (copy), the smart shelf's price filter, most-recent-first + search, the dead-URL 409 flag, the 6-month
-purge, and entity-decoding on read. Proven live through the tool (Renault 5 name decoded, Polestar 2 promoted to
+purge, entity-decoding on read, and `withStoredBrochure` (UK included, EU unticked, prior choice wins, none
+unchanged). Proven live through the tool (Renault 5 name decoded, Polestar 2 promoted to
 the EVs shelf while kept on the personal shelf).
 
 ## B8. External dependencies
@@ -427,9 +495,13 @@ the EVs shelf while kept on the personal shelf).
   (2 credits), **Map** (1), **Scrape with page `actions`** to operate a page in Firecrawl's own browser (1), Scrape
   with the PDF parser to read a document's first four pages (4), and `fetchFile` via `rawBase64` to retrieve a file
   past bot protection (about 2). Typical search: 10–12 credits; cap 25. Sees the URLs we scrape transiently; brochure PDFs land in our R2. **No customer PII.**
-- **Microsoft Entra / 365** — identity only. Graph draft parked.
+- **Microsoft Entra / 365** — identity only: one app registration, used by Cloudflare Access for sign-in. The
+  Graph draft was removed from the plan on 24 Sept 2026, so the tool never gets mailbox access and needs no second
+  Entra app.
 - **Parked/deferred:** Tawk.to webchat (renewals-only stage one; parked in `status-2026-09-16.md` §7, design in
-  `status-2026-09-15.md` §7); the custom-domain/prod-URL setup (`mailer.` occupied — `status-2026-09-16.md` §7 / memory); Graph draft (IT Entra app); Google Sheets register export.
+  `status-2026-09-15.md` §7); the custom-domain/prod-URL setup (`mailer.` occupied — `status-2026-09-16.md` §7 / memory); Google Sheets register export.
+- **Next delivery path (future iteration):** hand the draft to monday.com's email tool (the brief's `monday` output
+  adapter). It becomes a new rendering target, to be proven with real sends as Gmail and New Outlook are today.
 
 ## B9. Build status & roadmap (brief §8.2)
 | Step | State |
@@ -438,7 +510,7 @@ the EVs shelf while kept on the personal shelf).
 | 2 `render()`, layouts, hosted page | Done (hero and stacked; the grids were deleted 22 Sept) |
 | 3 URL lookup, image pipeline, brochure harvest | Done (brochure discovery rebuilt as the finder, 18 Sept) |
 | 4 Web app | Core built (dev-only) |
-| 5 Graph draft, Copy-for-Outlook | Copy-for-Outlook done; Graph parked |
+| 5 Graph draft, Copy-for-Outlook | Copy-for-Outlook done; Graph draft **removed** (24 Sept 2026 — monday.com next) |
 | 6 Redirects, click logging, stats | Done |
 | 7 Template admin, approval, register, suppression | **Done** (register, template admin + self-approve, suppression list) |
 | 8 Stubs & `evolution.md` | Not started (low value) |
@@ -448,12 +520,16 @@ European fallback and the European-edition small print are live. The one-offer-p
 what `pnpm dev:live` renders, so it is in use without a deploy (production serves what was stored; it does not
 re-render a campaign).
 
-**In `main` since v0.5.0 (sessions 6–7, not deployed — they run through `dev:live`):** the 22 Sept
-render/paste work (grid cards deleted, name-before-picture reorder, the Keep-source-formatting paste fix); the
-**offer-library rebuild as a curated repository** (B7c) with its `library_entries` table (migration `0003`,
-applied to production D1); the **"rep" → "salesperson"** terminology sweep; and the **identifiable campaigns list
-+ Copy a past campaign** with live re-pricing on copy (A3). Redeploying the Worker would ship all of it; it is
-deferred with the rest of go-live behind Access + the subdomain.
+**In `main` since v0.5.0 (sessions 6–8, pushed to `origin`, not deployed — they run through `dev:live`):** the
+22 Sept render/paste work (grid cards deleted, name-before-picture reorder, the Keep-source-formatting paste fix);
+the **offer-library rebuild as a curated repository** (B7c) with its `library_entries` table (migration `0003`,
+applied to production D1); the **"rep" → "salesperson"** terminology sweep; the **identifiable campaigns list +
+Copy a past campaign** with live re-pricing on copy (A3); and session 8 (23–24 Sept, commits `ac10c47` … `7ae069e`):
+the "DreamLease exclusive" badge without its "!", the preheader field removed and the **inbox preview derived from
+the intro**, the **plain (not bold) greeting**, the **automatic salesperson UTM**, **brochures re-attached on
+library use and on copy**, the recipient field above the intro, **resizable Compose panels** and the **portrait in
+the header**. Redeploying the Worker would ship all of it; it is deferred with the rest of go-live behind Access + the
+subdomain, and a real test send from `main` should come first.
 
 **Open from the 21 Sept test sends (in priority order):**
 - **Flattened text colour and size on the paste path** (A5) — cause found 22 Sept: Outlook's Merge-formatting paste.
@@ -483,18 +559,20 @@ deferred with the rest of go-live behind Access + the subdomain.
 
 **Remaining build-order:** step 8 stubs + `evolution.md` (low value). **Owed by others / parked:** Emma —
 approved compliance wording (then publish a real template to replace the placeholder) + the retention period;
-IT — Access + a Cloudflare-served subdomain (parked; `mailer.` occupied) + the Graph Entra app; Matt — Firecrawl
+IT — Access (one Entra app registration, sign-in only) + a Cloudflare-served subdomain (parked; `mailer.` occupied); Matt — Firecrawl
 secret + confirming the Workers Paid plan; Tawk webchat (parked, renewals-only stage one).
 
 ## B10. Testing & verification
-- `pnpm test` — **217 tests**: schema 23, render 34, adapters 92, api 68 (library: 9). The adapter suite replays 18 recorded
+- `pnpm test` — **220 tests** (24 Sept): schema 23, render 35 (incl. the intro-derived preheader), adapters 92, api 70
+  (library: 10, incl. `withStoredBrochure`; campaigns: the `salespersonTag` unit test and `utm_term` on the stored
+  campaign, on the `/r` destination and on the footer link). The adapter suite replays 18 recorded
   manufacturer sites through the brochure finder at zero credits (added 21 Sept: Polestar 2, the European fallback;
   Renault 4 and Geely EX2, the two misses of that afternoon; Toyota C-HR, Škoda Kodiaq and Hyundai Kona from the
   finder-1.4 sweep). `packages/adapters/scripts/finder-sweep.mts` runs the finder LIVE over a list of cars (real
   credits) and is how a change to the finder is proven. `apps/api` runs inside workerd with
   real local D1/R2/Images; adapter tests use the wasm HTMLRewriter.
 - `pnpm typecheck` clean (incl. `apps/web`); `apps/web` builds. `packages/render/scripts/diff-reference.ts` guards markup
-  fidelity. The test suites assert no CAP-ID leak (there is no CI pipeline yet). `.dev.vars` is git-ignored and must never be committed.
+  fidelity. The test suites assert no CAP-ID leak (no CI on `main` yet; workflows ready on branch `ci/baseline`). `.dev.vars` is git-ignored and must never be committed.
 
 ## B11. Key files index
 - Model & guard: `packages/schema/src/model.ts`, `capid.ts`, `text.ts` (the site's HTML entities, decoded at lookup and again wherever an offer reaches the server)
@@ -503,6 +581,9 @@ secret + confirming the Workers Paid plan; Tawk webchat (parked, renewals-only s
 - Worker: `apps/api/src/index.ts` (routes + Cron), `campaigns.ts`, `profile.ts`, `templates.ts`,
   `suppressions.ts`, `retention.ts`, `roles.ts`, `files.ts`, `brochures.ts`, `lookup.ts`, `library.ts`,
   `hosted.ts`, `tracking.ts`, `middleware/access.ts`, `db/schema.ts`
-- Web: `apps/web/src/App.tsx`, `Compose.tsx` (incl. `repriceCopied`), `Campaigns.tsx`, `Library.tsx`,
-  `Register.tsx`, `Suppressions.tsx`, `Templates.tsx`, `api.ts`, `styles.css`
-- Config: `apps/api/wrangler.jsonc`, `config/` (`badges.json`, `admins.json`, `library-shelves.json`)
+- Web: `apps/web/src/App.tsx` (header portrait, `addFromLibrary`), `Compose.tsx` (incl. `repriceCopied`, the resizable
+  columns), `Campaigns.tsx`, `Library.tsx`, `Register.tsx`, `Suppressions.tsx`, `Templates.tsx`, `api.ts`
+  (incl. `currentBrochure`), `styles.css`; `apps/web/vite.config.ts` (proxy + tunnel `allowedHosts`)
+- Config: `apps/api/wrangler.jsonc`, `config/` (`badges.json`, `admins.json`, `library-shelves.json`),
+  `.claude/launch.json` (the two dev servers for the desktop app)
+- Runbooks: `docs/it-runbook-sign-in.md` (Entra + Cloudflare Access sign-in, revised 24 Sept)

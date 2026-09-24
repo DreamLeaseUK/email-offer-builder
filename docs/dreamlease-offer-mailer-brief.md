@@ -395,7 +395,7 @@ Where the implementation has departed from this brief, and why. `docs/status-202
 - **Campaign persistence and the working loop.** Campaigns are stored in D1 (a validated `Campaign` snapshot plus the `render()` link map, `campaigns.links` column). `POST /api/campaigns` assembles → renders → writes the hosted page → stores; `GET /api/campaigns`, `/:id`. `POST /api/campaigns/preview` renders a draft without persisting (drives the live preview), and create returns the rendered `html`/`text` for Copy-for-Outlook. The `/r/:slug/:link` redirect resolves against the stored link map and logs a click; hosted-page views are logged too; link scanners are classified and excluded from stats (`GET /api/campaigns/:id/stats`, with last-click and last-view). So the loop from §5.4/§5.6 is closed end to end.
 - **The tool UI (step 4).** `apps/web` is a Vite + React app built from the DreamLease design system, which is **vendored into the monorepo as `packages/design-system`** (the `dl-*` components, tokens, Sofia Pro, stylesheet — consumed as source). Screens: Compose (URL lookup, term/mileage/initial chips that re-price in place, live preview, create, Copy-for-Outlook, Save-to-library), Campaigns (list + stats), Library (`POST`/`GET`/`DELETE /api/offers/library`), Register.
 - **URL lookup accepts any vehicle page.** Not just `/offers/<type>/<slug>/` but any dreamlease.co.uk path carrying a `personal`/`business` segment (e.g. `/<make>-car-lease-deals/<type>/<model>/<derivative>/`); identity comes from the page, so the path shape does not matter.
-- **Delivery.** Copy-for-Outlook (clipboard `text/html`+`text/plain`) is built and needs no IT. The Graph "Create draft in Outlook" is **parked** pending IT's Entra app — the compliance shape (delegated `Mail.ReadWrite`, browser-held tokens, drafts-only, app assigned to sales users) is agreed; see the status doc §4.
+- **Delivery.** Copy-for-Outlook (clipboard `text/html`+`text/plain`) is built and needs no IT. The Graph "Create draft in Outlook" was parked on 15 Sept (its compliance shape — delegated `Mail.ReadWrite`, browser-held tokens, drafts-only, app assigned to sales users — had been agreed; status doc §4) and was **removed from the plan on 24 Sept 2026** (Matt): the next delivery path is monday.com's email tool (§5.2's `monday` output adapter), so there is no second Entra app and the tool never gets mailbox access.
 - **Compliance record.** The promotions register (§5.5) is a live in-app master list plus CSV (`GET /api/register`, `/api/register.csv`). **Auto-append into DreamLease's existing Google Sheets financial-promotions register is a wanted future integration**, deferred pending the sheet's column layout, a Google service account, and a log-trigger decision. Template admin + Emma approval and the suppression list were still to build on 15 Sept — **both were built on 16 Sept** (see the 16 Sept entry below); the seeded default template's wording is still a placeholder, not yet Emma-approved.
 
 ### As built — 16 September 2026
@@ -431,8 +431,8 @@ Where the implementation has departed from this brief, and why. `docs/status-202
   single offer as the hero card and two to six as stacked rows; the two-up and three-up grids are no longer offered
   and the layout picker (§7.2 screen 2) is gone. Reason: side-by-side cards crowded the email and were the hard part
   to render alike everywhere.
-- **The send path is a paste into New Outlook, and it rewrites the HTML** (21 Sept). The Graph draft of §5.4 is
-  still parked on IT, so Copy-for-Outlook is how every email goes out. The paste drops the `<style>` block and the
+- **The send path is a paste into New Outlook, and it rewrites the HTML** (21 Sept). The Graph draft of §5.4 was
+  later removed from the plan (24 Sept; monday.com's email tool is the next delivery path), so Copy-for-Outlook is how every email goes out. The paste drops the `<style>` block and the
   conditional comments and flattens text colour and size, so the email may not depend on a media query or on
   `[if mso]`: the wrapper is fluid, badges are not floated, the stack card's image column is fluid inline. **The flattened
   text colour and size** (the red 28px price and the red make name arriving black and body-sized) **is Outlook's
@@ -443,6 +443,27 @@ Where the implementation has departed from this brief, and why. `docs/status-202
   links at production, which does not have them.
 - **Production is v0.5.0**; `/api` is still 503 there until Cloudflare Access exists, and `mailer.dreamlease.co.uk`
   (§5.7) turned out to be already in use, so the tool needs a different subdomain.
+
+### As built — 23 to 24 September 2026 (current state in `docs/status-2026-09-24.md`, design in `docs/architecture.md`)
+
+- **Delivery (§5.4):** the Graph "Create draft in Outlook" is **removed from the plan** (24 Sept); the next
+  delivery path is monday.com's email tool (§5.2's `monday` adapter). Copy for Outlook stays the only send path until
+  then. §9's "second Entra app registration for Graph" no longer applies: IT registers one app, for sign-in only.
+- **Preheader (§5.1, §7.2 screen 2):** no longer a Compose field. The render derives the inbox preview from the
+  intro's opening (~100 characters) unless a campaign already carries a preheader. The register's Preheader column
+  stays and is empty for new campaigns.
+- **Greeting (§7.1 intro block):** "Hi {name}," is plain, not bold (Matt) — a recorded deviation from the v5
+  reference. The recipient's first name is now entered above the intro in Compose.
+- **Badges (§5.1):** the fixed list's "DreamLease exclusive!" is now "DreamLease exclusive"; the site's own "!" is
+  dropped when a badge is matched to the list.
+- **Attribution (§5.6):** every link back to dreamlease.co.uk now also carries `utm_term=<salesperson>` (from the
+  sender's work email), added automatically so a web enquiry can be credited to the salesperson.
+- **Brochures (§5.8):** a library offer used in a campaign, or an offer in a copied campaign, now arrives with its
+  model's stored brochure attached (a European edition still arrives unticked); the salesperson can remove or replace
+  it.
+- **Tool UI (§7.2):** the Compose panels are resizable; the salesperson's portrait shows in the app header.
+- **Sign-in (§5.7):** Cloudflare Zero Trust is set up with team name `dreamlease`; the Entra instructions for IT are
+  written (`docs/it-runbook-sign-in.md`). Waiting on IT.
 
 ## 9. Assumptions and open items
 

@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "api-live",
+      "runtimeExecutable": "C:/Users/MatthewWilson/AppData/Roaming/npm/pnpm.cmd",
+      "runtimeArgs": ["dev:live"],
+      "port": 8787
+    },
+    {
+      "name": "web",
+      "runtimeExecutable": "C:/Users/MatthewWilson/AppData/Roaming/npm/pnpm.cmd",
+      "runtimeArgs": ["--filter", "@offer-mailer/web", "dev"],
+      "port": 5173
+    }
+  ]
+}

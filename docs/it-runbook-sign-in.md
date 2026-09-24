@@ -1,7 +1,8 @@
 # IT runbook — sign-in for the DreamLease Offer Mailer (Cloudflare Access + Microsoft Entra ID)
 
-Written 22 September 2026. Steps A1–A6 are for the Entra administrator; B1–B6 are for the Cloudflare account
-holder (Matt). About 15 minutes each. Nothing here sends email or touches mailboxes; this is sign-in only.
+Written 22 September 2026; Part A revised 24 September 2026 (current Entra menu names, a 12-month secret, one
+app registration only). Steps A1–A8 are for the Entra administrator; B1–B6 are for the Cloudflare account holder
+(Matt). About 15 minutes each. Nothing here sends email or touches mailboxes; this is sign-in only.
 
 ## What it does
 
@@ -15,49 +16,68 @@ Until this is done the production tool refuses every request to `/api` (HTTP 503
 
 ## Before you start (Matt supplies to IT)
 
-- The Cloudflare Zero Trust **team name**: Cloudflare dashboard → Zero Trust → Settings → Custom pages → Team
-  name and domain. Zero Trust must be enabled on the account first (free plan, one-time setup).
+- The Cloudflare Zero Trust **team name**: **`dreamlease`** (team domain `dreamlease.cloudflareaccess.com`; confirmed
+  by Matt from Cloudflare dashboard → **Zero Trust** → **Settings** → **Team name and domain**, 24 Sept 2026). IT
+  cannot finish A4 without it. If it is ever renamed, the A4 address must change with it.
 - The tool's hostname. Today: `offer-mailer.matt-wilson-9b8.workers.dev`. A DreamLease subdomain can come later
   (Part C) and does not hold up sign-in.
 
 ## Part A — Entra administrator
 
-**A1. Register the application.** Microsoft Entra admin center (entra.microsoft.com) → Identity → Applications →
-App registrations → New registration.
+You need to be a **Global Administrator** or an **Application Administrator**. This is the **only** app
+registration the tool needs: it is for sign-in and never reads, sends or touches mail (an Outlook-draft feature that
+would have needed a second app was removed from the plan on 24 September 2026). Menu names below are those of the
+Microsoft Entra admin center as of September 2026; where Microsoft has used another wording, it is in brackets.
 
-| Field | Value |
+**A1. Open the admin center.** Go to **https://entra.microsoft.com** and sign in with your admin account.
+
+**A2. Start a new app registration.** Left menu: **Entra ID** → **App registrations** → **New registration**.
+
+**A3. Fill in the form.**
+
+| Field | Enter or choose |
 |---|---|
-| Name | `Cloudflare Access – DreamLease Offer Mailer` |
-| Supported account types | Accounts in this organizational directory only (single tenant) |
-| Redirect URI | Platform **Web**, URL `https://<team-name>.cloudflareaccess.com/cdn-cgi/access/callback` |
+| Name | `Cloudflare Access - DreamLease Offer Mailer` |
+| Supported account types | **Single tenant only – DreamLease** (older screens: *Accounts in this organizational directory only*) |
+| Redirect URI, if the page shows one | Leave it empty; A4 adds it |
 
-Select Register.
+Select **Register**. The app's **Overview** page opens.
 
-**A2. Copy the identifiers.** On the app's Overview page copy the **Application (client) ID** and the
-**Directory (tenant) ID**.
+**A4. Add the sign-in return address.** Under **Manage**, select **Authentication** → **Add Redirect URI** (older
+screens: *Add a platform*) → the **Web** tile. Paste the address below exactly, then select **Configure**.
 
-**A3. Create a client secret.** Certificates & secrets → Client secrets → New client secret. Description
-`Cloudflare Access`; expiry 24 months. Copy the secret **Value** immediately; it is shown once. Diary the expiry
-date: when it lapses nobody can sign in until a new secret is issued and given to Cloudflare.
+```
+https://dreamlease.cloudflareaccess.com/cdn-cgi/access/callback
+```
 
-**A4. API permissions.** API permissions → Add a permission → Microsoft Graph → **Delegated** permissions:
+**A5. Create a client secret.** **Certificates & secrets** → **Client secrets** tab → **New client secret**.
+Description `Cloudflare Access`; expires **365 days (12 months)** (Microsoft recommends under 12 months; 24 is the
+maximum). Select **Add**, then copy the **Value** column straight away, not the Secret ID: it is shown only once. If
+the page is left before it is copied, delete that secret and make another. Note the expiry date. Microsoft's notice
+recommending certificates instead of secrets does not apply here: Cloudflare Access's Entra connector uses a secret.
 
-- `openid`
-- `email`
-- `profile`
-- `offline_access`
-- `User.Read`
+**A6. Permissions and consent.** **API permissions**: `User.Read` is already listed. **Add a permission** →
+**Microsoft Graph** → **Delegated permissions** → tick `openid`, `email`, `profile` and `offline_access` → **Add
+permissions** → **Grant admin consent for DreamLease** → **Yes**. Check that all five show **Granted for
+DreamLease** under **Status**.
 
-Then **Grant admin consent** for the tenant. These five are enough for sign-in with policies written by email
-address or domain. Add `Directory.Read.All` and `GroupMember.Read.All` only if the Access policy is to be written
-by Entra group; that is the full set Cloudflare tests and supports.
+These five are enough when the Access policy is written by email address or domain. Add `Directory.Read.All` and
+`GroupMember.Read.All` only if the policy is to be written by Entra group (together that is the full set Cloudflare
+tests and supports).
 
-**A5. Optional, recommended: restrict who can start a sign-in.** Identity → Applications → Enterprise
-applications → the same app → Properties → **Assignment required?** Yes. Then Users and groups → assign the sales
-team group (or the individuals). Cloudflare's own policy in B3 is the second gate; this makes Entra the first.
+**A7. Recommended: restrict who can start a sign-in.** **Entra ID** → **Enterprise apps** → **Cloudflare Access -
+DreamLease Offer Mailer** → **Properties** → **Assignment required?** **Yes** → **Save**. Then **Users and groups** →
+**Add user/group** → the sales team group (or the individuals) → **Assign**. Cloudflare's own policy in B3 is the
+second gate; this makes Entra the first.
 
-**A6. Hand over to Matt, not in plain-text email:** the Application (client) ID, the Directory (tenant) ID, the
-client secret value, and the secret's expiry date.
+**A8. Hand over to Matt.**
+
+| Value | Where it is | How to send it |
+|---|---|---|
+| Application (client) ID | the app's **Overview** page | email is fine |
+| Directory (tenant) ID | the app's **Overview** page | email is fine |
+| Client secret **Value** | copied in A5 | **not** by plain-text email: a call or a password manager |
+| Secret expiry date | shown in A5 | email is fine; diary it (see Ongoing) |
 
 ## Part B — Cloudflare (Matt)
 
@@ -77,17 +97,17 @@ not to the whole Worker. Zero Trust → Access → Applications → Add an appli
 | Session duration | 24 hours |
 | Application domain | `offer-mailer.matt-wilson-9b8.workers.dev` with path `api` |
 | Identity providers | Entra ID only; turn on **Instant Auth** so users go straight to Microsoft |
-| Policy | Name `DreamLease staff`, action **Allow**, include **Emails ending in** `@dreamlease.co.uk` (or the Entra group from A5) |
+| Policy | Name `DreamLease staff`, action **Allow**, include **Emails ending in** `@dreamlease.co.uk` (or the Entra group from A7) |
 
 Save. When the web app is later served from the Worker, add its path to the same application (Add domain).
 Do not use the Worker-level "Protect this Worker behind Access" with all traffic: it would put a login page in
 front of the customer links.
 
 **B4. Copy two values from the new application:** the **Application Audience (AUD) tag** (application →
-Overview) and the team domain `<team-name>.cloudflareaccess.com`.
+Overview) and the team domain `dreamlease.cloudflareaccess.com`.
 
 **B5. Give them to the Worker.** In `apps/api/wrangler.jsonc` set `ACCESS_TEAM_DOMAIN` to
-`<team-name>.cloudflareaccess.com` and `ACCESS_AUD` to the tag, then `pnpm run deploy`. With `ACCESS_AUD` set,
+`dreamlease.cloudflareaccess.com` and `ACCESS_AUD` to the tag, then `pnpm run deploy`. With `ACCESS_AUD` set,
 the tool accepts a request to `/api` only when it carries a valid Access token for that audience; the local
 development bypass is inert in production.
 
@@ -105,18 +125,21 @@ that hostname must be on a Cloudflare zone. DNS for `dreamlease.co.uk` is at GoD
 2. Keep GoDaddy as DNS and proxy just the one subdomain through Cloudflare (CNAME / partial setup). Cloudflare
    offers this on the Business plan and above only.
 
-`mailer.dreamlease.co.uk` is already in use elsewhere; `offers.dreamlease.co.uk` is free. This is a decision for
-Matt and IT and it does not block sign-in.
+Decided by Matt on 24 Sept 2026: the tool goes on **`marketingtools.dreamlease.co.uk`** and the customer links on
+`offers.dreamlease.co.uk` (both free); `mailer.dreamlease.co.uk` is in use elsewhere. Choosing between options 1 and
+2 above is still for Matt and IT, and it does not block sign-in.
 
 ## Ongoing
 
-- **Client secret renewal** (Entra admin): before the expiry set in A3, issue a new secret and give it to Matt,
-  who updates the identity provider in Cloudflare (B2). Missing this locks everyone out of the tool until done.
+- **Client secret renewal** (Entra admin, every 12 months): before the expiry set in A5, make a new secret (A5
+  again) and give it to Matt, who updates the identity provider in Cloudflare (B2). Missing this locks everyone out
+  of the tool until done.
 - **Leavers**: disable the M365 account. Their Access session ends at the next check (sessions last 24 hours by
   B3; Zero Trust → Access → Applications → Revoke existing tokens ends them at once).
 - **What flows where**: Entra gives Cloudflare the user's name and work email (and group membership only if the
   group permissions are granted). The tool receives the email. Nothing is written back to Entra. There is no
-  second Entra app: the "create draft in Outlook" idea that would have needed one has been dropped.
+  second Entra app: the "create draft in Outlook" idea that would have needed one was removed from the plan on
+  24 September 2026 (the next delivery path is monday.com's email tool).
 
 ## Data protection
 
@@ -140,9 +163,9 @@ Sign-in adds no customer data and creates no new GDPR issue; it removes two risk
 
 **Keeping it minimal**
 
-- Grant only the five permissions in A4. The two group permissions let Cloudflare read directory group
+- Grant only the five permissions in A6. The two group permissions let Cloudflare read directory group
   membership; add them only if the policy is to be written by Entra group.
-- Turn on Assignment required (A5), so only the sales group can start a sign-in at all.
+- Turn on Assignment required (A7), so only the sales group can start a sign-in at all.
 
 **Compliance items that are not about sign-in.** Before the first real customer send: the live compliance
 template is still a placeholder, not the approved wording (an FCA financial-promotions matter, not GDPR); the
