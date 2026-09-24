@@ -136,6 +136,9 @@ Three audiences / lease products, each with its own compliance wording and terms
   the **EU (WEUR)**.
 - **Residual, by design:** salesperson-authored free text (campaign name, subject, intro) is kept as the FCA record
   and could contain a name if a salesperson types one — a training matter, not a schema one.
+- **Logs carry no personal data or CAP IDs (24 Sept 2026)** — every error line goes through `safeErrorLine()`
+  (`apps/api/src/safe-log.ts`). A failed database query's message would otherwise include the query's values
+  (salesperson emails, contact details, campaign snapshots); only the database's own reason is kept.
 
 ## A5. The real send path, and what the email is built for (21 Sept 2026)
 **Scope (Matt, 21 Sept):** get it right in **Gmail (web + mobile app) and New Outlook (desktop + mobile)** first.
@@ -292,6 +295,10 @@ validates with Zod; hand-checked bodies are marked `x-validated-by: handler` (se
   `ACCESS_AUD`; the verified **email** becomes the user identity, used as `createdBy` everywhere. No passwords
   stored. Local dev: with `ACCESS_AUD` empty, `DEV_USER_EMAIL` is accepted; with it set the bypass is inert
   (misconfigured prod fails closed 503).
+- **Cross-site guard (24 Sept 2026)** — `hono/csrf` runs before `requireAccess()` on `/api`. A write from another
+  website (a form, an upload, a delete), which the browser would send with the salesperson's Access cookie, is
+  refused with 403. The tool's own requests come from the same origin and pass; other callers send
+  `content-type: application/json`. Reads and the public routes are unaffected. `test/security.test.ts`.
 - **Entra set-up (status 24 Sept)** — **one** app registration, sign-in only (delegated `openid`, `email`,
   `profile`, `offline_access`, `User.Read`; a 12-month client secret; redirect
   `https://dreamlease.cloudflareaccess.com/cdn-cgi/access/callback`). Matt is not the Entra administrator: the
@@ -567,7 +574,8 @@ IT — Access (one Entra app registration, sign-in only) + a Cloudflare-served s
 secret + confirming the Workers Paid plan; Tawk webchat (parked, renewals-only stage one).
 
 ## B10. Testing & verification
-- `pnpm test` — **227 tests** (24 Sept): schema 23, render 35 (incl. the intro-derived preheader), adapters 92, api 77
+- `pnpm test` — **233 tests** (24 Sept): schema 23, render 35 (incl. the intro-derived preheader), adapters 92, api 83
+  (security: 6, the cross-site guard and safe error logs)
   (library: 10, incl. `withStoredBrochure`; campaigns: the `salespersonTag` unit test and `utm_term` on the stored
   campaign, on the `/r` destination and on the footer link; OpenAPI: 7, incl. the served-vs-documented drift guard). The adapter suite replays 18 recorded
   manufacturer sites through the brochure finder at zero credits (added 21 Sept: Polestar 2, the European fallback;

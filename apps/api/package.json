@@ -18,7 +18,7 @@
     "@offer-mailer/adapters": "workspace:*",
     "@offer-mailer/render": "workspace:*",
     "@offer-mailer/schema": "workspace:*",
-    "drizzle-orm": "^0.44.5",
+    "drizzle-orm": "^0.45.3",
     "hono": "^4.9.7",
     "jose": "^6.1.0",
     "zod": "^4.1.5"

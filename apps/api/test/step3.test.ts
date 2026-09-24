@@ -14,6 +14,7 @@ import app from '../src/index.js';
 import { recheckLinkedBrochures } from '../src/brochures.js';
 import type { Env } from '../src/env.js';
 import { vehicleImageStore } from '../src/files.js';
+import { SAME_ORIGIN } from './same-origin.js';
 
 const USER = 'matt.wilson@dreamlease.co.uk';
 const authed = (over: Partial<Env> = {}): Env => ({ ...env, DEV_USER_EMAIL: USER, ...over }) as Env;
@@ -101,7 +102,7 @@ describe('image pipeline', () => {
 describe('POST /api/offers/lookup', () => {
   it('needs a login and a URL', async () => {
     expect((await app.request('/api/offers/lookup', post({ url: PAGE_URL }), anon)).status).toBe(503);
-    expect((await app.request('/api/offers/lookup', { method: 'POST', body: 'nope' }, authed())).status).toBe(400);
+    expect((await app.request('/api/offers/lookup', { method: 'POST', headers: SAME_ORIGIN, body: 'nope' }, authed())).status).toBe(400);
     expect((await app.request('/api/offers/lookup', post({}), authed())).status).toBe(400);
   });
 
@@ -198,13 +199,13 @@ describe('brochures', () => {
     form.set('make', 'BMW');
     form.set('model', 'iX1');
     form.set('pdf', new File([PDF], 'ix1.pdf', { type: 'application/pdf' }));
-    const ok = await app.request('/api/brochures/manual', { method: 'POST', body: form }, authed());
+    const ok = await app.request('/api/brochures/manual', { method: 'POST', headers: SAME_ORIGIN, body: form }, authed());
     expect(ok.status).toBe(200);
     const bad = new FormData();
     bad.set('make', 'BMW');
     bad.set('model', 'iX1');
     bad.set('pdf', new File([new TextEncoder().encode('hello')], 'ix1.txt', { type: 'text/plain' }));
-    expect((await app.request('/api/brochures/manual', { method: 'POST', body: bad }, authed())).status).toBe(422);
+    expect((await app.request('/api/brochures/manual', { method: 'POST', headers: SAME_ORIGIN, body: bad }, authed())).status).toBe(422);
   });
 
   it('finds, verifies, retrieves and stores a brochure through Firecrawl (v2 wire format), then serves the stored copy', async () => {

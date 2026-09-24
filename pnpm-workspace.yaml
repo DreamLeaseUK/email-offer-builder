@@ -14,3 +14,9 @@ minimumReleaseAgeExclude:
   - miniflare@5.20260911.0-alpha
   - workerd@1.20260911.1
   - wrangler@4.131.1
+# Security floors for packages pulled in indirectly, all dev/test tooling (remove each once its parent ships the fix):
+# sharp comes from the Workers test pool (miniflare), GHSA-rgj7-g3m4-5g8c; esbuild from drizzle-kit's old loader,
+# GHSA-67mh-4wv8-2f99.
+overrides:
+  sharp: '^0.35.4'
+  '@esbuild-kit/core-utils>esbuild': '^0.25.12'

@@ -190,7 +190,7 @@ export function buildOpenApi(version: string): object {
       title: 'DreamLease Offer Mailer API',
       version,
       description:
-        'Build branded lease-offer emails from dreamlease.co.uk offer URLs. Public routes serve hosted pages, files and email links; the tool API under /api sits behind Cloudflare Access (Microsoft Entra sign-in) and fails closed (503) until Access is configured. The Worker never sends email.',
+        'Build branded lease-offer emails from dreamlease.co.uk offer URLs. Public routes serve hosted pages, files and email links; the tool API under /api sits behind Cloudflare Access (Microsoft Entra sign-in) and fails closed (503) until Access is configured. Writes must come from the tool itself or send content-type: application/json; cross-site form posts are refused (403). The Worker never sends email.',
     },
     servers: [{ url: '/' }],
     tags: [...new Set(OPERATIONS.map((o) => o.tag))].map((name) => ({ name })),

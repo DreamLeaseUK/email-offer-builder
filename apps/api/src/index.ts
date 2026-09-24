@@ -1,4 +1,6 @@
 import { Hono } from 'hono';
+import { csrf } from 'hono/csrf';
+import { HTTPException } from 'hono/http-exception';
 import { brochureLink, brochuresApi, recheckLinkedBrochures } from './brochures.js';
 import { campaignsApi, redirect } from './campaigns.js';
 import { dev } from './dev.js';
@@ -11,6 +13,7 @@ import { lookup } from './lookup.js';
 import { requireAccess } from './middleware/access.js';
 import { buildOpenApi } from './openapi.js';
 import { profileApi } from './profile.js';
+import { safeErrorLine } from './safe-log.js';
 import { suppressionsApi } from './suppressions.js';
 import { templatesApi } from './templates.js';
 
@@ -40,6 +43,10 @@ app.route('/', redirect); // /r/:slug/:link — resolves a stored campaign's lin
 // ---------- tool API (behind Cloudflare Access) ----------
 
 const api = new Hono<AppEnv>();
+// Cross-site request forgery guard: a write from another website's form or script (which the browser would send with
+// the salesperson's Access cookie) is refused with 403. The tool's own requests (JSON, and the photo and brochure
+// uploads) come from the same origin; other callers send `content-type: application/json`.
+api.use('*', csrf());
 api.use('*', requireAccess());
 api.get('/openapi.json', (c) => c.json(buildOpenApi(c.env.APP_VERSION ?? 'dev'))); // the API described (openapi.ts; a test keeps it in step)
 api.route('/', profileApi); // /me + /me/photo — the salesperson's profile and portrait
@@ -56,7 +63,8 @@ app.route('/api', api);
 
 app.notFound((c) => c.json({ error: 'Not found' }, 404));
 app.onError((err, c) => {
-  console.error(err instanceof Error ? err.message : String(err));
+  if (err instanceof HTTPException) return c.json({ error: err.message || 'Request refused' }, err.status);
+  console.error(safeErrorLine(err));
   return c.json({ error: 'Internal error' }, 500);
 });
 
@@ -69,24 +77,24 @@ handler.scheduled = (_controller, env, ctx) => {
   ctx.waitUntil(
     runRetention(env, new Date())
       .then((r) => console.log('retention:', JSON.stringify(r)))
-      .catch((e) => console.error('retention failed:', e instanceof Error ? e.message : String(e))),
+      .catch((e) => console.error('retention failed:', safeErrorLine(e))),
   );
   // web brochures and request forms are links to someone else's page: drop any that have gone dead
   ctx.waitUntil(
     recheckLinkedBrochures(env)
       .then((r) => console.log('brochure links:', JSON.stringify(r)))
-      .catch((e) => console.error('brochure link re-check failed:', e instanceof Error ? e.message : String(e))),
+      .catch((e) => console.error('brochure link re-check failed:', safeErrorLine(e))),
   );
   // library entries: flag any whose source offer URL has moved or gone (a dealer changed it), and purge the archive
   ctx.waitUntil(
     recheckLibraryUrls(env)
       .then((r) => console.log('library urls:', JSON.stringify(r)))
-      .catch((e) => console.error('library url re-check failed:', e instanceof Error ? e.message : String(e))),
+      .catch((e) => console.error('library url re-check failed:', safeErrorLine(e))),
   );
   ctx.waitUntil(
     purgeArchivedLibrary(env, new Date())
       .then((n) => console.log('library archive purged:', n))
-      .catch((e) => console.error('library archive purge failed:', e instanceof Error ? e.message : String(e))),
+      .catch((e) => console.error('library archive purge failed:', safeErrorLine(e))),
   );
 };
 
