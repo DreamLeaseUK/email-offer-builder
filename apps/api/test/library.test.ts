@@ -10,6 +10,7 @@ import { fixtureCampaign } from '@offer-mailer/render/fixtures';
 import app from '../src/index.js';
 import { purgeArchivedLibrary, withStoredBrochure } from '../src/library.js';
 import type { Env } from '../src/env.js';
+import { SAME_ORIGIN } from './same-origin.js';
 
 const USER = 'matt.wilson@dreamlease.co.uk'; // the configured master admin
 const REP = 'salesperson@dreamlease.co.uk';
@@ -53,7 +54,7 @@ describe('offer library', () => {
     expect(findCapIdLeak(e)).toBeNull();
 
     expect((await current(authed())).some((x) => x.id === o.id)).toBe(true);
-    expect((await app.request(`/api/offers/library/${o.id}`, { method: 'DELETE' }, authed())).status).toBe(200);
+    expect((await app.request(`/api/offers/library/${o.id}`, { method: 'DELETE', headers: SAME_ORIGIN }, authed())).status).toBe(200);
     expect((await current(authed())).some((x) => x.id === o.id)).toBe(false);
   });
 

@@ -10,6 +10,7 @@ import { fixtureCampaign } from '@offer-mailer/render/fixtures';
 import app from '../src/index.js';
 import { salespersonTag } from '../src/campaigns.js';
 import type { Env } from '../src/env.js';
+import { SAME_ORIGIN } from './same-origin.js';
 
 const USER = 'matt.wilson@dreamlease.co.uk';
 const authed = (over: Partial<Env> = {}): Env => ({ ...env, DEV_USER_EMAIL: USER, ...over }) as Env;
@@ -140,7 +141,7 @@ describe('POST /api/campaigns', () => {
     (mixed.offers as { contractType: string }[])[1]!.contractType = 'business';
     expect((await post(mixed, authed())).status).toBe(422);
     expect((await post({ name: '' }, authed())).status).toBe(422);
-    expect((await app.request('/api/campaigns', { method: 'POST', body: 'not json' }, authed())).status).toBe(400);
+    expect((await app.request('/api/campaigns', { method: 'POST', headers: SAME_ORIGIN, body: 'not json' }, authed())).status).toBe(400);
   });
 });
 

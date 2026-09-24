@@ -7,6 +7,7 @@ import { describe, expect, it } from 'vitest';
 import { fixtureTemplate } from '@offer-mailer/render/fixtures';
 import app from '../src/index.js';
 import type { Env } from '../src/env.js';
+import { SAME_ORIGIN } from './same-origin.js';
 
 const USER = 'matt.wilson@dreamlease.co.uk';
 const authed = (over: Partial<Env> = {}): Env => ({ ...env, DEV_USER_EMAIL: USER, ...over }) as Env;
@@ -45,7 +46,7 @@ describe('template admin', () => {
     expect(put.status).toBe(200);
 
     // publish -> approved, stamped with the admin
-    const pub = await app.request(`/api/templates/${template.id}/publish`, { method: 'POST' }, authed());
+    const pub = await app.request(`/api/templates/${template.id}/publish`, { method: 'POST', headers: SAME_ORIGIN }, authed());
     expect(pub.status).toBe(200);
     const approved = ((await pub.json()) as { template: Tmpl }).template;
     expect(approved.status).toBe('approved');
@@ -57,7 +58,7 @@ describe('template admin', () => {
     expect(put2.status).toBe(409);
 
     // republishing an already-approved template is refused
-    expect((await app.request(`/api/templates/${template.id}/publish`, { method: 'POST' }, authed())).status).toBe(409);
+    expect((await app.request(`/api/templates/${template.id}/publish`, { method: 'POST', headers: SAME_ORIGIN }, authed())).status).toBe(409);
 
     // a new draft of the same name is the next version, and starts as a draft
     const v2 = ((await (await create(authed(), { name: 'Lock test' })).json()) as { template: Tmpl }).template;
@@ -68,12 +69,12 @@ describe('template admin', () => {
   it('rejects an invalid template and a missing one', async () => {
     expect((await app.request('/api/templates', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name: '' }) }, authed())).status).toBe(422);
     expect((await app.request('/api/templates/does-not-exist', {}, authed())).status).toBe(404);
-    expect((await app.request('/api/templates/does-not-exist/publish', { method: 'POST' }, authed())).status).toBe(404);
+    expect((await app.request('/api/templates/does-not-exist/publish', { method: 'POST', headers: SAME_ORIGIN }, authed())).status).toBe(404);
   });
 
   it('retires a template', async () => {
     const { template } = (await (await create(authed(), { name: 'Retire test' })).json()) as { template: Tmpl };
-    const res = await app.request(`/api/templates/${template.id}/retire`, { method: 'POST' }, authed());
+    const res = await app.request(`/api/templates/${template.id}/retire`, { method: 'POST', headers: SAME_ORIGIN }, authed());
     expect(res.status).toBe(200);
     expect(((await res.json()) as { template: Tmpl }).template.status).toBe('retired');
   });

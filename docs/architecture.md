@@ -136,6 +136,9 @@ Three audiences / lease products, each with its own compliance wording and terms
   the **EU (WEUR)**.
 - **Residual, by design:** salesperson-authored free text (campaign name, subject, intro) is kept as the FCA record
   and could contain a name if a salesperson types one — a training matter, not a schema one.
+- **Logs carry no personal data or CAP IDs (24 Sept 2026)** — every error line goes through `safeErrorLine()`
+  (`apps/api/src/safe-log.ts`). A failed database query's message would otherwise include the query's values
+  (salesperson emails, contact details, campaign snapshots); only the database's own reason is kept.
 
 ## A5. The real send path, and what the email is built for (21 Sept 2026)
 **Scope (Matt, 21 Sept):** get it right in **Gmail (web + mobile app) and New Outlook (desktop + mobile)** first.
@@ -292,6 +295,12 @@ validates with Zod; hand-checked bodies are marked `x-validated-by: handler` (se
   `ACCESS_AUD`; the verified **email** becomes the user identity, used as `createdBy` everywhere. No passwords
   stored. Local dev: with `ACCESS_AUD` empty, `DEV_USER_EMAIL` is accepted; with it set the bypass is inert
   (misconfigured prod fails closed 503).
+- **Cross-site guard (24 Sept 2026)** — `hono/csrf` runs before `requireAccess()` on `/api`. A write from another
+  website (a form, an upload, a delete), which the browser would send with the salesperson's Access cookie, is
+  refused with 403. The tool's own requests come from the same origin and pass. A non-browser caller can send
+  JSON writes (`content-type: application/json`), but not the two uploads (`/api/me/photo`, `/api/brochures/manual`)
+  or a bodyless write without that header: those are same-origin only until machine sign-in lands (B12). Reads and
+  the public routes (all GET) are unaffected. `test/security.test.ts`.
 - **Entra set-up (status 24 Sept)** — **one** app registration, sign-in only (delegated `openid`, `email`,
   `profile`, `offline_access`, `User.Read`; a 12-month client secret; redirect
   `https://dreamlease.cloudflareaccess.com/cdn-cgi/access/callback`). Matt is not the Entra administrator: the
@@ -567,7 +576,8 @@ IT — Access (one Entra app registration, sign-in only) + a Cloudflare-served s
 secret + confirming the Workers Paid plan; Tawk webchat (parked, renewals-only stage one).
 
 ## B10. Testing & verification
-- `pnpm test` — **227 tests** (24 Sept): schema 23, render 35 (incl. the intro-derived preheader), adapters 92, api 77
+- `pnpm test` — **234 tests** (24 Sept): schema 23, render 35 (incl. the intro-derived preheader), adapters 92, api 84
+  (security: 7, the cross-site guard and safe error logs)
   (library: 10, incl. `withStoredBrochure`; campaigns: the `salespersonTag` unit test and `utm_term` on the stored
   campaign, on the `/r` destination and on the footer link; OpenAPI: 7, incl. the served-vs-documented drift guard). The adapter suite replays 18 recorded
   manufacturer sites through the brochure finder at zero credits (added 21 Sept: Polestar 2, the European fallback;
@@ -584,7 +594,8 @@ secret + confirming the Workers Paid plan; Tawk webchat (parked, renewals-only s
 - Adapters: `packages/adapters/src/url/*`, `firecrawl/`, `brochure/` (`finder.ts`, `operate.ts`, `harvest.ts`, `ensure.ts`), `scripts/finder-sweep.mts`
 - Worker: `apps/api/src/index.ts` (routes + Cron), `campaigns.ts`, `profile.ts`, `templates.ts`,
   `suppressions.ts`, `retention.ts`, `roles.ts`, `files.ts`, `brochures.ts`, `lookup.ts`, `library.ts`,
-  `hosted.ts`, `tracking.ts`, `middleware/access.ts`, `db/schema.ts`, `openapi.ts` (the API described)
+  `hosted.ts`, `tracking.ts`, `middleware/access.ts`, `db/schema.ts`, `openapi.ts` (the API described),
+  `safe-log.ts` (every error log line)
 - Web: `apps/web/src/App.tsx` (header portrait, `addFromLibrary`), `Compose.tsx` (incl. `repriceCopied`, the resizable
   columns), `Campaigns.tsx`, `Library.tsx`, `Register.tsx`, `Suppressions.tsx`, `Templates.tsx`, `api.ts`
   (incl. `currentBrochure`), `styles.css`; `apps/web/vite.config.ts` (proxy + tunnel `allowedHosts`)
@@ -601,6 +612,9 @@ system, one API, and a UI that only calls the API.
   1. Validate its input with a named, exported Zod schema.
   2. Add the route to `OPERATIONS` in `apps/api/src/openapi.ts` (with the schema registered). The drift test fails until you do.
   3. Add a contract test in `apps/api/test/`.
+  4. Writes go on the `api` sub-app, where the cross-site guard covers them; public routes stay GET-only. A test of
+     any non-JSON write (an upload, a bodyless POST or DELETE, a raw text body) sends `SAME_ORIGIN`
+     (`test/same-origin.ts`), as the browser does, or it gets 403.
 - **Connect a new outside system** (monday.com, Mautic, a CRM…).
   1. Give it its own adapter in `packages/adapters/src/<system>/`: a typed interface, the implementation and contract tests with fixtures validated by `@offer-mailer/schema`.
   2. No adapter imports another; the API wires them.
@@ -613,9 +627,10 @@ system, one API, and a UI that only calls the API.
 - **Let another app, Make or an AI agent use it.** `/api/openapi.json` describes the API, but **machine sign-in is not supported yet**.
   - `requireAccess` needs an `email` claim. A Cloudflare Access service-token JWT carries only `common_name`, so a machine gets a 401 (it fails closed).
   - Enabling machine access is a deliberate change: map a named service token to an identity and a role (for `createdBy` and the promotions register), with a contract test.
+  - It must also get past the cross-site guard, which runs first: for example, skip `csrf()` only for a request carrying a verified **service-token** JWT (`common_name`, no `email`; another website cannot forge that header). Never skip it for any valid JWT: Access attaches one to every browser request too, so that would switch the guard off for everyone. Test a multipart upload by a machine.
   - **Never loosen the email check to make a machine work.**
 - **Known follow-ups** (built-to-last gaps, 24 Sept):
   1. Move the hand-checked request bodies to Zod. They are marked `x-validated-by: handler`: `/me/sender`, `/me/photo`, `/offers/lookup`, `/brochures/ensure`, `/brochures/accept`, `/brochures/manual` and `/offers/library/:id/promote`.
   2. Type the responses.
   3. Decide whether `/api/dev/preview` should stay in production.
-  4. Machine sign-in (Access service tokens mapped to an identity and role), when Make or an agent first needs to call the API.
+  4. Machine sign-in (Access service tokens mapped to an identity and role, and let through the cross-site guard), when Make or an agent first needs to call the API.

@@ -7,6 +7,7 @@ import { describe, expect, it } from 'vitest';
 import { fixtureCampaign } from '@offer-mailer/render/fixtures';
 import app from '../src/index.js';
 import type { Env } from '../src/env.js';
+import { SAME_ORIGIN } from './same-origin.js';
 
 const USER = 'matt.wilson@dreamlease.co.uk';
 const authed = (over: Partial<Env> = {}): Env => ({ ...env, DEV_USER_EMAIL: USER, ...over }) as Env;
@@ -41,17 +42,17 @@ const createCampaign = (e = authed()) => app.request('/api/campaigns', { method:
 
 describe('salesperson portrait', () => {
   it('needs a login', async () => {
-    expect((await app.request('/api/me/photo', { method: 'POST', body: photoForm(PNG) }, anon)).status).toBe(503);
+    expect((await app.request('/api/me/photo', { method: 'POST', headers: SAME_ORIGIN, body: photoForm(PNG) }, anon)).status).toBe(503);
   });
 
   it('rejects a non-image upload', async () => {
     const bad = new FormData();
     bad.set('photo', new File([new TextEncoder().encode('not an image at all')], 'x.png', { type: 'image/png' }));
-    expect((await app.request('/api/me/photo', { method: 'POST', body: bad }, authed())).status).toBe(422);
+    expect((await app.request('/api/me/photo', { method: 'POST', headers: SAME_ORIGIN, body: bad }, authed())).status).toBe(422);
   });
 
   it('uploads a portrait, persists it on /me, injects it into the signature, and clears it', async () => {
-    const up = await app.request('/api/me/photo', { method: 'POST', body: photoForm(PNG) }, authed());
+    const up = await app.request('/api/me/photo', { method: 'POST', headers: SAME_ORIGIN, body: photoForm(PNG) }, authed());
     expect(up.status).toBe(200);
     const { headshotUrl } = (await up.json()) as { headshotUrl: string };
     expect(headshotUrl).toMatch(/\/f\/headshots\/[a-f0-9]{64}\.jpg$/);
@@ -71,7 +72,7 @@ describe('salesperson portrait', () => {
     expect(created.html).not.toContain('headshot-placeholder');
 
     // delete clears it, and later emails have no headshot
-    expect((await app.request('/api/me/photo', { method: 'DELETE' }, authed())).status).toBe(200);
+    expect((await app.request('/api/me/photo', { method: 'DELETE', headers: SAME_ORIGIN }, authed())).status).toBe(200);
     const me2 = (await (await app.request('/api/me', {}, authed())).json()) as { headshotUrl: string | null };
     expect(me2.headshotUrl).toBeNull();
     const after = (await (await createCampaign()).json()) as { html: string };
@@ -83,7 +84,7 @@ describe('salesperson contact details', () => {
   const post = (body: unknown) => app.request('/api/me/sender', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }, authed());
 
   it('saves the salesperson contact details, returns them on /me, and preserves the photo', async () => {
-    await app.request('/api/me/photo', { method: 'POST', body: photoForm(PNG) }, authed());
+    await app.request('/api/me/photo', { method: 'POST', headers: SAME_ORIGIN, body: photoForm(PNG) }, authed());
     const details = { displayName: 'Matt Wilson', jobTitle: 'Account Manager', phone: '01234 567890', whatsapp: '+447700900123', bookingUrl: 'https://outlook.office365.com/book/dl/', secondaryContacts: ['whatsapp', 'book'] };
     expect((await post(details)).status).toBe(200);
     const me = (await (await app.request('/api/me', {}, authed())).json()) as { savedSender: typeof details | null; headshotUrl: string | null };

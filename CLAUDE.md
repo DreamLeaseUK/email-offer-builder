@@ -59,7 +59,7 @@ pnpm db:migrate          # apply migrations to the remote D1
 pnpm run deploy          # "run" matters: bare `pnpm deploy` is pnpm's own command
 ```
 
-API tests run inside workerd (`@cloudflare/vitest-pool-workers`, vitest 4 in `apps/api` only) with real local D1, R2 and Images bindings; `.dev.vars` is loaded, so the bare test `env` already has a dev user. The pool's workerd can trail wrangler's; `apps/api/vitest.config.ts` pins the test compatibility date. Adapter tests run under plain vitest with the wasm HTMLRewriter. Fixtures under `packages/adapters/test/fixtures` are real pages with the image host replaced and the CAP ID zeroed; keep them that way.
+API tests run inside workerd (`@cloudflare/vitest-pool-workers`; every package on vitest 4.1.11 since 24 Sept) with real local D1, R2 and Images bindings; `.dev.vars` is loaded, so the bare test `env` already has a dev user. The pool's workerd can trail wrangler's; `apps/api/vitest.config.ts` pins the test compatibility date. Adapter tests run under plain vitest with the wasm HTMLRewriter. Fixtures under `packages/adapters/test/fixtures` are real pages with the image host replaced and the CAP ID zeroed; keep them that way.
 
 ## Cloudflare
 
