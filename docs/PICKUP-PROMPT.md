@@ -71,7 +71,7 @@ web page. It is an FCA-regulated financial-promotions tool (compliance matters).
   Compose form, resizable panels, header photo). Then on 24 Sept: `4edec9c` (session-8 docs, review fixes, the tunnel
   `allowedHosts`, `.claude/launch.json`), PR #1 merged as `399c86b` (CI), and a docs commit recording CI. Check
   `git status` and `git log --oneline -5` for anything newer.
-- **Tests [verified 24 Sept]:** `pnpm test` → **234 pass** (schema 23, render 35, adapters 92, api 84, incl. the
+- **Tests [verified 24 Sept]:** `pnpm test` → **235 pass** (schema 23, render 35, adapters 92, api 85, incl. the
   OpenAPI drift guard and the security tests; the API is described at `/api/openapi.json`, `architecture.md` B5/B12);
   `pnpm typecheck` clean (incl. `apps/web`); `apps/web` builds. **CI [verified 24 Sept]:** since PR #1 (merged
   24 Sept), GitHub Actions runs `ci.yml` (typecheck, tests, web build, and a guard that `DEV_USER_EMAIL` never

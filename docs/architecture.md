@@ -576,7 +576,7 @@ IT — Access (one Entra app registration, sign-in only) + a Cloudflare-served s
 secret + confirming the Workers Paid plan; Tawk webchat (parked, renewals-only stage one).
 
 ## B10. Testing & verification
-- `pnpm test` — **234 tests** (24 Sept): schema 23, render 35 (incl. the intro-derived preheader), adapters 92, api 84
+- `pnpm test` — **235 tests** (24 Sept): schema 23, render 35 (incl. the intro-derived preheader), adapters 92, api 85
   (security: 7, the cross-site guard and safe error logs)
   (library: 10, incl. `withStoredBrochure`; campaigns: the `salespersonTag` unit test and `utm_term` on the stored
   campaign, on the `/r` destination and on the footer link; OpenAPI: 7, incl. the served-vs-documented drift guard). The adapter suite replays 18 recorded
@@ -632,5 +632,6 @@ system, one API, and a UI that only calls the API.
 - **Known follow-ups** (built-to-last gaps, 24 Sept):
   1. Move the hand-checked request bodies to Zod. They are marked `x-validated-by: handler`: `/me/sender`, `/me/photo`, `/offers/lookup`, `/brochures/ensure`, `/brochures/accept`, `/brochures/manual` and `/offers/library/:id/promote`.
   2. Type the responses.
-  3. Decide whether `/api/dev/preview` should stay in production.
+  3. ~~Decide whether `/api/dev/preview` should stay in production.~~ Decided by Matt, 24 Sept: it answers only on this
+     laptop (`src/local.ts`) and returns 404 on the live site, so a link can't publish a fixture page with made-up prices.
   4. Machine sign-in (Access service tokens mapped to an identity and role, and let through the cross-site guard), when Make or an agent first needs to call the API.
