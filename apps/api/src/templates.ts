@@ -25,12 +25,17 @@ import { templates as templatesTable } from './db/schema.js';
 import type { AppEnv, Env } from './env.js';
 import { requireAdmin } from './roles.js';
 
-/** The admin-authored parts of a template. Identity, version, markupVersion and status are server-owned. */
-const TemplateBody = z.object({
+/**
+ * The admin-authored parts of a template (POST /templates; PUT takes TemplateBodyPatch). Identity, version,
+ * markupVersion and status are server-owned. Exported so the OpenAPI document (openapi.ts) describes the real schema.
+ */
+export const TemplateBody = z.object({
   name: z.string().min(1).max(120),
   complianceBlocks: z.record(ContractType, ComplianceBlock),
   footer: z.object({ optOutLine: z.string().min(1), companyLine: z.string().min(1) }),
 });
+/** PUT /templates/:id body: any subset of TemplateBody. */
+export const TemplateBodyPatch = TemplateBody.partial();
 
 const issues = (e: z.ZodError) => e.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('; ');
 
@@ -99,7 +104,7 @@ templatesApi.put('/templates/:id', async (c) => {
   const existing = await repo.get(c.req.param('id'));
   if (!existing) return c.json({ error: 'Template not found.' }, 404);
   if (existing.status !== 'draft') return c.json({ error: 'Approved templates are locked. Create a new draft version to change the wording.' }, 409);
-  const parsedBody = TemplateBody.partial().safeParse(await c.req.json().catch(() => ({})));
+  const parsedBody = TemplateBodyPatch.safeParse(await c.req.json().catch(() => ({})));
   if (!parsedBody.success) return c.json({ error: `Those template details are not valid: ${issues(parsedBody.error)}` }, 422);
   const next: TemplateT = {
     ...existing,
