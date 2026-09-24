@@ -594,7 +594,8 @@ secret + confirming the Workers Paid plan; Tawk webchat (parked, renewals-only s
 - Adapters: `packages/adapters/src/url/*`, `firecrawl/`, `brochure/` (`finder.ts`, `operate.ts`, `harvest.ts`, `ensure.ts`), `scripts/finder-sweep.mts`
 - Worker: `apps/api/src/index.ts` (routes + Cron), `campaigns.ts`, `profile.ts`, `templates.ts`,
   `suppressions.ts`, `retention.ts`, `roles.ts`, `files.ts`, `brochures.ts`, `lookup.ts`, `library.ts`,
-  `hosted.ts`, `tracking.ts`, `middleware/access.ts`, `db/schema.ts`, `openapi.ts` (the API described)
+  `hosted.ts`, `tracking.ts`, `middleware/access.ts`, `db/schema.ts`, `openapi.ts` (the API described),
+  `safe-log.ts` (every error log line)
 - Web: `apps/web/src/App.tsx` (header portrait, `addFromLibrary`), `Compose.tsx` (incl. `repriceCopied`, the resizable
   columns), `Campaigns.tsx`, `Library.tsx`, `Register.tsx`, `Suppressions.tsx`, `Templates.tsx`, `api.ts`
   (incl. `currentBrochure`), `styles.css`; `apps/web/vite.config.ts` (proxy + tunnel `allowedHosts`)
@@ -612,7 +613,8 @@ system, one API, and a UI that only calls the API.
   2. Add the route to `OPERATIONS` in `apps/api/src/openapi.ts` (with the schema registered). The drift test fails until you do.
   3. Add a contract test in `apps/api/test/`.
   4. Writes go on the `api` sub-app, where the cross-site guard covers them; public routes stay GET-only. A test of
-     an upload or a bodyless write sends `SAME_ORIGIN` (`test/same-origin.ts`), as the browser does, or it gets 403.
+     any non-JSON write (an upload, a bodyless POST or DELETE, a raw text body) sends `SAME_ORIGIN`
+     (`test/same-origin.ts`), as the browser does, or it gets 403.
 - **Connect a new outside system** (monday.com, Mautic, a CRM…).
   1. Give it its own adapter in `packages/adapters/src/<system>/`: a typed interface, the implementation and contract tests with fixtures validated by `@offer-mailer/schema`.
   2. No adapter imports another; the API wires them.
@@ -625,7 +627,7 @@ system, one API, and a UI that only calls the API.
 - **Let another app, Make or an AI agent use it.** `/api/openapi.json` describes the API, but **machine sign-in is not supported yet**.
   - `requireAccess` needs an `email` claim. A Cloudflare Access service-token JWT carries only `common_name`, so a machine gets a 401 (it fails closed).
   - Enabling machine access is a deliberate change: map a named service token to an identity and a role (for `createdBy` and the promotions register), with a contract test.
-  - It must also get past the cross-site guard, which runs first: for example, skip `csrf()` for a request carrying a verified service-token JWT (another website cannot forge that header). Test a multipart upload by a machine.
+  - It must also get past the cross-site guard, which runs first: for example, skip `csrf()` only for a request carrying a verified **service-token** JWT (`common_name`, no `email`; another website cannot forge that header). Never skip it for any valid JWT: Access attaches one to every browser request too, so that would switch the guard off for everyone. Test a multipart upload by a machine.
   - **Never loosen the email check to make a machine work.**
 - **Known follow-ups** (built-to-last gaps, 24 Sept):
   1. Move the hand-checked request bodies to Zod. They are marked `x-validated-by: handler`: `/me/sender`, `/me/photo`, `/offers/lookup`, `/brochures/ensure`, `/brochures/accept`, `/brochures/manual` and `/offers/library/:id/promote`.

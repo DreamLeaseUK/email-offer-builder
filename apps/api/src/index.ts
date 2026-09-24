@@ -45,7 +45,8 @@ app.route('/', redirect); // /r/:slug/:link — resolves a stored campaign's lin
 const api = new Hono<AppEnv>();
 // Cross-site request forgery guard: a write from another website's form or script (which the browser would send with
 // the salesperson's Access cookie) is refused with 403. The tool's own requests (JSON, and the photo and brochure
-// uploads) come from the same origin; other callers send `content-type: application/json`.
+// uploads) come from the same origin. A non-browser caller must send `content-type: application/json`, so it cannot
+// use the two uploads until machine sign-in exists (docs/architecture.md B6, B12).
 api.use('*', csrf());
 api.use('*', requireAccess());
 api.get('/openapi.json', (c) => c.json(buildOpenApi(c.env.APP_VERSION ?? 'dev'))); // the API described (openapi.ts; a test keeps it in step)
