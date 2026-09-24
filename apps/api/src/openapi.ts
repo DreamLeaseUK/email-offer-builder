@@ -1,10 +1,12 @@
 /**
  * OpenAPI 3.1 description of the Worker's whole HTTP surface: the public routes (health, hosted pages, stored
  * files, email links) and the tool API behind Cloudflare Access. Served at GET /api/openapi.json so other apps,
- * Make scenarios and AI agents can use the Offer Mailer without reading its code (house rule "API-first").
+ * Make scenarios and AI agents can understand the Offer Mailer without reading its code (house rule "API-first").
+ * Machines cannot call /api yet: requireAccess needs an email identity (docs/architecture.md B12).
  *
  * OPERATIONS is the catalogue. test/openapi.test.ts fails if the app serves a route that is not listed here, or
- * lists one it does not serve, so the document cannot drift: adding a route means adding it here.
+ * lists one it does not serve, so routes cannot drift: adding a route means adding it here. Query parameters and the
+ * doc-only body schemas are kept in step by hand (the test checks method + path only).
  *
  * Request bodies validated with Zod reuse the real schemas (z.toJSONSchema over a registry, so shared models like
  * Offer become $refs). Bodies still checked by hand in their handler have a doc-only schema here and are marked
@@ -12,10 +14,10 @@
  * Responses are described, not yet typed.
  */
 import { z } from 'zod';
-import { Offer } from '@offer-mailer/schema';
+import { ContactMethod, Offer } from '@offer-mailer/schema';
 import { DraftCampaign } from './campaigns.js';
 import { SuppressionAdd, SuppressionEmail } from './suppressions.js';
-import { TemplateBody } from './templates.js';
+import { TemplateBody, TemplateBodyPatch } from './templates.js';
 
 type Method = 'get' | 'post' | 'put' | 'delete';
 type Access = 'public' | 'signed-in' | 'admin';
@@ -40,14 +42,14 @@ const VehicleRef = z.object({ make: z.string(), model: z.string() });
 const BrochureEnsureBody = VehicleRef.extend({ force: z.boolean().optional().meta({ description: 'Search again even if a brochure is stored (spends Firecrawl credits).' }) });
 const BrochureManualForm = VehicleRef.extend({ url: z.string().optional().meta({ description: 'A link to the brochure or request page.' }), pdf: binary().optional() });
 const LibrarySaveBody = z.object({ offer: Offer });
-const PromoteBody = z.object({ category: z.string().max(60).meta({ description: 'The shared shelf name.' }) });
+const PromoteBody = z.object({ category: z.string().meta({ description: 'The shared shelf name (trimmed and cut to 60 characters).' }) });
 const SenderBody = z.object({
   displayName: z.string().optional(),
   jobTitle: z.string().optional(),
   phone: z.string().optional(),
   whatsapp: z.string().optional(),
   bookingUrl: z.string().optional(),
-  secondaryContacts: z.unknown().optional().meta({ description: 'Secondary contact methods; the result is checked against the Sender model.' }),
+  secondaryContacts: z.array(ContactMethod).optional().meta({ description: 'Secondary contact links; unknown or unavailable methods are dropped.' }),
 });
 const PhotoForm = z.object({ photo: binary().meta({ description: 'A portrait image.' }) });
 
@@ -56,7 +58,7 @@ const SCHEMAS: Record<string, z.ZodType> = {
   DraftCampaign,
   Offer,
   TemplateBody,
-  TemplateBodyPatch: TemplateBody.partial(),
+  TemplateBodyPatch,
   SuppressionAdd,
   SuppressionEmail,
   LookupBody,
@@ -105,10 +107,10 @@ export const OPERATIONS: Operation[] = [
   { method: 'get', path: '/api/register', tag: 'Register', summary: 'The promotions register: every campaign with its salesperson-authored copy', access: 'signed-in', returns: 'json' },
   { method: 'get', path: '/api/register.csv', tag: 'Register', summary: 'The promotions register as CSV', access: 'signed-in', returns: 'csv' },
 
-  { method: 'post', path: '/api/offers/library', tag: 'Library', summary: "Save an offer to the salesperson's library", access: 'signed-in', body: { schema: 'LibrarySaveBody', validatedBy: 'zod' }, returns: 'json' },
+  { method: 'post', path: '/api/offers/library', tag: 'Library', summary: "Save an offer to the salesperson's library (201 when new; 200 when re-saving an existing entry)", access: 'signed-in', body: { schema: 'LibrarySaveBody', validatedBy: 'zod' }, returns: 'json-created' },
   { method: 'get', path: '/api/library/shelves', tag: 'Library', summary: 'The shared shelves (from config/library-shelves.json)', access: 'signed-in', returns: 'json' },
-  { method: 'get', path: '/api/offers/library', tag: 'Library', summary: 'Library entries: personal and shared', access: 'signed-in', returns: 'json' },
-  { method: 'get', path: '/api/offers/library/archived', tag: 'Library', summary: 'Archived library entries', access: 'signed-in', returns: 'json' },
+  { method: 'get', path: '/api/offers/library', tag: 'Library', summary: 'Current library entries: personal, or a shared shelf (scope=shared, with category, q search and maxMonthly)', access: 'signed-in', query: q('scope', 'q', 'category', 'maxMonthly'), returns: 'json' },
+  { method: 'get', path: '/api/offers/library/archived', tag: 'Library', summary: 'Archived library entries (scope=shared for admins)', access: 'signed-in', query: q('scope'), returns: 'json' },
   { method: 'post', path: '/api/offers/library/{id}/reprice', tag: 'Library', summary: "Re-price an entry from the live site and re-attach the model's current brochure", access: 'signed-in', returns: 'json' },
   { method: 'post', path: '/api/offers/library/{id}/archive', tag: 'Library', summary: 'Archive an entry', access: 'signed-in', returns: 'json' },
   { method: 'post', path: '/api/offers/library/{id}/unarchive', tag: 'Library', summary: 'Restore an archived entry', access: 'signed-in', returns: 'json' },
@@ -128,7 +130,7 @@ export const OPERATIONS: Operation[] = [
   { method: 'post', path: '/api/suppressions/check', tag: 'Suppressions', summary: 'Is this email suppressed? (email in the body, not the URL)', access: 'signed-in', body: { schema: 'SuppressionEmail', validatedBy: 'zod' }, returns: 'json' },
   { method: 'post', path: '/api/suppressions/remove', tag: 'Suppressions', summary: 'Remove an opt-out, re-permitting contact (admin)', access: 'admin', body: { schema: 'SuppressionEmail', validatedBy: 'zod' }, returns: 'json' },
 
-  { method: 'get', path: '/api/dev/preview', tag: 'Dev', summary: 'Render the fixture campaigns for client testing (html, hosted, text, eml or json); publish=1 also writes the hosted page', access: 'signed-in', query: q('layout', 'count', 'contract', 'cta', 'brochure', 'sender', 'format', 'publish'), returns: 'html' },
+  { method: 'get', path: '/api/dev/preview', tag: 'Dev', summary: 'Render the fixture campaigns for client testing (html, hosted, text, eml or json); publish=1 also writes the hosted page', access: 'signed-in', query: q('layout', 'count', 'contract', 'cta', 'label', 'brochure', 'sender', 'format', 'publish'), returns: 'html' },
 ];
 
 const RESPONSES: Record<Returns, { code: string; description: string; content?: Record<string, { schema: object }> }> = {

@@ -610,8 +610,12 @@ system, one API, and a UI that only calls the API.
   2. D1 changes are additive migrations only (`pnpm db:generate`). Matt applies remote migrations.
   3. Keep `assertNoCapId()` coverage for anything persisted.
 - **Add a rule, list or wording.** Put it in `config/` (like `badges.json`, `library-shelves.json`), not in code.
-- **Let another app, Make or an AI agent use it.** Point it at `/api/openapi.json`. Calls go through Cloudflare Access (a service token for machines).
+- **Let another app, Make or an AI agent use it.** `/api/openapi.json` describes the API, but **machine sign-in is not supported yet**.
+  - `requireAccess` needs an `email` claim. A Cloudflare Access service-token JWT carries only `common_name`, so a machine gets a 401 (it fails closed).
+  - Enabling machine access is a deliberate change: map a named service token to an identity and a role (for `createdBy` and the promotions register), with a contract test.
+  - **Never loosen the email check to make a machine work.**
 - **Known follow-ups** (built-to-last gaps, 24 Sept):
   1. Move the hand-checked request bodies to Zod. They are marked `x-validated-by: handler`: `/me/sender`, `/me/photo`, `/offers/lookup`, `/brochures/ensure`, `/brochures/accept`, `/brochures/manual` and `/offers/library/:id/promote`.
   2. Type the responses.
   3. Decide whether `/api/dev/preview` should stay in production.
+  4. Machine sign-in (Access service tokens mapped to an identity and role), when Make or an agent first needs to call the API.
