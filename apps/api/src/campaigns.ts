@@ -36,7 +36,8 @@ import type { Brochure } from '@offer-mailer/schema';
 const DEFAULT_TEMPLATE_ID = 'd1000000-0000-4000-8000-000000000001';
 const DEFAULT_TEMPLATE: TemplateT = { ...fixtureTemplate, id: DEFAULT_TEMPLATE_ID };
 
-const DraftCampaign = z.object({
+/** POST /campaigns and /campaigns/preview body. Exported so the OpenAPI document (openapi.ts) describes the real schema. */
+export const DraftCampaign = z.object({
   name: z.string().min(1).max(120),
   useCase: CampaignUseCase,
   subject: z.string().min(1).max(150),

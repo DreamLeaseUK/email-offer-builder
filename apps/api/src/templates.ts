@@ -26,7 +26,8 @@ import type { AppEnv, Env } from './env.js';
 import { requireAdmin } from './roles.js';
 
 /** The admin-authored parts of a template. Identity, version, markupVersion and status are server-owned. */
-const TemplateBody = z.object({
+/** POST /templates body (PUT takes it partial). Exported so the OpenAPI document (openapi.ts) describes the real schema. */
+export const TemplateBody = z.object({
   name: z.string().min(1).max(120),
   complianceBlocks: z.record(ContractType, ComplianceBlock),
   footer: z.object({ optOutLine: z.string().min(1), companyLine: z.string().min(1) }),

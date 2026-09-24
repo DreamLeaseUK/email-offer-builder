@@ -9,6 +9,7 @@ import { hosted } from './hosted.js';
 import { libraryApi, purgeArchivedLibrary, recheckLibraryUrls } from './library.js';
 import { lookup } from './lookup.js';
 import { requireAccess } from './middleware/access.js';
+import { buildOpenApi } from './openapi.js';
 import { profileApi } from './profile.js';
 import { suppressionsApi } from './suppressions.js';
 import { templatesApi } from './templates.js';
@@ -40,6 +41,7 @@ app.route('/', redirect); // /r/:slug/:link — resolves a stored campaign's lin
 
 const api = new Hono<AppEnv>();
 api.use('*', requireAccess());
+api.get('/openapi.json', (c) => c.json(buildOpenApi(c.env.APP_VERSION ?? 'dev'))); // the API described (openapi.ts; a test keeps it in step)
 api.route('/', profileApi); // /me + /me/photo — the salesperson's profile and portrait
 api.route('/', lookup);
 api.route('/', brochuresApi);

@@ -47,11 +47,16 @@ export function suppressionsRepo(env: Env) {
   };
 }
 
+const trimmedEmail = z.preprocess((v) => (typeof v === 'string' ? v.trim() : v), z.email());
+/** POST /suppressions body. Exported so the OpenAPI document (openapi.ts) describes the real schema. */
+export const SuppressionAdd = z.object({ email: trimmedEmail, note: z.string().max(200).optional() });
+/** POST /suppressions/check and /suppressions/remove body. */
+export const SuppressionEmail = z.object({ email: z.string() });
+
 export const suppressionsApi = new Hono<AppEnv>();
 
 suppressionsApi.post('/suppressions', async (c) => {
-  const trimmedEmail = z.preprocess((v) => (typeof v === 'string' ? v.trim() : v), z.email());
-  const body = z.object({ email: trimmedEmail, note: z.string().max(200).optional() }).safeParse(await c.req.json().catch(() => ({})));
+  const body = SuppressionAdd.safeParse(await c.req.json().catch(() => ({})));
   if (!body.success) return c.json({ error: 'A valid email address is required.' }, 422);
   await suppressionsRepo(c.env).add(body.data.email, c.get('user').email, body.data.note?.trim() || undefined);
   return c.json({ ok: true }, 201);
@@ -70,13 +75,13 @@ suppressionsApi.get('/suppressions.csv', async (c) => {
 });
 
 suppressionsApi.post('/suppressions/check', async (c) => {
-  const body = z.object({ email: z.string() }).safeParse(await c.req.json().catch(() => ({})));
+  const body = SuppressionEmail.safeParse(await c.req.json().catch(() => ({})));
   if (!body.success || !body.data.email.trim()) return c.json({ suppressed: false });
   return c.json({ suppressed: await suppressionsRepo(c.env).isSuppressed(body.data.email) });
 });
 
 suppressionsApi.post('/suppressions/remove', requireAdmin(), async (c) => {
-  const body = z.object({ email: z.string() }).safeParse(await c.req.json().catch(() => ({})));
+  const body = SuppressionEmail.safeParse(await c.req.json().catch(() => ({})));
   if (!body.success) return c.json({ error: 'An email is required.' }, 422);
   await suppressionsRepo(c.env).remove(body.data.email);
   return c.json({ ok: true });
