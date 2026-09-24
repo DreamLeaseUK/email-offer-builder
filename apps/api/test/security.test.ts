@@ -58,6 +58,12 @@ describe('error logs', () => {
     expect(line).not.toContain(USER);
   });
 
+  it('withhold any error line that mentions a source image URL or CAP ID (rule 2)', () => {
+    const line = safeErrorLine(new Error('fetch failed: https://images.motorleaseplatform.com/cvd/?capId=12345&w=800'));
+    expect(line).toMatch(/^Error: \[message withheld/);
+    expect(line).not.toMatch(/capid|motorleaseplatform|12345/i);
+  });
+
   it('log a failed request without the salesperson or what they sent', async () => {
     const logged = vi.spyOn(console, 'error').mockImplementation(() => {});
     const body = JSON.stringify({ displayName: 'Private Person', phone: '07700 900123' });
