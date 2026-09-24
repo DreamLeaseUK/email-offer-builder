@@ -39,7 +39,7 @@ web page. It is an FCA-regulated financial-promotions tool (compliance matters).
   standing rule wins; do the work solo.
 - Commit only when asked; he commits directly to `main` and asked for pushes on 23 Sept. Report the live system's
   state plainly after any deploy.
-- **A block list stops you (since 24 Sept):** deploys, `dev:live`, both `db:migrate` commands, `wrangler d1 execute`
+- **A block list stops you (since 24 Sept):** deploys, `dev:live`, `pnpm db:migrate` (remote; `pnpm db:migrate:local` is allowed since 24 Sept), `wrangler d1 execute`
   (reads included), the Cloudflare connector's D1 query and writes, history-destroying git (`reset --hard`,
   `push --force`, `clean`, `stash`, `restore`) and reading secret files (`.dev.vars`, `.env`). Matt runs those in the
   desktop app's Terminal panel. For a production D1 read, give him the exact SELECT and ask for the output. The full
