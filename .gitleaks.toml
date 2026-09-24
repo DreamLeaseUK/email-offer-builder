@@ -1,0 +1,10 @@
+# Gitleaks config: all the default rules, plus narrow allowlists for verified false positives.
+# Every entry must say what it allows, why it is not a secret, and where it was found.
+[extend]
+useDefault = true
+
+[[allowlists]]
+targetRules = ["generic-api-key"]
+description = "vehicleKey is a public make/model slug (schema: ^[a-z0-9-]+/[a-z0-9-]+$, e.g. 'leapmotor/c10'), never a secret. Found in apps/api/test/step3.test.ts, commit c1397c5, 24 Sept 2026."
+regexTarget = "match"
+regexes = ['''vehicleKey:\s*['"][a-z0-9-]+/[a-z0-9-]+['"]''']
