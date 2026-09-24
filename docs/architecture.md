@@ -277,7 +277,11 @@ by setting `DEV_USER_EMAIL` in production (CLAUDE.md).
 `/offers/library/:id/reprice`, `/…/archive`, `/…/unarchive`, `/…/promote` **(admin)**, `/library/shelves` ·
 `/brochures/ensure`, `/brochures/accept` (an official page, a request form, or the European edition the finder offered), `/brochures/manual`, `/brochures/current` (the stored copy, no search) · `/campaigns*`, `/register`, `/register.csv` ·
 `/templates*` **(admin)** · `/suppressions`, `/suppressions.csv`, `/suppressions/check`,
-`/suppressions/remove` **(remove = admin)** · `/dev/*`.
+`/suppressions/remove` **(remove = admin)** · `/dev/*` · `/openapi.json`.
+**Described in OpenAPI 3.1** at `/api/openapi.json` (behind Access, versioned with `APP_VERSION`; source
+`apps/api/src/openapi.ts`, added 24 Sept). `test/openapi.test.ts` fails if a route is served but not documented, or
+documented but not served, so the description can't drift. Request bodies come from the Zod model where the handler
+validates with Zod; hand-checked bodies are marked `x-validated-by: handler` (see B12).
 **Cron:** `scheduled()` → `runRetention()` + `recheckLinkedBrochures()` (a web / request brochure whose page is now
 404/410 is superseded) + `recheckLibraryUrls()` (flag a library entry whose source URL moved/gone) +
 `purgeArchivedLibrary()` (archived library entries > 6 months).
@@ -563,9 +567,9 @@ IT — Access (one Entra app registration, sign-in only) + a Cloudflare-served s
 secret + confirming the Workers Paid plan; Tawk webchat (parked, renewals-only stage one).
 
 ## B10. Testing & verification
-- `pnpm test` — **220 tests** (24 Sept): schema 23, render 35 (incl. the intro-derived preheader), adapters 92, api 70
+- `pnpm test` — **227 tests** (24 Sept): schema 23, render 35 (incl. the intro-derived preheader), adapters 92, api 77
   (library: 10, incl. `withStoredBrochure`; campaigns: the `salespersonTag` unit test and `utm_term` on the stored
-  campaign, on the `/r` destination and on the footer link). The adapter suite replays 18 recorded
+  campaign, on the `/r` destination and on the footer link; OpenAPI: 7, incl. the served-vs-documented drift guard). The adapter suite replays 18 recorded
   manufacturer sites through the brochure finder at zero credits (added 21 Sept: Polestar 2, the European fallback;
   Renault 4 and Geely EX2, the two misses of that afternoon; Toyota C-HR, Škoda Kodiaq and Hyundai Kona from the
   finder-1.4 sweep). `packages/adapters/scripts/finder-sweep.mts` runs the finder LIVE over a list of cars (real
@@ -580,10 +584,34 @@ secret + confirming the Workers Paid plan; Tawk webchat (parked, renewals-only s
 - Adapters: `packages/adapters/src/url/*`, `firecrawl/`, `brochure/` (`finder.ts`, `operate.ts`, `harvest.ts`, `ensure.ts`), `scripts/finder-sweep.mts`
 - Worker: `apps/api/src/index.ts` (routes + Cron), `campaigns.ts`, `profile.ts`, `templates.ts`,
   `suppressions.ts`, `retention.ts`, `roles.ts`, `files.ts`, `brochures.ts`, `lookup.ts`, `library.ts`,
-  `hosted.ts`, `tracking.ts`, `middleware/access.ts`, `db/schema.ts`
+  `hosted.ts`, `tracking.ts`, `middleware/access.ts`, `db/schema.ts`, `openapi.ts` (the API described)
 - Web: `apps/web/src/App.tsx` (header portrait, `addFromLibrary`), `Compose.tsx` (incl. `repriceCopied`, the resizable
   columns), `Campaigns.tsx`, `Library.tsx`, `Register.tsx`, `Suppressions.tsx`, `Templates.tsx`, `api.ts`
   (incl. `currentBrochure`), `styles.css`; `apps/web/vite.config.ts` (proxy + tunnel `allowedHosts`)
 - Config: `apps/api/wrangler.jsonc`, `config/` (`badges.json`, `admins.json`, `library-shelves.json`),
   `.claude/launch.json` (the two dev servers for the desktop app)
 - Runbooks: `docs/it-runbook-sign-in.md` (Entra + Cloudflare Access sign-in, revised 24 Sept)
+
+## B12. How to extend
+
+How to grow the app without refactoring it. The shape stays: the Zod model at the centre, one adapter per outside
+system, one API, and a UI that only calls the API.
+
+- **Add an API route.**
+  1. Validate its input with a named, exported Zod schema.
+  2. Add the route to `OPERATIONS` in `apps/api/src/openapi.ts` (with the schema registered). The drift test fails until you do.
+  3. Add a contract test in `apps/api/test/`.
+- **Connect a new outside system** (monday.com, Mautic, a CRM…).
+  1. Give it its own adapter in `packages/adapters/src/<system>/`: a typed interface, the implementation and contract tests with fixtures validated by `@offer-mailer/schema`.
+  2. No adapter imports another; the API wires them.
+  3. The planned monday.com delivery path is an output adapter alongside Copy for Outlook (`CLAUDE.md` rule 4).
+- **Add a field to the model.**
+  1. Add it to `packages/schema` as optional (or with a default) so stored JSON snapshots still parse.
+  2. D1 changes are additive migrations only (`pnpm db:generate`). Matt applies remote migrations.
+  3. Keep `assertNoCapId()` coverage for anything persisted.
+- **Add a rule, list or wording.** Put it in `config/` (like `badges.json`, `library-shelves.json`), not in code.
+- **Let another app, Make or an AI agent use it.** Point it at `/api/openapi.json`. Calls go through Cloudflare Access (a service token for machines).
+- **Known follow-ups** (built-to-last gaps, 24 Sept):
+  1. Move the hand-checked request bodies to Zod. They are marked `x-validated-by: handler`: `/me/sender`, `/me/photo`, `/offers/lookup`, `/brochures/ensure`, `/brochures/accept`, `/brochures/manual` and `/offers/library/:id/promote`.
+  2. Type the responses.
+  3. Decide whether `/api/dev/preview` should stay in production.

@@ -32,7 +32,7 @@ Do not start a build step, a review, a diagnostic or any other new piece of work
 ## Layout
 
 ```
-apps/api           Cloudflare Worker (Hono): API, hosted pages (/c), redirects (/r), stored files (/f), brochure links (/b), email assets (/a), the daily Cron. It does NOT serve the web app yet.
+apps/api           Cloudflare Worker (Hono): API, hosted pages (/c), redirects (/r), stored files (/f), brochure links (/b), email assets (/a), the daily Cron. It does NOT serve the web app yet. The whole surface is described at /api/openapi.json (src/openapi.ts; a test fails if a route is undocumented). How to extend: docs/architecture.md B12.
 apps/web           Vite + React tool UI: Compose, Campaigns, Library, Register, Suppressions, Templates (admin). Runs locally only (port 5173, proxying to the API on 8787).
 packages/schema    Zod schemas from brief §5.1, CAP ID guard, decoding of the site's HTML entities (text.ts)
 packages/adapters  Source and output adapter interfaces (§5.2) and implementations: url lookup (normalise, HTMLRewriter page parser, site pricing JSON, offer assembly), Firecrawl client, brochure finder / harvest (which also holds the manual upload-or-paste path) / ensure. Pure: I/O is injected.
