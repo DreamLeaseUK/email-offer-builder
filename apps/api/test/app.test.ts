@@ -114,6 +114,16 @@ describe('dev preview', () => {
     expect(await hostedRes.text()).not.toMatch(/View these offers online/);
   });
 
+  it('is not served on the live site, so nothing can be published there', async () => {
+    const objects = {};
+    const live = { ...env, HOSTED: fakeBucket(objects) };
+    const res = await app.request('https://offer-mailer.matt-wilson-9b8.workers.dev/api/dev/preview?publish=1', { headers: { 'cf-connecting-ip': '203.0.113.9' } }, live);
+    expect(res.status).toBe(404);
+    expect(objects).toEqual({});
+    // wrangler dev on this laptop, even with the live hostname configured
+    expect((await app.request('https://offer-mailer.matt-wilson-9b8.workers.dev/api/dev/preview', { headers: { 'cf-connecting-ip': '127.0.0.1' } }, live)).status).toBe(200);
+  });
+
   it('serves an eml download', async () => {
     const res = await app.request('/api/dev/preview?format=eml', {}, env);
     expect(res.headers.get('content-type')).toBe('message/rfc822');

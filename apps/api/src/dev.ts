@@ -1,6 +1,8 @@
 /**
  * Dev preview — renders the fixture campaigns so the template can be checked in real clients
- * before the editor exists (brief §8.2 step 2). Behind Access like the rest of /api.
+ * before the editor exists (brief §8.2 step 2). Behind Access like the rest of /api, and LOCAL ONLY (Matt, 24 Sept
+ * 2026): on the live site it answers 404, so a crafted link can't publish a fixture page (made-up prices, no
+ * approved template) to the public offers domain.
  *
  *   /api/dev/preview?layout=stack&count=4&contract=personal&cta=book&brochure=pdf&sender=salesperson&format=html
  *   format: html (default) | hosted | text | eml | json
@@ -13,11 +15,14 @@ import type { FixtureOptions } from '@offer-mailer/render/fixtures';
 import { Hono } from 'hono';
 import type { AppEnv } from './env.js';
 import { writeHostedPage } from './hosted.js';
+import { isThisLaptop } from './local.js';
 
 const oneOf = <T extends string>(value: string | undefined, allowed: readonly T[]): T | undefined =>
   allowed.includes(value as T) ? (value as T) : undefined;
 
 export const dev = new Hono<AppEnv>();
+
+dev.use('*', async (c, next) => (isThisLaptop(c.req.url, c.req.header('cf-connecting-ip')) ? next() : c.json({ error: 'Not found' }, 404)));
 
 dev.get('/preview', async (c) => {
   const q = c.req.query();

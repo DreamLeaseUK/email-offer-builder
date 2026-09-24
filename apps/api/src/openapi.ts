@@ -130,7 +130,7 @@ export const OPERATIONS: Operation[] = [
   { method: 'post', path: '/api/suppressions/check', tag: 'Suppressions', summary: 'Is this email suppressed? (email in the body, not the URL)', access: 'signed-in', body: { schema: 'SuppressionEmail', validatedBy: 'zod' }, returns: 'json' },
   { method: 'post', path: '/api/suppressions/remove', tag: 'Suppressions', summary: 'Remove an opt-out, re-permitting contact (admin)', access: 'admin', body: { schema: 'SuppressionEmail', validatedBy: 'zod' }, returns: 'json' },
 
-  { method: 'get', path: '/api/dev/preview', tag: 'Dev', summary: 'Render the fixture campaigns for client testing (html, hosted, text, eml or json); publish=1 also writes the hosted page', access: 'signed-in', query: q('layout', 'count', 'contract', 'cta', 'label', 'brochure', 'sender', 'format', 'publish'), returns: 'html' },
+  { method: 'get', path: '/api/dev/preview', tag: 'Dev', summary: 'Local development only (404 on the live site): render the fixture campaigns for client testing (html, hosted, text, eml or json); publish=1 also writes the hosted page', access: 'signed-in', query: q('layout', 'count', 'contract', 'cta', 'label', 'brochure', 'sender', 'format', 'publish'), returns: 'html' },
 ];
 
 const RESPONSES: Record<Returns, { code: string; description: string; content?: Record<string, { schema: object }> }> = {
