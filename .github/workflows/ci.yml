@@ -1,0 +1,56 @@
+# CI: proves every change typechecks, passes its tests and builds, before it reaches main.
+# Runs on pull requests and on pushes to main. Docs-only changes are skipped to save Actions minutes
+# (private repo on GitHub Free: 2,000 minutes a month shared across the org).
+# No secrets, no deploy: this workflow only reads the code.
+name: CI
+
+on:
+  pull_request:
+    paths-ignore: ['docs/**', '**/*.md']
+  push:
+    branches: [main]
+    paths-ignore: ['docs/**', '**/*.md']
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Typecheck, test, build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      # Reads the pnpm version from "packageManager" in package.json.
+      - uses: pnpm/action-setup@v6.1.0
+
+      - uses: actions/setup-node@v7.0.0
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install (exactly the locked versions)
+        run: pnpm install --frozen-lockfile
+
+      # DEV_USER_EMAIL is the local-only login bypass (.dev.vars). If it ever appears in the committed
+      # wrangler vars, a deploy would ship that bypass to production.
+      - name: No dev login bypass in the deployed config
+        run: |
+          if grep -nE '"DEV_USER_EMAIL"[[:space:]]*:' apps/api/wrangler.jsonc; then
+            echo "::error file=apps/api/wrangler.jsonc::DEV_USER_EMAIL is set in the committed wrangler vars. It must only live in .dev.vars."
+            exit 1
+          fi
+
+      - name: Typecheck (all packages, incl. apps/web)
+        run: pnpm typecheck
+
+      - name: Tests (API runs inside workerd with local D1/R2)
+        run: pnpm test
+
+      - name: Build the web app
+        run: pnpm --filter @offer-mailer/web build
