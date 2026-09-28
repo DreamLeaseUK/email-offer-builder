@@ -1,13 +1,13 @@
 # DreamLease Offer Mailer — Solution Design & System Architecture
 
-**Status:** current as of 24 Sept 2026 (session 8). This is the authoritative technical design document. The
+**Status:** current as of 28 Sept 2026 (session 9: the go-live bundle — addresses, the web app served by the Worker, the compliance-approver role). This is the authoritative technical design document. The
 **production Worker is still v0.5.0** (21 Sept): everything of sessions 6–8 — the offer-library rebuild (**B7c**),
 campaign copy, the brochure carry-over on library use and copy, the salesperson UTM, the auto-preheader and the
 Compose changes — is in `main` (pushed to `origin`) and runs through `pnpm dev:live`, **not yet deployed** (the
 `library_entries` table was applied to production D1, migration `0003`, so `dev:live` works). For product
 requirements see `dreamlease-offer-mailer-brief.md` (v1.1, with an as-built log in §9a); for the email-markup
 reference see `offer-mailer-implementation-notes.md` (and the deviations from it in B7); for the build log see
-`status-2026-09-24.md` (`-09-23`, `-09-21`, `-09-18`, `-09-16`, `-09-15`, `-09-14` are history); for how to resume see
+`status-2026-09-28.md` (`-09-24`, `-09-23`, `-09-21`, `-09-18`, `-09-16`, `-09-15`, `-09-14` are history); for how to resume see
 `PICKUP-PROMPT.md`; for sign-in set-up see `it-runbook-sign-in.md`. Brochure discovery (the finder) is designed and evidenced in `brochure-finder-brief.md`.
 Where this document and the code disagree, the code wins — fix this document.
 
@@ -96,8 +96,10 @@ Three audiences / lease products, each with its own compliance wording and terms
   **never** flows into the library. Client-only (`apps/web/src/Campaigns.tsx`, `App.tsx` `copyCampaign`,
   `Compose.tsx` `repriceCopied`) — no API change.
 - **Promotions register** (master table + CSV).
-- **Template admin (master-admin only)**: author the Emma-approved compliance templates, publish (self-
-  approve), lock approved, new-version/retire. See A4 / B6.
+- **Compliance templates (compliance approver only, 28 Sept 2026)**: Emma (`config/compliance.json`) authors the
+  compliance wording, publishes it (stamped with her verified sign-in), locks approved, new-version/retire. Master
+  admins can read it but not change it. The seeded placeholder is labelled "not compliance-approved" and carries no
+  approver. See A4 / B6.
 - **Suppression register**: the opt-out list — add / check / view / CSV export; admin-only removal. See A4.
 
 ## A4. Security & compliance posture
@@ -178,24 +180,33 @@ validation is Matt's own test sends.
 ## B1. High-level shape
 ```
                      ┌──────────────────────── Cloudflare Worker "offer-mailer" (Hono) ────────────────────────┐
-  Salesperson browser        │  /api/*  (behind Cloudflare Access → Entra SSO)                                          │
-  (mailer.…)      ──►│    me/profile · lookup · brochures · campaigns · library · register                     │
-                     │    templates (admin) · suppressions (remove=admin) · dev-preview                         │
+  Salesperson browser        │  /app/* (web app) + /api/*  (tool host, behind Cloudflare Access → Entra SSO)            │
+  (marketingtools…)──►│    me/profile · lookup · brochures · campaigns · library · register                     │
+                     │    templates (compliance) · suppressions (remove=admin) · dev-preview                    │
   Customer browser   │  PUBLIC (no login):  /health · /c/:slug (hosted) · /f/* · /b/:id · /r/:slug/:link · /a/* │
   (offers.…)      ──►│  Cron (daily 03:00): scheduled() → retention/housekeeping                                │
                      └──────┬──────────────┬─────────────────┬──────────────────┬────────────────────────────┘
                           D1 (SQL)      R2 (objects)    Images (TRANSFORM)   Firecrawl (metered, external)
 ```
-Two hosting surfaces on one Worker:
-- **`marketingtools.dreamlease.co.uk`** (Matt, 24 Sept 2026) — tool UI + `/api`, staff-only behind Cloudflare Access.
-- **`offers.dreamlease.co.uk`** — hosted pages, redirects, images, brochures — public (noindex, expiring).
+Two hosting surfaces on one Worker (decided by Matt, 28 Sept 2026; how and why in `status-2026-09-28.md` §2):
+- **`marketingtools.dreamelectric.uk`** — the tool: the web app (`/app/`) + `/api`, staff-only; Cloudflare Access
+  covers the whole host. A Custom Domain on our `dreamelectric.uk` zone. `TOOL_BASE_URL`.
+- **`offers.dreamlease.co.uk`** — hosted pages, redirects, images, brochures — public (noindex, expiring), on the
+  DreamLease domain so customers can trust it. A **Cloudflare for SaaS** custom hostname on the `dreamelectric.uk`
+  zone (fallback origin `saas.dreamelectric.uk`, `AAAA 100::`), sent to the Worker by the route
+  `offers.dreamlease.co.uk/*`; GoDaddy keeps DreamLease DNS and holds two records for it (CNAME + TXT).
+  `PUBLIC_BASE_URL` moves to it once it is verified live.
 
-Until the custom domains are attached, both run on `offer-mailer.matt-wilson-9b8.workers.dev`, and `/api/*` returns
-**503** (fails closed) until Access is configured there (runbook Part B: the Access application on that hostname,
-path `api`); that is enough for go-live. **Domain note:** `mailer.` is already occupied (found 16 Sept:
-`status-2026-09-16.md` §4 and §7 / memory), so the tool moves to `marketingtools.` (free in DNS, checked 24 Sept).
-DNS is at GoDaddy, so it must become Cloudflare-served first (runbook Part C). `TOOL_BASE_URL` in `wrangler.jsonc`
-still says `mailer.`; nothing reads it at runtime yet.
+Why not a `dreamlease.co.uk` zone of our own: the main site (`www`) and its certificates are run by MotorComplete
+through their own Cloudflare account (their validation records live in our GoDaddy DNS), DNS is at GoDaddy, and
+proxying one subdomain from outside DNS needs Cloudflare's Business plan. `mailer.` is taken by an unrelated host.
+
+The Custom Domain and the route are attached once in the dashboard (runbook Part C), **not** listed in
+`wrangler.jsonc`: with a `routes` key, `wrangler dev --remote` previews on the first route's zone instead of
+workers.dev and `pnpm dev:live` stops running the local code (seen 28 Sept). `wrangler deploy` publishes only the
+routes the file lists, so it leaves the dashboard ones alone (wrangler 4.131 `triggersDeploy`). `workers.dev` stays on
+so links in emails already sent keep working. Until Access is configured, `/api/*` returns **503** on every host
+(fails closed).
 
 ## B2. Monorepo layout (pnpm workspaces)
 | Package | Responsibility |
@@ -205,20 +216,24 @@ still says `mailer.`; nothing reads it at runtime yet.
 | `packages/render` | `render(campaign, template)` — the sole HTML producer. v5 markup as template functions (`cards.ts`, `render.ts`), with the recorded deviations of B7; two layouts, hero and stacked (the grids were deleted 22 Sept); `diff-reference.ts` fidelity check; `MARKUP_VERSION`. |
 | `packages/design-system` | Vendored DreamLease design system (`dl-*` React components, tokens, Sofia Pro), consumed as source. |
 | `apps/api` | The Cloudflare Worker (Hono): API, hosted pages, redirects, files, static assets, the retention Cron. |
-| `apps/web` | Vite + React tool UI: Compose / Campaigns / Library / Register / Suppressions / Templates (admin). Dev-only today; served from the Worker in prod later. |
+| `apps/web` | Vite + React tool UI: Compose / Campaigns / Library / Register / Suppressions / Templates (compliance edits, admins read). Built into `apps/api/public/app` (git-ignored) and served by the Worker at `/app/` on the tool host only (`apps/api/src/ui.ts`, 28 Sept); `pnpm run deploy` builds it first. In development it runs on Vite (5173). |
 
 ## B3. Runtime & bindings (Cloudflare, account `9b8d051…`; the Workers Paid plan is the design assumption — Matt to confirm it is switched on, it cannot be seen from the repo)
 - **Worker** `offer-mailer` (`apps/api/wrangler.jsonc`), `nodejs_compat`, observability on; static assets from
-  `./public` via `ASSETS` (`/a/*`); **Cron trigger** `0 3 * * *` (retention).
+  `./public` via `ASSETS`: `/a/*` straight from the assets on every host; `/` and `/app/*` go to the Worker first
+  (`run_worker_first`), which serves the built web app only on the tool host; **Cron trigger** `0 3 * * *` (retention).
 - **D1** `offer-mailer` (`32d1b987-…`, WEUR), binding `DB`, Drizzle ORM, migrations in `apps/api/migrations`.
 - **R2** (WEUR): `offer-mailer-images` (`IMAGES`), `offer-mailer-hosted` (`HOSTED`), `offer-mailer-brochures`
   (`BROCHURES`).
 - **Images** binding `TRANSFORM` (vehicle → 1200px JPEG; headshot → 256px square).
-- **Access** — `ACCESS_TEAM_DOMAIN` + `ACCESS_AUD` gate prod; empty locally, and **still empty in production**
-  until IT returns the Entra values. Cloudflare Zero Trust is enabled on the account with team name **`dreamlease`**
-  (team domain `dreamlease.cloudflareaccess.com`, confirmed 24 Sept), which is what `ACCESS_TEAM_DOMAIN` becomes.
-- **Vars/secrets** — `FIRECRAWL_API_KEY` (secret; **not set in production**: `/health` reports `firecrawl:false`);
-  optional `ADMIN_EMAILS`, `RETENTION_CAMPAIGN_DAYS`; locally `.dev.vars` (git-ignored, `DEV_USER_EMAIL`).
+- **Access** — `ACCESS_TEAM_DOMAIN` (a var: `dreamlease.cloudflareaccess.com`, set 28 Sept; team name
+  **`dreamlease`**) + `ACCESS_AUD` gate prod. `ACCESS_AUD` is a **production-only secret** since 28 Sept (`wrangler
+  secret put ACCESS_AUD`, runbook B5), not a var, so local dev and the tests keep the `DEV_USER_EMAIL` bypass without
+  editing the file. **Still unset in production** until Matt completes runbook Part B.
+- **Vars/secrets** — secrets `FIRECRAWL_API_KEY` (**not set in production**: `/health` reports `firecrawl:false`)
+  and `ACCESS_AUD`; vars `PUBLIC_BASE_URL` (customer links), `TOOL_BASE_URL` (the only host serving the web app),
+  optional `ADMIN_EMAILS`, `COMPLIANCE_EMAILS`, `RETENTION_CAMPAIGN_DAYS`; locally `.dev.vars` (git-ignored,
+  `DEV_USER_EMAIL`).
 
 ### Two ways to run the tool locally
 | Command | Storage | Use it for |
@@ -230,7 +245,10 @@ Both take the dev sign-in from `.dev.vars`; the Vite UI (`pnpm --filter @offer-m
 whichever is on 8787. Production `/api` itself stays 503 until Access is configured.
 
 **Starting the servers (24 Sept).** `.claude/launch.json` defines `api-live` (`pnpm dev:live`, port 8787) and `web`
-(the Vite UI, port 5173) so the Claude desktop app can start and manage both. It calls `pnpm` by its full path
+(the Vite UI, port 5173) so the Claude desktop app can start and manage both; since 28 Sept also `api-local` (plain
+`wrangler dev` on port 8788, local storage), for checking the built web app as the Worker serves it
+(`localhost:8788/` → `/app/`, after `pnpm build:web`). `dev:live` runs at Cloudflare's edge, so it does not count as
+"this laptop" and does not serve `/app/`. It calls `pnpm` by its full path
 (`%AppData%\npm\pnpm.cmd`) because `pnpm` is installed but not on Matt's PowerShell `PATH`. Servers started this way
 are stopped by the app when its Browser pane is closed; a `dev:live` session also drops after a few hours.
 
@@ -274,12 +292,15 @@ by setting `DEV_USER_EMAIL` in production (CLAUDE.md).
 - **Residency:** D1 + R2 in **WEUR (EU)**. Cloudflare is the processor (standard DPA applies).
 
 ## B5. Routing surface (`apps/api/src/index.ts`)
-**Public (no login):** `/health` · `/c/:slug` · `/f/*` · `/b/:id` · `/r/:slug/:link` · `/a/*`.
+**Public (no login):** `/health` · `/c/:slug` · `/f/*` · `/b/:id` · `/r/:slug/:link` · `/a/*` · `/` (tool host →
+`/app/`; any other host → `https://www.dreamlease.co.uk/`).
+**The web app:** `/app/*` — the built files on the tool host (Access covers the whole host at the edge); 404 on every
+other host, so the internal tool never appears on the customer-facing address (`src/ui.ts`, 28 Sept).
 **Behind Access (`/api/*`):** `/me`, `/me/photo`, `/me/sender` · `/offers/lookup` · **library (B7c):**
 `/offers/library` (save · list current, `?scope=&category=&q=&maxMonthly=`), `/offers/library/archived`,
 `/offers/library/:id/reprice`, `/…/archive`, `/…/unarchive`, `/…/promote` **(admin)**, `/library/shelves` ·
 `/brochures/ensure`, `/brochures/accept` (an official page, a request form, or the European edition the finder offered), `/brochures/manual`, `/brochures/current` (the stored copy, no search) · `/campaigns*`, `/register`, `/register.csv` ·
-`/templates*` **(admin)** · `/suppressions`, `/suppressions.csv`, `/suppressions/check`,
+`/templates*` **(read: admin or compliance; write: compliance only)** · `/suppressions`, `/suppressions.csv`, `/suppressions/check`,
 `/suppressions/remove` **(remove = admin)** · `/dev/*` · `/openapi.json`.
 **Described in OpenAPI 3.1** at `/api/openapi.json` (behind Access, versioned with `APP_VERSION`; source
 `apps/api/src/openapi.ts`, added 24 Sept). `test/openapi.test.ts` fails if a route is served but not documented, or
@@ -305,16 +326,25 @@ validates with Zod; hand-checked bodies are marked `x-validated-by: handler` (se
   `profile`, `offline_access`, `User.Read`; a 12-month client secret; redirect
   `https://dreamlease.cloudflareaccess.com/cdn-cgi/access/callback`). Matt is not the Entra administrator: the
   click-by-click instructions for IT are `it-runbook-sign-in.md` Part A (revised 24 Sept to Microsoft's current menu
-  names) and a matching Word document outside the repo. Waiting on IT; then Cloudflare Part B and a deploy with
-  `ACCESS_TEAM_DOMAIN` + `ACCESS_AUD` set.
-- **Authorization (roles, built — `roles.ts`)** — two roles, approver parked:
+  names) and a matching Word document outside the repo. **IT has done Part A** (the IDs came by email; the secret, due
+  to expire 24 Sept 2027, by phone). Next is Matt's Part B: Entra as the identity provider, one Access application on
+  the whole `marketingtools.dreamelectric.uk` host, then the audience tag as the `ACCESS_AUD` secret after a deploy.
+  `requireAccess()` checks the token on every host, so once `ACCESS_AUD` is set `/api` on `workers.dev` or
+  `offers.` answers 401: the tool works only through the protected host.
+- **Authorization (roles, built — `roles.ts`)** — two roles plus one permission:
   - **Salesperson** — the default; uses the tool.
-  - **Master admin** — template admin + admin-only actions; **self-approves** templates (rule 3's approved-
-    gate stays; the admin flips `draft → approved`).
-  Mapping: a **config allowlist** (`config/admins.json`), optionally extended by `ADMIN_EMAILS`, resolved by
-  `roleFor(env, email)` (case-insensitive). `/me` returns the role so the web app branches views;
-  `requireAdmin()` gates admin routes. Works off whatever email Access supplies — no Entra work needed to
-  build/test, no rework when Entra lands.
+  - **Master admin** — admin-only actions (library promote, suppression removal); can **read** templates.
+    Mapping: `config/admins.json`, optionally extended by `ADMIN_EMAILS`, resolved by `roleFor(env, email)`.
+  - **Compliance approver** (28 Sept 2026, Matt: "Emma alone edits and approves") — the only people who can create,
+    edit, publish and retire compliance templates; publishing stamps `approvedBy` with the approver's verified
+    email, so the register can only ever name the person who pressed Publish. `config/compliance.json` (Emma),
+    optionally extended at runtime by `COMPLIANCE_EMAILS` (a deputy, without a code change); `isComplianceApprover`,
+    `requireCompliance()` on template writes, `requireAdminOrCompliance()` on template reads. Separate from the
+    role: an approver who is not an admin uses the rest of the tool as a salesperson. Before 28 Sept master admins
+    self-approved templates; that is gone.
+  All case-insensitive and off whatever email Access supplies. `/me` returns `role` and `complianceApprover` so the
+  web app branches views (Templates is read-only for admins); the API enforces the same split, and
+  `test/templates.test.ts` proves an admin's writes are refused.
 
 ## B7. Rendering & the email template
 `render()` is pure and the only HTML producer. Card markup is translated line-for-line from
@@ -350,7 +380,8 @@ Matt, 23 Sept: "whatever works as salesperson identifier", so `utm_term` stands.
 
 **Deviations from the v5 reference, all for the paste path of A5** (recorded in the header of `cards.ts`;
 `diff-reference` reports 84 lines: 8 pre-date 21 Sept (2 the logo width, 6 the third hero pill), 10 are the inline-block pills (6) and the stack card’s image column (4), 64 are the name-before-picture reorder of 22 Sept (50 the stacked card, 14 the hero), and 2 are the plain recipient greeting (23 Sept, render.ts’s intro); the fluid wrapper sits outside the sections the script compares). **`MARKUP_VERSION` was not bumped for them (still 2)**, so templates approved against it — including the
-seeded placeholder — keep rendering (`render()` refuses a mismatch); whether Emma should re-approve the changed
+seeded placeholder (which nobody approved: since 28 Sept it is named "Placeholder wording (not compliance-approved)"
+and carries no approver) — keep rendering (`render()` refuses a mismatch); whether Emma should re-approve the changed
 markup is undecided:
 - **Fluid wrapper** — `width:100%; max-width:600px`, not a fixed 600px. Outlook mobile shrank the fixed layout to
   fit instead of reflowing it, so side-by-side columns stayed side by side on a phone. Classic Outlook keeps its
@@ -522,10 +553,10 @@ the EVs shelf while kept on the personal shelf).
 | 1 Scaffold, schema, D1, Worker, Access, deploy | Done, deployed |
 | 2 `render()`, layouts, hosted page | Done (hero and stacked; the grids were deleted 22 Sept) |
 | 3 URL lookup, image pipeline, brochure harvest | Done (brochure discovery rebuilt as the finder, 18 Sept) |
-| 4 Web app | Core built (dev-only) |
+| 4 Web app | Built; served by the Worker on the tool host from the next deploy (28 Sept) |
 | 5 Graph draft, Copy-for-Outlook | Copy-for-Outlook done; Graph draft **removed** (24 Sept 2026 — monday.com next) |
 | 6 Redirects, click logging, stats | Done |
-| 7 Template admin, approval, register, suppression | **Done** (register, template admin + self-approve, suppression list) |
+| 7 Template admin, approval, register, suppression | **Done** (register, compliance-approver-only templates since 28 Sept, suppression list) |
 | 8 Stubs & `evolution.md` | Not started (low value) |
 
 **PII plan: complete** (items 1–4). Build-order steps 1–7 done. **Production is v0.5.0** (21 Sept): the finder's
@@ -572,12 +603,15 @@ subdomain, and a real test send from `main` should come first.
 
 **Remaining build-order:** step 8 stubs + `evolution.md` (low value). **Owed by others / parked:** Emma —
 approved compliance wording (then publish a real template to replace the placeholder) + the retention period;
-IT — Access (one Entra app registration, sign-in only) + a Cloudflare-served subdomain (parked; `mailer.` occupied); Matt — Firecrawl
-secret + confirming the Workers Paid plan; Tawk webchat (parked, renewals-only stage one).
+IT — the two GoDaddy records for `offers.dreamlease.co.uk` (runbook C8; the Entra app is done); Matt — runbook
+Parts B and C, the deploy, the placeholder-template correction (`apps/api/scripts/fix-placeholder-template.sql`),
+the Firecrawl secret and confirming the Workers Paid plan; Tawk webchat (parked, renewals-only stage one).
 
 ## B10. Testing & verification
-- `pnpm test` — **235 tests** (24 Sept): schema 23, render 35 (incl. the intro-derived preheader), adapters 92, api 85
-  (security: 7, the cross-site guard and safe error logs)
+- `pnpm test` — **242 tests** (28 Sept): schema 23, render 35 (incl. the intro-derived preheader), adapters 92, api 92
+  (templates: who may read and write, `COMPLIANCE_EMAILS`, `/me`'s `complianceApprover`; the placeholder template
+  seeded without an approver and replaced by compliance's first publish; the web app served on the tool host only;
+  security: 7, the cross-site guard and safe error logs)
   (library: 10, incl. `withStoredBrochure`; campaigns: the `salespersonTag` unit test and `utm_term` on the stored
   campaign, on the `/r` destination and on the footer link; OpenAPI: 7, incl. the served-vs-documented drift guard). The adapter suite replays 18 recorded
   manufacturer sites through the brochure finder at zero credits (added 21 Sept: Polestar 2, the European fallback;
@@ -595,13 +629,15 @@ secret + confirming the Workers Paid plan; Tawk webchat (parked, renewals-only s
 - Worker: `apps/api/src/index.ts` (routes + Cron), `campaigns.ts`, `profile.ts`, `templates.ts`,
   `suppressions.ts`, `retention.ts`, `roles.ts`, `files.ts`, `brochures.ts`, `lookup.ts`, `library.ts`,
   `hosted.ts`, `tracking.ts`, `middleware/access.ts`, `db/schema.ts`, `openapi.ts` (the API described),
-  `safe-log.ts` (every error log line)
+  `safe-log.ts` (every error log line), `ui.ts` (the web app on the tool host), `local.ts` (is this wrangler dev on
+  the laptop); `apps/api/scripts/fix-placeholder-template.sql` (the one-off production correction of 28 Sept)
 - Web: `apps/web/src/App.tsx` (header portrait, `addFromLibrary`), `Compose.tsx` (incl. `repriceCopied`, the resizable
   columns), `Campaigns.tsx`, `Library.tsx`, `Register.tsx`, `Suppressions.tsx`, `Templates.tsx`, `api.ts`
   (incl. `currentBrochure`), `styles.css`; `apps/web/vite.config.ts` (proxy + tunnel `allowedHosts`)
-- Config: `apps/api/wrangler.jsonc`, `config/` (`badges.json`, `admins.json`, `library-shelves.json`),
-  `.claude/launch.json` (the two dev servers for the desktop app)
-- Runbooks: `docs/it-runbook-sign-in.md` (Entra + Cloudflare Access sign-in, revised 24 Sept)
+- Config: `apps/api/wrangler.jsonc`, `config/` (`badges.json`, `admins.json`, `compliance.json`,
+  `library-shelves.json`), `.claude/launch.json` (the dev servers for the desktop app)
+- Runbooks: `docs/it-runbook-sign-in.md` (Entra + Cloudflare Access sign-in, revised 24 Sept; Parts B and C, the
+  addresses, revised 28 Sept)
 
 ## B12. How to extend
 
@@ -624,6 +660,12 @@ system, one API, and a UI that only calls the API.
   2. D1 changes are additive migrations only (`pnpm db:generate`). Matt applies remote migrations.
   3. Keep `assertNoCapId()` coverage for anything persisted.
 - **Add a rule, list or wording.** Put it in `config/` (like `badges.json`, `library-shelves.json`), not in code.
+- **Change who approves the compliance wording.** Edit `config/compliance.json` and deploy, or set
+  `COMPLIANCE_EMAILS` for a temporary deputy. Never grant it through `admins.json`: admins read templates, they do not
+  approve them.
+- **Serve another staff page.** Put it in the web app (a new view in `App.tsx`), not in a new host: everything under
+  `/app/` is already behind Access on the tool host and absent everywhere else. A new public (customer) route is a
+  GET on the Worker, listed in `OPERATIONS`, and must not rely on Access.
 - **Let another app, Make or an AI agent use it.** `/api/openapi.json` describes the API, but **machine sign-in is not supported yet**.
   - `requireAccess` needs an `email` claim. A Cloudflare Access service-token JWT carries only `common_name`, so a machine gets a 401 (it fails closed).
   - Enabling machine access is a deliberate change: map a named service token to an identity and a role (for `createdBy` and the promotions register), with a contract test.

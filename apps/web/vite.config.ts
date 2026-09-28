@@ -5,8 +5,12 @@ import { defineConfig } from 'vite';
 // (localhost:8787) with .dev.vars supplying the signed-in user, so the tool works without Access.
 const WORKER = process.env.WORKER_ORIGIN ?? 'http://localhost:8787';
 
-export default defineConfig({
+export default defineConfig(({ command }) => ({
   plugins: [react()],
+  // Built, the app is served by the Worker at /app/ on the tool host (apps/api/src/ui.ts), so its asset URLs carry
+  // that prefix and the files go into the Worker's static folder. In dev it stays at the root of localhost:5173.
+  base: command === 'build' ? '/app/' : '/',
+  build: { outDir: '../api/public/app', emptyOutDir: true },
   server: {
     port: 5173,
     // Accept requests that arrive through a dev "share" tunnel (cloudflared / ngrok / localtunnel), so the whole
@@ -18,4 +22,4 @@ export default defineConfig({
     fs: { allow: ['../..'] },
     proxy: Object.fromEntries(['/api', '/r', '/c', '/b', '/f', '/a'].map((p) => [p, { target: WORKER, changeOrigin: true }])),
   },
-});
+}));

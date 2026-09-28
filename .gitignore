@@ -6,4 +6,6 @@ dist/
 .DS_Store
 Thumbs.db
 apps/api/worker-configuration.d.ts
+# The built web app (pnpm --filter @offer-mailer/web build); the Worker serves it, the deploy script rebuilds it.
+apps/api/public/app/
 out/

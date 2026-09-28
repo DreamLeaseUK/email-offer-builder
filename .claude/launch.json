@@ -4,14 +4,36 @@
     {
       "name": "api-live",
       "runtimeExecutable": "C:/Users/MatthewWilson/AppData/Roaming/npm/pnpm.cmd",
-      "runtimeArgs": ["dev:live"],
+      "runtimeArgs": [
+        "dev:live"
+      ],
       "port": 8787
     },
     {
       "name": "web",
       "runtimeExecutable": "C:/Users/MatthewWilson/AppData/Roaming/npm/pnpm.cmd",
-      "runtimeArgs": ["--filter", "@offer-mailer/web", "dev"],
+      "runtimeArgs": [
+        "--filter",
+        "@offer-mailer/web",
+        "dev"
+      ],
       "port": 5173
+    },
+    {
+      "name": "api-local",
+      "runtimeExecutable": "C:/Users/MatthewWilson/AppData/Roaming/npm/pnpm.cmd",
+      "runtimeArgs": [
+        "--filter",
+        "@offer-mailer/api",
+        "exec",
+        "wrangler",
+        "dev",
+        "--port",
+        "8788",
+        "--inspector-port",
+        "9230"
+      ],
+      "port": 8788
     }
   ]
 }

@@ -29,12 +29,18 @@ import { logHit } from './tracking.js';
 import type { Brochure } from '@offer-mailer/schema';
 
 /**
- * The working default template until the template admin (build step 7) lets Matt author one and Emma
- * approves it. It reuses the fixture's compliance wording — a starting point, not Emma-approved (see
- * status doc §7) — but with a real UUID, since the fixture's id is a test placeholder, not a valid one.
+ * The PLACEHOLDER template, seeded into an empty database so the tool can be tested before compliance publishes
+ * real wording. It reuses the fixture's wording (with a real UUID, since the fixture's id is a test placeholder).
+ * It is `approved` only so that campaigns can render (rule 3's gate), and it deliberately carries NO `approvedBy`:
+ * nobody approved it, and the name says so. The first template a compliance approver publishes is approved later,
+ * so it replaces the placeholder for new campaigns (approvedDefault orders by approval time). Before 28 Sept 2026
+ * it wrongly showed "approved by" Emma; the stored production row is corrected by
+ * apps/api/scripts/fix-placeholder-template.sql (run by Matt: docs/status-2026-09-28.md).
  */
+export const PLACEHOLDER_TEMPLATE_NAME = 'Placeholder wording (not compliance-approved)';
 const DEFAULT_TEMPLATE_ID = 'd1000000-0000-4000-8000-000000000001';
-const DEFAULT_TEMPLATE: TemplateT = { ...fixtureTemplate, id: DEFAULT_TEMPLATE_ID };
+const { approvedBy: _nobodyApprovedThis, ...fixtureUnapproved } = fixtureTemplate;
+const DEFAULT_TEMPLATE: TemplateT = { ...fixtureUnapproved, id: DEFAULT_TEMPLATE_ID, name: PLACEHOLDER_TEMPLATE_NAME };
 
 /** POST /campaigns and /campaigns/preview body. Exported so the OpenAPI document (openapi.ts) describes the real schema. */
 export const DraftCampaign = z.object({
@@ -76,9 +82,13 @@ function templatesRepo(env: Env) {
       const row = await d.select().from(templatesTable).where(eq(templatesTable.id, id)).get();
       return row ? Template.parse(row.data) : undefined;
     },
-    /** The newest approved template, seeding the default once when none exists yet. */
+    /**
+     * The most recently APPROVED template, seeding the placeholder once when none exists yet. Ordered by approval
+     * time, not version: versions count per template name, so compliance's first template (v1 of its own name)
+     * would otherwise tie with the placeholder (also v1) and either could win.
+     */
     async approvedDefault(): Promise<TemplateT> {
-      const row = await d.select().from(templatesTable).where(eq(templatesTable.status, 'approved')).orderBy(desc(templatesTable.version)).get();
+      const row = await d.select().from(templatesTable).where(eq(templatesTable.status, 'approved')).orderBy(desc(templatesTable.approvedAt), desc(templatesTable.version)).get();
       if (row) return Template.parse(row.data);
       const seed = DEFAULT_TEMPLATE;
       await d

@@ -1,18 +1,22 @@
 /**
- * Template admin (build step 7) — master-admin only. A template carries the per-contract-type compliance
- * blocks and footer that render() locks into every email (rule 3, compliance is locked).
+ * Compliance templates (build step 7). A template carries the per-contract-type compliance blocks and footer
+ * that render() locks into every email (rule 3, compliance is locked).
  *
- * Approved templates are IMMUTABLE. To change wording the admin creates a new draft version, edits it,
- * and publishes it — publish = self-approve (the separate approver role is parked). Campaigns pin the
- * wording version they rendered against, so old approved versions stay resolvable; new campaigns use the
- * newest approved (see campaigns.ts `approvedDefault`, which orders by version).
+ * Who (Matt, 28 Sept 2026): only a **compliance approver** (config/compliance.json — Emma) creates, edits,
+ * approves and retires the wording; a master admin can read it (to see what is live) but not change it. The
+ * approval is stamped with the approver's own Cloudflare Access sign-in, so it only carries weight once Access is
+ * live (before that, every local user is DEV_USER_EMAIL).
  *
- *   GET    /api/templates             list all, newest first
- *   GET    /api/templates/:id         one
- *   POST   /api/templates             create a new draft (server sets id, version, markupVersion, status)
- *   PUT    /api/templates/:id         edit a DRAFT (approved/retired are locked -> 409)
- *   POST   /api/templates/:id/publish draft -> approved, stamped with the admin + time
- *   POST   /api/templates/:id/retire  remove a template from the approved rotation
+ * Approved templates are IMMUTABLE. To change wording the approver creates a new draft version, edits it,
+ * and publishes it. Campaigns pin the wording version they rendered against, so old approved versions stay
+ * resolvable; new campaigns use the most recently approved (see campaigns.ts `approvedDefault`, which orders by approval time).
+ *
+ *   GET    /api/templates             list all, newest first              admin or compliance
+ *   GET    /api/templates/:id         one                                  admin or compliance
+ *   POST   /api/templates             create a new draft                   compliance
+ *   PUT    /api/templates/:id         edit a DRAFT (approved/retired 409)  compliance
+ *   POST   /api/templates/:id/publish draft -> approved, stamped with the approver + time   compliance
+ *   POST   /api/templates/:id/retire  remove a template from the approved rotation         compliance
  */
 import { MARKUP_VERSION } from '@offer-mailer/render';
 import { ComplianceBlock, ContractType, Template, assertNoCapId } from '@offer-mailer/schema';
@@ -23,7 +27,7 @@ import { z } from 'zod';
 import { db } from './db/index.js';
 import { templates as templatesTable } from './db/schema.js';
 import type { AppEnv, Env } from './env.js';
-import { requireAdmin } from './roles.js';
+import { requireAdminOrCompliance, requireCompliance } from './roles.js';
 
 /**
  * The admin-authored parts of a template (POST /templates; PUT takes TemplateBodyPatch). Identity, version,
@@ -68,19 +72,20 @@ function templatesAdminRepo(env: Env) {
 }
 
 export const templatesApi = new Hono<AppEnv>();
-// Scope the admin guard to the template paths only. A bare use('*') would also gate any routes mounted
-// after this sub-app on the same base (they share the parent middleware chain).
-templatesApi.use('/templates', requireAdmin());
-templatesApi.use('/templates/*', requireAdmin());
+// Guards are per route, scoped to the template paths only: a bare use('*') would also gate any routes mounted
+// after this sub-app on the same base (they share the parent middleware chain). Reads: admin or compliance.
+// Every write: compliance only.
+const canRead = requireAdminOrCompliance();
+const canWrite = requireCompliance();
 
-templatesApi.get('/templates', async (c) => c.json({ templates: await templatesAdminRepo(c.env).list() }));
+templatesApi.get('/templates', canRead, async (c) => c.json({ templates: await templatesAdminRepo(c.env).list() }));
 
-templatesApi.get('/templates/:id', async (c) => {
+templatesApi.get('/templates/:id', canRead, async (c) => {
   const t = await templatesAdminRepo(c.env).get(c.req.param('id'));
   return t ? c.json({ template: t }) : c.json({ error: 'Template not found.' }, 404);
 });
 
-templatesApi.post('/templates', async (c) => {
+templatesApi.post('/templates', canWrite, async (c) => {
   const parsedBody = TemplateBody.safeParse(await c.req.json().catch(() => ({})));
   if (!parsedBody.success) return c.json({ error: `Those template details are not valid: ${issues(parsedBody.error)}` }, 422);
   const repo = templatesAdminRepo(c.env);
@@ -99,7 +104,7 @@ templatesApi.post('/templates', async (c) => {
   return c.json({ template: parsed.data }, 201);
 });
 
-templatesApi.put('/templates/:id', async (c) => {
+templatesApi.put('/templates/:id', canWrite, async (c) => {
   const repo = templatesAdminRepo(c.env);
   const existing = await repo.get(c.req.param('id'));
   if (!existing) return c.json({ error: 'Template not found.' }, 404);
@@ -118,7 +123,7 @@ templatesApi.put('/templates/:id', async (c) => {
   return c.json({ template: parsed.data });
 });
 
-templatesApi.post('/templates/:id/publish', async (c) => {
+templatesApi.post('/templates/:id/publish', canWrite, async (c) => {
   const repo = templatesAdminRepo(c.env);
   const existing = await repo.get(c.req.param('id'));
   if (!existing) return c.json({ error: 'Template not found.' }, 404);
@@ -130,7 +135,7 @@ templatesApi.post('/templates/:id/publish', async (c) => {
   return c.json({ template: parsed.data });
 });
 
-templatesApi.post('/templates/:id/retire', async (c) => {
+templatesApi.post('/templates/:id/retire', canWrite, async (c) => {
   const repo = templatesAdminRepo(c.env);
   const existing = await repo.get(c.req.param('id'));
   if (!existing) return c.json({ error: 'Template not found.' }, 404);

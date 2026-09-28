@@ -7,7 +7,7 @@ const baseEnv = {
   ACCESS_TEAM_DOMAIN: '',
   ACCESS_AUD: '',
   PUBLIC_BASE_URL: 'https://offers.dreamlease.co.uk',
-  TOOL_BASE_URL: 'https://mailer.dreamlease.co.uk',
+  TOOL_BASE_URL: 'https://marketingtools.dreamelectric.uk',
   APP_VERSION: 'test',
 } as unknown as Env;
 const devEnv = { ...baseEnv, DEV_USER_EMAIL: 'matt.wilson@dreamlease.co.uk' } as unknown as Env;

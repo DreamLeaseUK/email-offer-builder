@@ -16,6 +16,7 @@ import { profileApi } from './profile.js';
 import { safeErrorLine } from './safe-log.js';
 import { suppressionsApi } from './suppressions.js';
 import { templatesApi } from './templates.js';
+import { ui } from './ui.js';
 
 const app = new Hono<AppEnv>();
 
@@ -39,6 +40,8 @@ app.route('/', hosted);
 app.route('/', files);
 app.route('/', brochureLink);
 app.route('/', redirect); // /r/:slug/:link — resolves a stored campaign's link and logs the click
+// The tool's web app: served only on the tool host (Access protects it at the edge); '/' elsewhere goes to dreamlease.co.uk.
+app.route('/', ui);
 
 // ---------- tool API (behind Cloudflare Access) ----------
 
