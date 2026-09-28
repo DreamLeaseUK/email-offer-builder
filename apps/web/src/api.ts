@@ -150,7 +150,7 @@ async function jsonOrThrow<T>(r: Response): Promise<T> {
 const jsonPost = (url: string, data: unknown) => fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(data) });
 
 export const api = {
-  me: () => fetch('/api/me').then((r) => jsonOrThrow<{ email: string; sub: string; role: Role; publicBaseUrl: string; headshotUrl: string | null; savedSender: SavedSender | null }>(r)),
+  me: () => fetch('/api/me').then((r) => jsonOrThrow<{ email: string; sub: string; role: Role; complianceApprover: boolean; publicBaseUrl: string; headshotUrl: string | null; savedSender: SavedSender | null }>(r)),
   /** Save the salesperson's contact details so they prefill next time. */
   saveSender: (details: SavedSender) => jsonPost('/api/me/sender', details).then((r) => jsonOrThrow<{ ok: boolean; savedSender: SavedSender }>(r)),
   /** Upload the salesperson's portrait; returns the stored (square) headshot URL. */

@@ -8,18 +8,30 @@
   // Daily retention/housekeeping (src/retention.ts): purges the 24h lookup cache, and campaign records
   // only if RETENTION_CAMPAIGN_DAYS is set. 03:00 UTC.
   "triggers": { "crons": ["0 3 * * *"] },
-  // Static files served before the Worker runs: /a/* email assets now, the web app build later.
-  "assets": { "directory": "./public", "binding": "ASSETS" },
+  // Static files. The /a/* email assets are served straight from ./public on every host. "/" and "/app/*" (the
+  // web app, built into ./public/app) go to the Worker first, which serves the app only on the tool host (src/ui.ts).
+  "assets": { "directory": "./public", "binding": "ASSETS", "run_worker_first": ["/", "/app/*"] },
+  // Where the Worker answers (decided 28 Sept 2026, docs/architecture.md B3):
+  //  - marketingtools.dreamelectric.uk: the tool (web app + /api), a Custom Domain on our dreamelectric.uk zone.
+  //    Cloudflare Access protects the whole host.
+  //  - offers.dreamlease.co.uk: customer links (hosted pages, /r, /b, /f, /a), a Cloudflare for SaaS custom hostname
+  //    on the dreamelectric.uk zone (CNAME at GoDaddy), sent to the Worker by the route offers.dreamlease.co.uk/*.
+  //  - workers.dev stays on so links in emails already sent keep working.
+  // The Custom Domain and the route are attached ONCE in the dashboard (docs/it-runbook-sign-in.md Part C), NOT
+  // listed here: with a "routes" key, `wrangler dev --remote` (pnpm dev:live) previews on the first route's zone
+  // instead of workers.dev and stops serving the local code (seen 28 Sept). `wrangler deploy` only publishes routes
+  // the file lists, so it leaves the dashboard ones in place (checked in wrangler 4.131's triggersDeploy).
+  "workers_dev": true,
   "vars": {
-    // Cloudflare Access: team domain and the application's AUD tag. Leave empty locally;
-    // the middleware then accepts DEV_USER_EMAIL from .dev.vars.
-    "ACCESS_TEAM_DOMAIN": "",
-    "ACCESS_AUD": "",
-    // Origin that serves /r, /c, /b, /f and /a. Becomes https://offers.dreamlease.co.uk once the
-    // custom domain is attached; until then the workers.dev URL so emails render end to end.
+    // Cloudflare Access team domain. The application's AUD tag is NOT a var: it is a production-only secret
+    // (wrangler secret put ACCESS_AUD), so wrangler dev and the tests keep the DEV_USER_EMAIL bypass (src/env.ts).
+    "ACCESS_TEAM_DOMAIN": "dreamlease.cloudflareaccess.com",
+    // Origin that serves /r, /c, /b, /f and /a in emails. Stays workers.dev until offers.dreamlease.co.uk is
+    // verified live, then becomes https://offers.dreamlease.co.uk (a new email must never link to a dead host).
     "PUBLIC_BASE_URL": "https://offer-mailer.matt-wilson-9b8.workers.dev",
-    "TOOL_BASE_URL": "https://mailer.dreamlease.co.uk",
-    "APP_VERSION": "0.5.0"
+    // The tool's own origin: the only host that serves the web app.
+    "TOOL_BASE_URL": "https://marketingtools.dreamelectric.uk",
+    "APP_VERSION": "0.6.0"
   },
   "d1_databases": [
     {
@@ -37,5 +49,6 @@
   // Cloudflare Images binding (brief §5.3 step 4): resizes the vehicle image to a 1200px JPEG before it
   // goes to R2. Billed per unique transformation; the free allowance covers our volume.
   "images": { "binding": "TRANSFORM" }
-  // Secrets (wrangler secret put): FIRECRAWL_API_KEY
+  // Secrets (wrangler secret put): FIRECRAWL_API_KEY, ACCESS_AUD (production only; set after the first deploy of
+  // this file, which removes the old empty ACCESS_AUD var that would otherwise clash with the secret's name)
 }

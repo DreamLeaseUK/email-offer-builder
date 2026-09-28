@@ -151,7 +151,9 @@ export const fixtureTemplate: Template = {
     optOutLine: "Don't want offers from DreamLease? Reply to this email and tell us, and we'll stop.",
     companyLine: 'DreamLease Ltd, [registered address], registered in England and Wales no. [00000000].',
   },
-  approvedBy: 'emma.airey@dreamlease.co.uk',
+  // A test value, never a real person: this fixture also seeds production's placeholder template, and a real name
+  // here once made the tool claim a compliance approval that never happened (Emma, 24 Sept 2026).
+  approvedBy: 'compliance-approver@example.com',
   approvedAt: NOW,
   status: 'approved',
 };

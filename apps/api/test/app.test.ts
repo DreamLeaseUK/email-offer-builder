@@ -23,7 +23,7 @@ const baseEnv = {
   ACCESS_TEAM_DOMAIN: '',
   ACCESS_AUD: '',
   PUBLIC_BASE_URL: 'https://offers.dreamlease.co.uk',
-  TOOL_BASE_URL: 'https://mailer.dreamlease.co.uk',
+  TOOL_BASE_URL: 'https://marketingtools.dreamelectric.uk',
   APP_VERSION: 'test',
 } as unknown as Env;
 
@@ -47,7 +47,7 @@ describe('Access middleware', () => {
     const dev = { ...baseEnv, DEV_USER_EMAIL: 'matt.wilson@dreamlease.co.uk' };
     const res = await app.request('/api/me', {}, dev);
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ email: 'matt.wilson@dreamlease.co.uk', sub: 'dev', role: 'admin', publicBaseUrl: 'https://offers.dreamlease.co.uk', headshotUrl: null, savedSender: null });
+    expect(await res.json()).toEqual({ email: 'matt.wilson@dreamlease.co.uk', sub: 'dev', role: 'admin', complianceApprover: false, publicBaseUrl: 'https://offers.dreamlease.co.uk', headshotUrl: null, savedSender: null });
   });
 
   it('ignores DEV_USER_EMAIL once ACCESS_AUD is set', async () => {
@@ -128,5 +128,35 @@ describe('dev preview', () => {
     const res = await app.request('/api/dev/preview?format=eml', {}, env);
     expect(res.headers.get('content-type')).toBe('message/rfc822');
     expect(await res.text()).toMatch(/^X-Unsent: 1/);
+  });
+});
+
+describe('the web app (served on the tool host only)', () => {
+  // A stand-in for the static assets binding: answers with the path it was asked for.
+  const ASSETS = { fetch: async (req: Request) => new Response(`asset ${new URL(req.url).pathname}`) } as unknown as Fetcher;
+  const env = { ...baseEnv, ASSETS };
+  const internet = { headers: { 'cf-connecting-ip': '203.0.113.9' } };
+
+  it('serves the app on the tool host, and / goes to it', async () => {
+    const home = await app.request('https://marketingtools.dreamelectric.uk/', internet, env);
+    expect(home.status).toBe(302);
+    expect(home.headers.get('location')).toBe('/app/');
+    const page = await app.request('https://marketingtools.dreamelectric.uk/app/', internet, env);
+    expect(page.status).toBe(200);
+    expect(await page.text()).toBe('asset /app/');
+  });
+
+  it('does not exist on the customer-facing hosts: / goes to dreamlease.co.uk and /app/* is 404', async () => {
+    for (const host of ['https://offers.dreamlease.co.uk', 'https://offer-mailer.matt-wilson-9b8.workers.dev']) {
+      const home = await app.request(`${host}/`, internet, env);
+      expect(home.status).toBe(302);
+      expect(home.headers.get('location')).toBe('https://www.dreamlease.co.uk/');
+      expect((await app.request(`${host}/app/`, internet, env)).status).toBe(404);
+      expect((await app.request(`${host}/app/assets/index.js`, internet, env)).status).toBe(404);
+    }
+  });
+
+  it('is served by wrangler dev on this laptop, so the build can be checked locally', async () => {
+    expect(await (await app.request('/app/', {}, env)).text()).toBe('asset /app/');
   });
 });

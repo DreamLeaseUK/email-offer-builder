@@ -17,6 +17,8 @@ export function App() {
   const [email, setEmail] = useState('');
   const [base, setBase] = useState('');
   const [role, setRole] = useState<Role>('salesperson');
+  // Compliance (config/compliance.json) alone edits and publishes the wording; master admins can only read it.
+  const [complianceApprover, setComplianceApprover] = useState(false);
   const [headshotUrl, setHeadshotUrl] = useState<string | null>(null);
   const [meError, setMeError] = useState('');
   const [view, setView] = useState<View>('compose');
@@ -32,6 +34,7 @@ export function App() {
         setEmail(m.email);
         setBase(m.publicBaseUrl.replace(/\/$/, ''));
         setRole(m.role);
+        setComplianceApprover(m.complianceApprover);
         setHeadshotUrl(m.headshotUrl);
       })
       .catch((e) => setMeError(errMsg(e)));
@@ -67,6 +70,8 @@ export function App() {
   // In-app display strips our origin so headshot URLs (stamped absolute for the email) resolve same-origin.
   const sameOrigin = (u: string): string => (base && u.startsWith(base) ? u.slice(base.length) || '/' : u);
 
+  const seesTemplates = role === 'admin' || complianceApprover;
+
   const tab = (v: View, label: string) => (
     <button className={`app__tab${view === v ? ' app__tab--active' : ''}`} onClick={() => setView(v)} type="button">
       {label}
@@ -84,7 +89,7 @@ export function App() {
           {tab('library', 'Library')}
           {tab('register', 'Register')}
           {tab('suppressions', 'Suppressions')}
-          {role === 'admin' && tab('templates', 'Templates')}
+          {seesTemplates && tab('templates', 'Templates')}
         </nav>
         <span className="app__spacer" />
         <span className="app__user">
@@ -109,7 +114,7 @@ export function App() {
       {view === 'library' && <Library base={base} role={role} onAdd={addFromLibrary} />}
       {view === 'register' && <Register />}
       {view === 'suppressions' && <Suppressions role={role} />}
-      {view === 'templates' && role === 'admin' && <Templates />}
+      {view === 'templates' && seesTemplates && <Templates canEdit={complianceApprover} />}
     </div>
   );
 }

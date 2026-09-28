@@ -1,9 +1,9 @@
 # Pickup prompt — DreamLease Offer Mailer
 
 Paste everything below the line into a new Claude Code session opened in `C:\Users\MatthewWilson\email-offer-builder`.
-**Updated 24 September 2026 (end of session 8).** It supersedes all earlier pickup prompts. Every state claim is
-marked **[verified 24 Sept]** (checked against the repo or the live system that day) or **[asserted]** (recorded,
-not re-checked). Verify before you act: run the pickup-verify skill if it is available.
+**Updated 28 September 2026 (end of session 9).** It supersedes all earlier pickup prompts. Every state claim is
+marked **[verified 28 Sept]** / **[verified 24 Sept]** (checked against the repo or the live system that day) or
+**[asserted]** (recorded, not re-checked). Verify before you act: run the pickup-verify skill if it is available.
 
 ---
 
@@ -37,26 +37,28 @@ web page. It is an FCA-regulated financial-promotions tool (compliance matters).
   commands that work in PowerShell.
 - **No multi-agent / workflow runs unless he asks** (`CLAUDE.md`) — even when a session is set to prefer them, this
   standing rule wins; do the work solo.
-- Commit only when asked; he commits directly to `main` and asked for pushes on 23 Sept. Report the live system's
-  state plainly after any deploy.
+- Since 24 Sept, work goes on a branch with a pull request (CI runs on it); **nothing merges to `main` until he says
+  "ship it"**, and production deploys are his own click. Report the live system's state plainly after any deploy.
 - **A block list stops you (since 24 Sept):** deploys, `dev:live`, `pnpm db:migrate` (remote; `pnpm db:migrate:local` is allowed since 24 Sept), `wrangler d1 execute`
   (reads included), the Cloudflare connector's D1 query and writes, history-destroying git (`reset --hard`,
-  `push --force`, `clean`, `stash`, `restore`) and reading secret files (`.dev.vars`, `.env`). Matt runs those in the
-  desktop app's Terminal panel. For a production D1 read, give him the exact SELECT and ask for the output. The full
+  `push --force`, `clean`, `stash`, `restore`) and reading secret files (`.dev.vars`, `.env`). `wrangler d1 execute`
+  is refused even with `--local` [verified 28 Sept]. Matt runs those in the desktop app's Terminal panel. For a production D1 read, give him the exact SELECT and ask for the output. The full
   list is in `CLAUDE.md` → Working with Matt.
 
 ## 1. Read these, in order
 
 1. `CLAUDE.md` — the four rules that never bend, the current rendering scope, the working agreement, commands.
 2. **This file.**
-3. **`docs/status-2026-09-24.md`** — the current build log (session 8): what was built, the evidence, Matt's
-   decisions, sign-in progress, local running and sharing. Then `status-2026-09-23.md` (the offer-library rebuild,
-   campaign copy) and `status-2026-09-21.md` (the finder day, the paste fix) as history.
-4. **`docs/architecture.md`** — the authoritative Solution Design & System Architecture. Changed most recently:
-   **A2 (Track) / A3** (the feature list), **B3** (starting the servers; sharing the tool through a tunnel),
-   **B6** (the Entra status), **B7** ("Inbox preview" and "Attribution"), **B7c** ("Brochures ride along on use").
-5. `docs/it-runbook-sign-in.md` — Cloudflare Access + Entra ID; Part A was rewritten on 24 Sept for a non-technical
-   administrator, with team `dreamlease` filled in.
+3. **`docs/status-2026-09-28.md`** — the current build log (session 9, the go-live bundle): the address decision and
+   why, what was built, the evidence, Emma's questions answered, and **Matt's ranked go-live steps (§6)**. Then
+   `status-2026-09-24.md` (session 8), `-09-23.md` (the offer-library rebuild, campaign copy) and `-09-21.md` (the
+   finder day, the paste fix) as history.
+4. **`docs/architecture.md`** — the authoritative Solution Design & System Architecture. Changed most recently (28
+   Sept): **B1** (the two addresses), **B2/B3** (the web app served by the Worker, `ACCESS_AUD` a secret, the
+   `api-local` server), **B5** (`/` and `/app/*`), **B6** (the compliance-approver role), **B12**.
+5. `docs/it-runbook-sign-in.md` — Cloudflare Access + Entra ID. Part A (IT, done) was rewritten on 24 Sept; **Parts B
+   and C were rewritten on 28 Sept**: the Access application on the whole `marketingtools.dreamelectric.uk` host, the
+   AUD tag as a secret, and the click-by-click Cloudflare for SaaS steps plus IT's two GoDaddy records.
 6. `docs/brochure-finder-brief.md` — the brochure finder's design and evidence (read its status banner first).
 7. `docs/dreamlease-offer-mailer-brief.md` — the product brief (v1.1); §5 is the shared contract, **§9a is the
    as-built log** (latest entry: 23–24 Sept).
@@ -65,29 +67,28 @@ web page. It is an FCA-regulated financial-promotions tool (compliance matters).
 
 ## 2. Repo & live state
 
-- **Git [verified 24 Sept]:** branch `main`, `origin` = `https://github.com/DreamLeaseUK/email-offer-builder`
-  (private), everything pushed. Session 8's code commits: `ac10c47` (badge "!"), `dd8de0d` (auto-preheader,
-  plain greeting, salesperson UTM), `666d2ad` (library brochure re-attach), `7ae069e` (web: brochure carry-over,
-  Compose form, resizable panels, header photo). Then on 24 Sept: `4edec9c` (session-8 docs, review fixes, the tunnel
-  `allowedHosts`, `.claude/launch.json`), PR #1 merged as `399c86b` (CI), and a docs commit recording CI. Check
-  `git status` and `git log --oneline -5` for anything newer.
-- **Tests [verified 24 Sept]:** `pnpm test` → **235 pass** (schema 23, render 35, adapters 92, api 85, incl. the
-  OpenAPI drift guard and the security tests; the API is described at `/api/openapi.json`, `architecture.md` B5/B12);
-  `pnpm typecheck` clean (incl. `apps/web`); `apps/web` builds. **CI [verified 24 Sept]:** since PR #1 (merged
-  24 Sept), GitHub Actions runs `ci.yml` (typecheck, tests, web build, and a guard that `DEV_USER_EMAIL` never
-  reaches the committed vars) and `security.yml` (gitleaks, full history) on every pull request and push to `main`.
-  `.gitleaks.toml` allowlists one verified false positive (`vehicleKey` slugs); any new entry there needs a reason. `diff-reference`
+- **Git [verified 28 Sept]:** session 9's work is on branch **`go-live/domains-ui-compliance`**, pushed, with a pull
+  request to `main` (`gh pr list`); **not merged** until Matt says "ship it". `main` ends at `9af5ec7` (PR #5). Check
+  `git status`, `git branch` and `git log --oneline -5` for anything newer.
+- **Tests [verified 28 Sept]:** `pnpm test` → **242 pass** (schema 23, render 35, adapters 92, api 92, incl. the
+  OpenAPI drift guard, the security tests, the template-permission tests and the served-app tests); `pnpm typecheck`
+  clean (incl. `apps/web`); `pnpm build:web` builds into `apps/api/public/app`. **CI [verified 24 Sept]:** GitHub
+  Actions runs `ci.yml` (typecheck, tests, web build, and a guard that `DEV_USER_EMAIL` never reaches the committed
+  vars) and `security.yml` (gitleaks, full history) on every pull request and push to `main`. `.gitleaks.toml`
+  allowlists one verified false positive (`vehicleKey` slugs); any new entry there needs a reason. `diff-reference`
   reports **84** differing lines (2 logo width, 6 the third hero pill, 10 inline-block pills + the stack image column,
   64 the name-before-picture reorder, 2 the plain greeting of 23 Sept), all recorded in the `cards.ts` header.
   `MARKUP_VERSION` is still 2.
-- **Production [verified 24 Sept]:** https://offer-mailer.matt-wilson-9b8.workers.dev/health → **v0.5.0**, db ok,
+- **Production [verified 28 Sept]:** https://offer-mailer.matt-wilson-9b8.workers.dev/health → **v0.5.0**, db ok,
   images true, **`firecrawl:false`**; **`/api` answers 503** until Cloudflare Access exists. **The Worker has NOT been
-  redeployed for sessions 6–8**: all of it runs only through `pnpm dev:live`. D1 migrations 0000–0003 applied
+  redeployed for sessions 6–9**: all of it runs only through `pnpm dev:live` (the code says 0.6.0). D1 migrations 0000–0003 applied
   (remote too). `wrangler` is signed in as Matt. **Security:** production has `ACCESS_AUD` empty; `/api` is closed
   only because `DEV_USER_EMAIL` is not defined there. **Never set it in production.**
-- **How the tool is run today [verified 24 Sept]:** locally, on production storage. `.claude/launch.json` defines
+- **How the tool is run today [verified 28 Sept]:** locally, on production storage. `.claude/launch.json` defines
   `api-live` (`pnpm dev:live`, :8787) and `web` (Vite, http://localhost:5173 — use `localhost`) — start them with the
   desktop app's preview tools; they stop when the app's Browser pane is closed ("restart localhost" = start both).
+  `api-local` (plain `wrangler dev`, :8788, local storage) checks the built web app as the Worker serves it
+  (`localhost:8788/` → `/app/`); `dev:live` cannot, as it runs at Cloudflare's edge.
   Plain `pnpm dev` (local storage) must never be used for an email that will be sent. `dev:live` writes real
   production data and drops its Cloudflare session after a few hours.
 - **Sharing the running tool [verified 24 Sept]:** no LAN, so a Cloudflare quick tunnel —
@@ -101,9 +102,12 @@ web page. It is an FCA-regulated financial-promotions tool (compliance matters).
 - **Production storage [asserted 23 Sept, not re-counted]** (all test data from `dev:live`): about 11 test campaigns
   on 23 Sept — **more were created in session 8's testing**; 3 library entries (Renault 5 personal, Polestar 2
   personal + on the shared EVs shelf); 4 legacy `offers` rows; 11 current brochures incl. `renault/5` (verified in
-  D1 on 23 Sept); the placeholder template; one saved sender (with a headshot); no suppressions. Wipe test campaigns
-  from the promotions register before go-live.
-- **Roles [asserted]:** `matt.wilson@dreamlease.co.uk` is the master admin (`config/admins.json`).
+  D1 on 23 Sept); the placeholder template (**still shows "approved by" Emma until Matt runs
+  `apps/api/scripts/fix-placeholder-template.sql`**, status §6 step 6); one saved sender (with a headshot); no
+  suppressions. Wipe test campaigns from the promotions register before go-live.
+- **Roles [verified 28 Sept, in code]:** `matt.wilson@dreamlease.co.uk` is the master admin (`config/admins.json`);
+  `emma.airey@dreamlease.co.uk` is the **only compliance approver** (`config/compliance.json`; her address is assumed
+  from her email). Master admins can read templates but not change them.
 
 ## 3. What exists (build order, brief §8.2)
 
@@ -112,10 +116,10 @@ web page. It is an FCA-regulated financial-promotions tool (compliance matters).
 | 1 Scaffold, schema, D1, Worker, Access middleware, deploy | Done, deployed |
 | 2 `render()`, layouts, hosted page | Done. One offer per row (1 → hero, 2+ → stacked). Since 23 Sept: the inbox preview is **derived from the intro**; the greeting is **plain** |
 | 3 URL lookup, image pipeline, brochures | Done. The **finder** (`finder-1.4`), with a European English-language fallback that is only ever OFFERED |
-| 4 Web app | Core built; runs locally only, not yet served from the Worker. Sessions 6–7: the curated **offer library** (B7c), the identifiable **Campaigns list + Copy**. Session 8: **brochures carried through library use and copy**, preheader field removed, recipient above the intro, **resizable Compose panels**, **portrait in the header** |
+| 4 Web app | Built. **Served by the Worker at `/app/` on the tool host from the next deploy** (28 Sept). Sessions 6–7: the curated **offer library** (B7c), the identifiable **Campaigns list + Copy**. Session 8: **brochures carried through library use and copy**, preheader field removed, recipient above the intro, **resizable Compose panels**, **portrait in the header** |
 | 5 Graph draft / Copy for Outlook | Copy for Outlook is the only send path. Graph draft **removed** (24 Sept) — **next delivery path is monday.com's email tool** |
 | 6 Redirects, click logging, stats | Done. Since 23 Sept every website link also carries **`utm_term=<salesperson>`** |
-| 7 Template admin, approval, register, suppression | Done |
+| 7 Template admin, approval, register, suppression | Done. Since 28 Sept only the compliance approver (Emma) creates, edits, publishes and retires templates |
 | 8 Stubs + `docs/evolution.md` | Not started (low value; the `monday` stub is now the real next delivery path) |
 
 ## 4. The thing to understand before touching the email
@@ -136,14 +140,13 @@ are unproven in real clients.
 
 ## 5. Open items, in the order I would take them
 
-1. **A test send from the current `main`** (Keep source formatting → Gmail + New Outlook). Confirms nothing
-   regressed and is the first real check of the inbox preview and the plain greeting. Only Matt can do it. Lead with it.
-2. **Sign-in.** Matt sends IT the Word document ("DreamLease Offer Mailer - Entra sign-in setup.docx", in his
-   Documents; same content as runbook Part A). IT returns: Application (client) ID, Directory (tenant) ID, client
-   secret Value (not by email), expiry date. Then runbook Part B (Cloudflare: Entra as IdP, the Access application on
-   the `api` path, policy), set `ACCESS_TEAM_DOMAIN=dreamlease.cloudflareaccess.com` + `ACCESS_AUD` **in
-   `apps/api/wrangler.jsonc`** (runbook B5), bump `APP_VERSION` to 0.6.0, then Matt deploys — which also ships
-   sessions 6–8, so do the test send first. The full go-live list is §6.
+1. **Go-live, Matt's ranked steps in `status-2026-09-28.md` §6**: "ship it" on the pull request; a test send from
+   `main` (Keep source formatting → Gmail + New Outlook; the first real check of the inbox preview and the plain
+   greeting, none since 22 Sept); Cloudflare sign-in (runbook B2–B4); Cloudflare addresses (C1–C6); IT's two GoDaddy
+   records (C8); the one-line deploy + `ACCESS_AUD` secret + placeholder correction; the test (B6). Ask Matt where he
+   is in that list; lead with it.
+2. **When `https://offers.dreamlease.co.uk/health` answers:** change `PUBLIC_BASE_URL` in `wrangler.jsonc` to it
+   (a one-line change on a branch; Matt deploys). workers.dev stays on for links already sent.
 3. **Offer-library follow-ups** (B7c, small): expiry-based auto-archive; a "re-point the URL" editor; drop the legacy
    `offers` table.
 4. **Campaign curation beyond copy** (rename / archive) — floated, not built.
@@ -158,28 +161,20 @@ are unproven in real clients.
 ## 6. Go-live
 
 **Target: Thursday 1 October 2026, two salespeople. The date is flexible (Matt, 24 Sept): get it right rather than
-rush it.** In order:
+rush it.** The build side is done (session 9). What is left is Matt's, in the order of `status-2026-09-28.md` §6, plus:
 
-1. **Build: serve the web app from the production Worker.** Not built, and the biggest item; it is development
-   work, not something owed by others. `wrangler.jsonc` already reserves the static-assets folder (`./public`).
-   Plan it and get Matt's OK before building.
-2. **IT:** the one Entra app registration (runbook Part A / the Word document) → four values back to Matt.
-3. **Matt:** runbook Part B in Cloudflare (Entra as the identity provider, the Access application on the workers.dev
-   hostname with path `api`, the policy) → the AUD tag. Also the production Firecrawl secret and confirming the
-   Workers Paid plan.
-4. **Deploy config:** `ACCESS_TEAM_DOMAIN` + `ACCESS_AUD` go in `apps/api/wrangler.jsonc` (runbook B5), never only
-   in the dashboard, because a deploy replaces dashboard-set vars with the file's. Bump `APP_VERSION` to 0.6.0 so
-   `/health` shows the new build.
-5. **Emma:** approved compliance wording for PCH / BCH / salary sacrifice (the live template is a placeholder); the
-   brochure small print incl. the European-edition sentence; the campaign retention period.
-6. **Wipe the test campaigns** from the production promotions register (§2). Matt runs the statement.
-7. **Deploy:** after a test send from `main`, Matt runs `pnpm run deploy`, which ships sessions 6–8. Then verify
-   `/health` shows 0.6.0, `/api` sits behind Access, and a hosted page opens with no login.
+- **Emma:** the approved compliance wording for PCH / BCH / salary sacrifice, published by her in the tool once she
+  can sign in (the live template is a placeholder, labelled so once corrected); the brochure small print incl. the
+  European-edition sentence; the campaign retention period.
+- **Wipe the test campaigns** from the production promotions register. Matt runs the statement.
+- The production Firecrawl secret; confirming the Workers Paid plan.
+- After the deploy, verify: `/health` shows 0.6.0; `marketingtools.dreamelectric.uk` asks for a Microsoft sign-in and
+  then shows the tool; a hosted page opens with no login; `/api/me` on workers.dev answers 401.
 
-**Custom domain, not needed for go-live:** the tool goes on **`marketingtools.dreamlease.co.uk`** (Matt, 24 Sept)
-and the public links on `offers.dreamlease.co.uk`; both are free, and `mailer.` is taken. DNS is at GoDaddy, so the
-subdomain must first become Cloudflare-served (runbook Part C; project memory `custom-domain-setup-parked`).
-`TOOL_BASE_URL` still says `mailer.`, but nothing reads it at runtime.
+**Addresses (decided 28 Sept):** the tool on `marketingtools.dreamelectric.uk` (Custom Domain, Access on the whole
+host); customer links on `offers.dreamlease.co.uk` (Cloudflare for SaaS on the `dreamelectric.uk` zone; GoDaddy keeps
+DreamLease DNS). `dreamlease.co.uk` cannot come to our Cloudflare: MotorComplete runs `www` and its certificates from
+their own account. Project memory `custom-domain-setup-parked` holds the reasoning.
 
 ## 7. Known-good facts & gotchas
 
@@ -197,7 +192,14 @@ subdomain must first become Cloudflare-served (runbook Part C; project memory `c
 - Copy for Outlook copies the campaign **as created**; any offer change (incl. a Library add) drops the created result,
   so the salesperson presses Create again.
 - Links inside a preview iframe 404 — expected; only a created campaign has links.
-- The seeded default template is a **placeholder, not Emma-approved**.
+- The seeded default template is a **placeholder, not Emma-approved**; since 28 Sept it is named so and carries no
+  approver. The default for new campaigns is the most recently **approved** template (not the highest version:
+  versions count per name, so they tie across names).
+- **Never put `routes` in `apps/api/wrangler.jsonc`:** `pnpm dev:live` then previews on that zone and serves
+  production instead of the local code (seen 28 Sept). The Custom Domain and the SaaS route live in the dashboard; a
+  deploy leaves them alone.
+- `hono/csrf` accepts a browser's `Sec-Fetch-Site: same-origin`; a test client without that header gets 403 on a form
+  or upload even from the right origin. Don't mistake that for a bug (it happened on 28 Sept).
 - A brochure "nothing found" is remembered 7 days (1 day if the official site was never reached); never a failed
   search; nothing across a `FINDER_VERSION` change.
 - The site HTML-encodes text in its script block ("Techno &#x2B; Comfort"); decoding happens at lookup and wherever an
@@ -214,6 +216,5 @@ subdomain must first become Cloudflare-served (runbook Part C; project memory `c
 ## 8. Start
 
 Confirm in a few lines that you have read the docs above; state the git, test and live state as you find them
-(`git status`, `git log --oneline -5`, `pnpm test`, `/health`); then ask Matt which of §5 he wants, leading with the
-thing only he can do: a test send from the current `main`, made with Keep source formatting. Propose nothing else
-until he answers.
+(`git status`, `git branch`, `git log --oneline -5`, `pnpm test`, `/health`); then ask Matt where he is in the go-live
+steps of `status-2026-09-28.md` §6, leading with whatever only he can do next. Propose nothing else until he answers.

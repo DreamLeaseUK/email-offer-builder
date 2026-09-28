@@ -20,7 +20,14 @@ import { SuppressionAdd, SuppressionEmail } from './suppressions.js';
 import { TemplateBody, TemplateBodyPatch } from './templates.js';
 
 type Method = 'get' | 'post' | 'put' | 'delete';
-type Access = 'public' | 'signed-in' | 'admin';
+/** public: no sign-in. signed-in: any Access user. admin: a master admin. compliance: a compliance approver
+ *  (config/compliance.json). admin-or-compliance: either. */
+type Access = 'public' | 'signed-in' | 'admin' | 'compliance' | 'admin-or-compliance';
+const ROLE_NOTE: Partial<Record<Access, string>> = {
+  admin: 'master-admin',
+  compliance: 'compliance-approver',
+  'admin-or-compliance': 'master-admin or compliance-approver',
+};
 type Returns = 'json' | 'json-created' | 'html' | 'csv' | 'image' | 'pdf' | 'redirect';
 
 export interface Operation {
@@ -83,6 +90,8 @@ export const OPERATIONS: Operation[] = [
   { method: 'get', path: '/f/headshots/{file}', tag: 'Public', summary: "A salesperson's portrait", access: 'public', returns: 'image' },
   { method: 'get', path: '/b/{id}', tag: 'Public', summary: 'Brochure link used in emails: redirects to the stored PDF or the official page', access: 'public', returns: 'redirect' },
   { method: 'get', path: '/r/{slug}/{link}', tag: 'Public', summary: 'Tracked link used in emails: logs the click and redirects to the destination', access: 'public', returns: 'redirect' },
+  { method: 'get', path: '/', tag: 'Public', summary: "Tool host: redirects to the web app (/app/). Any other host: redirects to dreamlease.co.uk", access: 'public', returns: 'redirect' },
+  { method: 'get', path: '/app/*', tag: 'Public', summary: "The tool's web app (built files). Served only on the tool host, which Cloudflare Access protects at the edge; 404 on every other host", access: 'public', returns: 'html' },
 
   // ---------- tool API (Cloudflare Access) ----------
   { method: 'get', path: '/api/openapi.json', tag: 'Meta', summary: 'This document', access: 'signed-in', returns: 'json' },
@@ -117,12 +126,12 @@ export const OPERATIONS: Operation[] = [
   { method: 'post', path: '/api/offers/library/{id}/promote', tag: 'Library', summary: 'Copy an entry to a shared shelf (admin)', access: 'admin', body: { schema: 'PromoteBody', validatedBy: 'handler' }, returns: 'json' },
   { method: 'delete', path: '/api/offers/library/{id}', tag: 'Library', summary: 'Delete an entry (its owner or an admin)', access: 'signed-in', returns: 'json' },
 
-  { method: 'get', path: '/api/templates', tag: 'Templates', summary: 'All email templates', access: 'admin', returns: 'json' },
-  { method: 'get', path: '/api/templates/{id}', tag: 'Templates', summary: 'One template', access: 'admin', returns: 'json' },
-  { method: 'post', path: '/api/templates', tag: 'Templates', summary: 'Create a draft template', access: 'admin', body: { schema: 'TemplateBody', validatedBy: 'zod' }, returns: 'json-created' },
-  { method: 'put', path: '/api/templates/{id}', tag: 'Templates', summary: 'Edit a draft template', access: 'admin', body: { schema: 'TemplateBodyPatch', validatedBy: 'zod' }, returns: 'json' },
-  { method: 'post', path: '/api/templates/{id}/publish', tag: 'Templates', summary: 'Approve a template for use (campaigns render only against approved templates)', access: 'admin', returns: 'json' },
-  { method: 'post', path: '/api/templates/{id}/retire', tag: 'Templates', summary: 'Retire a template', access: 'admin', returns: 'json' },
+  { method: 'get', path: '/api/templates', tag: 'Templates', summary: 'All email templates (compliance wording)', access: 'admin-or-compliance', returns: 'json' },
+  { method: 'get', path: '/api/templates/{id}', tag: 'Templates', summary: 'One template', access: 'admin-or-compliance', returns: 'json' },
+  { method: 'post', path: '/api/templates', tag: 'Templates', summary: 'Create a draft template (compliance only)', access: 'compliance', body: { schema: 'TemplateBody', validatedBy: 'zod' }, returns: 'json-created' },
+  { method: 'put', path: '/api/templates/{id}', tag: 'Templates', summary: 'Edit a draft template (compliance only)', access: 'compliance', body: { schema: 'TemplateBodyPatch', validatedBy: 'zod' }, returns: 'json' },
+  { method: 'post', path: '/api/templates/{id}/publish', tag: 'Templates', summary: "Approve a template for use, stamped with the approver's sign-in (campaigns render only against approved templates; compliance only)", access: 'compliance', returns: 'json' },
+  { method: 'post', path: '/api/templates/{id}/retire', tag: 'Templates', summary: 'Retire a template (compliance only)', access: 'compliance', returns: 'json' },
 
   { method: 'post', path: '/api/suppressions', tag: 'Suppressions', summary: 'Add an opt-out to the suppression register', access: 'signed-in', body: { schema: 'SuppressionAdd', validatedBy: 'zod' }, returns: 'json-created' },
   { method: 'get', path: '/api/suppressions', tag: 'Suppressions', summary: 'The suppression register, newest first', access: 'signed-in', returns: 'json' },
@@ -166,7 +175,7 @@ export function buildOpenApi(version: string): object {
       tags: [o.tag],
       summary: o.summary,
       security: o.access === 'public' ? [] : [{ cloudflareAccess: [] }],
-      ...(o.access === 'admin' ? { 'x-dreamlease-role': 'master-admin' } : {}),
+      ...(ROLE_NOTE[o.access] ? { 'x-dreamlease-role': ROLE_NOTE[o.access] } : {}),
       ...(params.length || query.length ? { parameters: [...params, ...query] } : {}),
       ...(o.body
         ? {
@@ -202,7 +211,8 @@ export function buildOpenApi(version: string): object {
           type: 'apiKey',
           in: 'header',
           name: 'Cf-Access-Jwt-Assertion',
-          description: 'Set by Cloudflare Access after sign-in. Routes marked x-dreamlease-role: master-admin also need a master admin (config/admins.json).',
+          description:
+            'Set by Cloudflare Access after sign-in. Routes marked x-dreamlease-role also need that role: master-admin (config/admins.json) or compliance-approver (config/compliance.json).',
         },
       },
     },

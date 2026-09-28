@@ -1,8 +1,10 @@
 # IT runbook — sign-in for the DreamLease Offer Mailer (Cloudflare Access + Microsoft Entra ID)
 
 Written 22 September 2026; Part A revised 24 September 2026 (current Entra menu names, a 12-month secret, one
-app registration only). Steps A1–A8 are for the Entra administrator; B1–B6 are for the Cloudflare account holder
-(Matt). About 15 minutes each. Nothing here sends email or touches mailboxes; this is sign-in only.
+app registration only); Parts B and C revised 28 September 2026 (the tool's own address, the customer-link address,
+the audience tag as a secret). Steps A1–A8 are for the Entra administrator; B1–B6 and C1–C7 are for the Cloudflare
+account holder (Matt); C8 is two DNS records for whoever manages DreamLease DNS at GoDaddy. Nothing here sends email or
+touches mailboxes.
 
 ## What it does
 
@@ -19,8 +21,9 @@ Until this is done the production tool refuses every request to `/api` (HTTP 503
 - The Cloudflare Zero Trust **team name**: **`dreamlease`** (team domain `dreamlease.cloudflareaccess.com`; confirmed
   by Matt from Cloudflare dashboard → **Zero Trust** → **Settings** → **Team name and domain**, 24 Sept 2026). IT
   cannot finish A4 without it. If it is ever renamed, the A4 address must change with it.
-- The tool's hostname. Today: `offer-mailer.matt-wilson-9b8.workers.dev`. A DreamLease subdomain can come later
-  (Part C) and does not hold up sign-in.
+- The tool's hostname: **`marketingtools.dreamelectric.uk`** (decided 28 Sept 2026; `dreamelectric.uk` is a
+  DreamLease domain already on our Cloudflare account, so no DNS change is needed for it). It does not change
+  anything in Part A: the redirect address in A4 is Cloudflare's, not the tool's.
 
 ## Part A — Entra administrator
 
@@ -87,47 +90,98 @@ second gate; this makes Entra the first.
 provider → **Azure AD** (Microsoft Entra ID). Paste the Application ID, the client secret and the Directory ID.
 Save, then **Test**: a Microsoft sign-in should complete and report success.
 
-**B3. Protect the tool, and only the tool.** The Worker also serves customer-facing pages (hosted offer pages,
-tracked links, brochures, images) that must open without any login, so Access is applied to the `/api` path,
-not to the whole Worker. Zero Trust → Access → Applications → Add an application → **Self-hosted**:
+**B3. Protect the tool's whole address, and nothing else.** The tool (web app and `/api`) has its own hostname,
+`marketingtools.dreamelectric.uk`, so Access covers that whole host. The customer-facing pages (hosted offer pages,
+tracked links, brochures, images) are served on other hostnames and must open without any login. Zero Trust →
+Access → Applications → Add an application → **Self-hosted**:
 
 | Field | Value |
 |---|---|
 | Application name | `DreamLease Offer Mailer` |
 | Session duration | 24 hours |
-| Application domain | `offer-mailer.matt-wilson-9b8.workers.dev` with path `api` |
+| Application domain | `marketingtools.dreamelectric.uk`, path left **empty** (the whole host) |
 | Identity providers | Entra ID only; turn on **Instant Auth** so users go straight to Microsoft |
 | Policy | Name `DreamLease staff`, action **Allow**, include **Emails ending in** `@dreamlease.co.uk` (or the Entra group from A7) |
 
-Save. When the web app is later served from the Worker, add its path to the same application (Add domain).
+Save. It is fine to do this before the address exists (C5): the host is then protected from its first request.
 Do not use the Worker-level "Protect this Worker behind Access" with all traffic: it would put a login page in
 front of the customer links.
 
-**B4. Copy two values from the new application:** the **Application Audience (AUD) tag** (application →
-Overview) and the team domain `dreamlease.cloudflareaccess.com`.
+**B4. Copy the Application Audience (AUD) tag** from the new application (application → Overview). The team
+domain `dreamlease.cloudflareaccess.com` is already in `apps/api/wrangler.jsonc`.
 
-**B5. Give them to the Worker.** In `apps/api/wrangler.jsonc` set `ACCESS_TEAM_DOMAIN` to
-`dreamlease.cloudflareaccess.com` and `ACCESS_AUD` to the tag, then `pnpm run deploy`. With `ACCESS_AUD` set,
-the tool accepts a request to `/api` only when it carries a valid Access token for that audience; the local
-development bypass is inert in production.
+**B5. Give the tag to the Worker, as a secret.** Only after a deploy of the 28 Sept code (C7), which removes the
+old empty `ACCESS_AUD` setting that would clash with the secret's name. In the desktop app's Terminal panel, from
+the repo folder:
 
-**B6. Test.** In a private browser window open `https://offer-mailer.matt-wilson-9b8.workers.dev/api/me`: a
-Microsoft sign-in, then a small JSON reply showing your email and role. A colleague not covered by the policy
-is refused. Then confirm `/health` and a hosted page (`/c/<slug>`) still open with no login at all.
+```
+pnpm --filter @offer-mailer/api exec wrangler secret put ACCESS_AUD
+```
 
-## Part C — later, not needed for sign-in: a DreamLease subdomain
+Paste the tag when asked. It takes effect at once, no deploy needed. With `ACCESS_AUD` set, the tool accepts a
+request to `/api` only when it carries a valid Access token for that audience, on any hostname; the local
+development bypass is inert in production. (It is a secret, not a setting in `wrangler.jsonc`, so that local
+development and the tests keep their bypass without anyone editing the file.)
 
-Customer links currently use the `workers.dev` hostname. To put the tool and the links on a DreamLease subdomain,
-that hostname must be on a Cloudflare zone. DNS for `dreamlease.co.uk` is at GoDaddy, which leaves two options:
+**B6. Test.** In a private browser window open `https://marketingtools.dreamelectric.uk/`: a Microsoft sign-in, then
+the tool. `https://marketingtools.dreamelectric.uk/api/me` shows your email and role. A colleague not covered by the
+policy is refused. Then confirm the customer side still opens with no login at all: `/health` and a hosted page
+(`/c/<slug>`) on `offer-mailer.matt-wilson-9b8.workers.dev` (and on `offers.dreamlease.co.uk` once Part C is
+done). The tool is not served there: `/api/me` on those hosts answers 401 and `/app/` answers 404.
 
-1. Move DNS for `dreamlease.co.uk` to Cloudflare (full setup; free plan; GoDaddy stays the registrar; every
-   existing record is recreated in Cloudflare before the nameservers change).
-2. Keep GoDaddy as DNS and proxy just the one subdomain through Cloudflare (CNAME / partial setup). Cloudflare
-   offers this on the Business plan and above only.
+## Part C — the two addresses (Matt, plus two DNS records at GoDaddy)
 
-Decided by Matt on 24 Sept 2026: the tool goes on **`marketingtools.dreamlease.co.uk`** and the customer links on
-`offers.dreamlease.co.uk` (both free); `mailer.dreamlease.co.uk` is in use elsewhere. Choosing between options 1 and
-2 above is still for Matt and IT, and it does not block sign-in.
+Decided by Matt on 28 Sept 2026, after finding that `dreamlease.co.uk` cannot be put on our Cloudflare account
+without moving its DNS (the main site and its certificates are run by MotorComplete through their own Cloudflare
+account, and proxying one subdomain from GoDaddy DNS needs Cloudflare's Business plan):
+
+- **The tool** goes on **`marketingtools.dreamelectric.uk`**. Staff only, behind Access; the domain does not matter
+  to customers, and `dreamelectric.uk` is already a full zone on our account.
+- **Customer links** go on **`offers.dreamlease.co.uk`**, so customers only ever see the DreamLease domain. It is
+  attached with **Cloudflare for SaaS** on the `dreamelectric.uk` zone: GoDaddy keeps DreamLease's DNS, two records
+  are added there, and nothing about `www`, the main site, email (MX) or MotorComplete's records changes. Free for
+  the first 100 hostnames; we need one.
+
+In the Cloudflare dashboard, zone **`dreamelectric.uk`**:
+
+**C1. Turn on custom hostnames.** SSL/TLS → **Custom Hostnames** → **Enable Cloudflare for SaaS**. If it asks for a
+payment method, one hostname is inside the free allowance.
+
+**C2. Create the landing record.** DNS → Records → Add record: type **AAAA**, name **`saas`**, IPv6 address
+**`100::`**, proxy status **Proxied** (orange cloud). `100::` is Cloudflare's "no server behind this" address; the
+Worker answers instead.
+
+**C3. Make it the fallback origin.** SSL/TLS → Custom Hostnames → **Fallback Origin**: `saas.dreamelectric.uk` →
+**Add Fallback Origin**. Wait for it to show **Active** (a minute or two).
+
+**C4. Add the customer address.** Custom Hostnames → **Add Custom Hostname**: `offers.dreamlease.co.uk`; leave the
+certificate options at their defaults (HTTP validation). Save. The row shows a **hostname pre-validation TXT record**
+(name `_cf-custom-hostname.offers.dreamlease.co.uk` and a value): copy both for C8.
+
+**C5. Attach the tool's address.** Workers & Pages → **offer-mailer** → Settings → **Domains & Routes** → **Add** →
+**Custom domain**: `marketingtools.dreamelectric.uk` → Add. Cloudflare creates its DNS record and certificate.
+
+**C6. Send the customer address to the Worker.** Back in the `dreamelectric.uk` zone: **Workers Routes** → **Add
+route**: route **`offers.dreamlease.co.uk/*`**, Worker **offer-mailer** → Save.
+
+C5 and C6 are made once in the dashboard and are deliberately not in `wrangler.jsonc` (a route there stops `pnpm
+dev:live` from running the local code); a deploy leaves them in place.
+
+**C7. Deploy the 28 Sept code** (Terminal panel, repo folder): `pnpm run deploy`. It builds the web app and deploys
+the Worker. Then do B5.
+
+**C8. For whoever manages DreamLease DNS at GoDaddy** (two records in the `dreamlease.co.uk` zone; nothing else
+changes):
+
+| Type | Name (host) | Value (points to) | TTL |
+|---|---|---|---|
+| CNAME | `offers` | `saas.dreamelectric.uk` | 1 hour (default) |
+| TXT | `_cf-custom-hostname.offers` | the value copied in C4 | 1 hour (default) |
+
+Within about an hour of both records existing, the custom hostname in C4 shows **Active** with an active
+certificate. Test: `https://offers.dreamlease.co.uk/health` answers with no login. Then Claude changes
+`PUBLIC_BASE_URL` to `https://offers.dreamlease.co.uk` and Matt deploys, so new emails link there. Links in emails
+already sent keep working on the `workers.dev` address, which stays on.
 
 ## Ongoing
 

@@ -465,6 +465,19 @@ Where the implementation has departed from this brief, and why. `docs/status-202
 - **Sign-in (§5.7):** Cloudflare Zero Trust is set up with team name `dreamlease`; the Entra instructions for IT are
   written (`docs/it-runbook-sign-in.md`). Waiting on IT.
 
+### As built — 28 September 2026 (current state in `docs/status-2026-09-28.md`, design in `docs/architecture.md`)
+
+- **Approval (§5.5):** the approver role is **no longer parked** and the 16 Sept departure is reversed: only the
+  compliance approver (`config/compliance.json`: Emma alone, Matt's decision) creates, edits, publishes and retires
+  templates, and publishing stamps her verified sign-in. Master admins can read templates, not change them. Roles are
+  salesperson and master admin, plus the compliance-approver permission.
+- **Placeholder wording:** the seeded default template no longer claims an approver ("Placeholder wording (not
+  compliance-approved)"); the first template compliance publishes replaces it for new campaigns.
+- **Hosting (§8):** the tool (web app and API) on `marketingtools.dreamelectric.uk` behind Access; the hosted pages and
+  links on `offers.dreamlease.co.uk` (so §9's placeholder host is now decided), attached through Cloudflare for SaaS
+  because `dreamlease.co.uk`'s main site and certificates are run by MotorComplete. The web app is served by the
+  Worker, not only locally.
+
 ## 9. Assumptions and open items
 
 - Salary sacrifice 20% and 40% figures are entered by hand for now. A `salsac.gross` field and a calculator hook are reserved so the HMRC-verified calculator logic can be plugged in later.
