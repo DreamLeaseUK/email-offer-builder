@@ -11,6 +11,8 @@ export interface Env {
   /**
    * The Access application's AUD tag. A PRODUCTION-ONLY secret (`wrangler secret put ACCESS_AUD`), never a
    * wrangler.jsonc var: a var would also reach `wrangler dev` and the tests, switching the local sign-in bypass off.
+   * `wrangler dev --remote` (pnpm dev:live) carries the deployed Worker's secrets into its preview, so that script
+   * blanks it with `--var ACCESS_AUD:` (seen 28 Sept: without it the local tool answered 401).
    * Absent = Access not configured: the dev bypass applies locally and production fails closed (503).
    */
   ACCESS_AUD?: string;
