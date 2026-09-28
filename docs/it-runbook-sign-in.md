@@ -183,6 +183,19 @@ certificate. Test: `https://offers.dreamlease.co.uk/health` answers with no logi
 `PUBLIC_BASE_URL` to `https://offers.dreamlease.co.uk` and Matt deploys, so new emails link there. Links in emails
 already sent keep working on the `workers.dev` address, which stays on.
 
+**Living alongside MotorComplete (checked 28 Sept 2026).** The website `www` is a custom hostname on MotorComplete's
+own Cloudflare account, exactly as `offers` is on ours. Each name is routed on its own, by where its DNS record
+points, and an exact name like `offers` outranks any wildcard another account could add. On 28 Sept MotorComplete's
+Cloudflare answered for `www` only (not `offers`, not the bare domain), and no `*.dreamlease.co.uk` certificate has
+ever been issued. Leave their records (`www`, `_acme-challenge`, `_acme-challenge.www`, `_cf-custom-hostname.www`)
+exactly as they are. Two rules for later:
+
+- **If the domain's DNS ever moves from GoDaddy to Cloudflare** (its nameservers change, in any account), keep the
+  `offers` record **DNS only** (grey cloud). Proxied, the route in C6 no longer runs the Worker for it.
+- **If anyone ever adds CAA records** to `dreamlease.co.uk` (records limiting which certificate authorities may issue
+  for it), they must allow `letsencrypt.org` and `pki.goog`, or the `offers` certificate stops renewing (and
+  MotorComplete's `www` certificate, from Google Trust Services, would be at risk too). There are none today.
+
 ## Ongoing
 
 - **Client secret renewal** (Entra admin, every 12 months): before the expiry set in A5, make a new secret (A5
