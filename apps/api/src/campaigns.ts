@@ -306,12 +306,26 @@ async function readDraft(c: { req: { json(): Promise<unknown> } }): Promise<Draf
 
 export const campaignsApi = new Hono<AppEnv>();
 
+/**
+ * A preview is not stored, so its tracked links (/r/<slug>/<id>) resolve to nothing and a click in the preview
+ * showed "Link not found" (Matt, 29 Sept 2026). In the PREVIEW only, each tracked link points straight at its
+ * destination and opens in a new tab (the site will not load inside the preview frame). The created campaign, and
+ * the email sent, keep their tracked links.
+ */
+export function previewWithDirectLinks(html: string, base: string, slug: string, links: Record<string, string>): string {
+  const attr = (s: string) => s.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  let out = html;
+  for (const [id, destination] of Object.entries(links)) out = out.split(`"${base}/r/${slug}/${id}"`).join(`"${attr(destination)}"`);
+  return out.replace(/<head([^>]*)>/i, '<head$1><base target="_blank" />');
+}
+
 /** Render a draft for the live preview without persisting anything. */
 campaignsApi.post('/campaigns/preview', async (c) => {
   try {
     const input = await readDraft(c);
-    const { rendered } = await assemble(c.env, input, c.get('user').email);
-    return c.json({ html: rendered.html, hostedHtml: rendered.hostedHtml, layout: rendered.layout });
+    const { campaign, rendered } = await assemble(c.env, input, c.get('user').email);
+    const direct = (h: string) => previewWithDirectLinks(h, c.env.PUBLIC_BASE_URL.replace(/\/$/, ''), campaign.hostedPage.slug, rendered.links);
+    return c.json({ html: direct(rendered.html), hostedHtml: direct(rendered.hostedHtml), layout: rendered.layout });
   } catch (err) {
     if (err instanceof AssembleError) return c.json({ error: err.message }, err.status);
     throw err;

@@ -156,6 +156,21 @@ describe('POST /api/campaigns/preview', () => {
     const after = (await env.DB.prepare('select count(*) as n from campaigns').first<{ n: number }>())!.n;
     expect(after).toBe(before);
   });
+
+  it('points the preview’s links straight at the site and opens them in a new tab (nothing is stored to resolve /r/)', async () => {
+    const res = await app.request('/api/campaigns/preview', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(draft()) }, authed());
+    const { html } = (await res.json()) as { html: string };
+    expect(html).not.toMatch(/\/r\/[A-Za-z0-9_-]+\/o1-cta/);
+    expect(html).toMatch(/href="https:\/\/www\.dreamlease\.co\.uk\/[^"]*utm_term=matt-wilson/);
+    expect(html).toContain('<base target="_blank" />');
+  });
+
+  it('keeps tracked links in the created campaign', async () => {
+    const res = await post(draft(), authed());
+    const { html } = (await res.json()) as { html: string };
+    expect(html).toMatch(/\/r\/[A-Za-z0-9_-]+\/o1-cta/);
+    expect(html).not.toContain('<base target="_blank" />');
+  });
 });
 
 describe('GET /r/:slug/:link', () => {

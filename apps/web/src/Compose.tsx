@@ -38,6 +38,14 @@ function toSalsac(o: Offer, keep?: Offer): Offer {
 }
 const salsacReady = (o: Offer): boolean => (o.pricing.salsac?.net20 ?? 0) > 0 && (o.pricing.salsac?.net40 ?? 0) > 0;
 
+/**
+ * WhatsApp is planned but not released (Matt, 29 Sept 2026): salespeople see it, greyed out and marked "coming
+ * soon", so they know it is on the way; nothing about WhatsApp reaches an email. A saved number is kept. Set to
+ * true to release it: the field, the CTA and the signature link all come back.
+ */
+const WHATSAPP_LIVE = false;
+const SOON = ' — coming soon';
+
 /** The green-button CTA options (brief §5.9). `need` is the sender field that unlocks the option. */
 const CTA_OPTIONS: { kind: CtaKind; label: string; need?: 'phone' | 'whatsapp' | 'booking'; needText?: string }[] = [
   { kind: 'view_offer', label: 'View offer — open the offer page' },
@@ -456,9 +464,10 @@ export function Compose({ email, base, items, setItems, seed, onSeedApplied, onH
   const sameOrigin = (u: string): string => (base && u.startsWith(base) ? u.slice(base.length) || '/' : u);
   const displayHtml = (html: string): string => (base ? html.split(base).join('') : html);
 
-  const [name, setName] = useState('Follow-up offers');
+  const [name, setName] = useState('Renewal offers');
   const [audience, setAudience] = useState<Audience>('personal');
-  const [useCase, setUseCase] = useState<UseCase>('follow_up');
+  // Renewal first and by default (Matt, 29 Sept 2026): it is the sales team's main use.
+  const [useCase, setUseCase] = useState<UseCase>('renewal');
   const [subject, setSubject] = useState('The options we talked about');
   const [preheader, setPreheader] = useState('');
   const [intro, setIntro] = useState('Thanks for your time. As promised, here are the options that fit what we discussed.');
@@ -586,7 +595,7 @@ export function Compose({ email, base, items, setItems, seed, onSeedApplied, onH
     setSenderWhatsapp(seed.sender.whatsapp);
     setSenderBooking(seed.sender.booking);
     setSecondary(seed.sender.secondary);
-    setCtaKind(seed.ctaKind);
+    setCtaKind(seed.ctaKind === 'whatsapp' && !WHATSAPP_LIVE ? 'view_offer' : seed.ctaKind);
     setCtaLabel(seed.ctaLabel);
     setRecipientFirst('');
     setItems(seed.offers.map((o) => ({ offer: o }))); // show the copied offers at once…
@@ -627,7 +636,7 @@ export function Compose({ email, base, items, setItems, seed, onSeedApplied, onH
 
   /** Is a secondary contact method usable yet — its underlying sender field filled? (Email always is.) */
   const secondaryReady = (m: ContactMethod): boolean =>
-    m === 'email' ? true : m === 'call' ? !!senderPhone.trim() : m === 'whatsapp' ? !!senderWhatsapp.trim() : !!senderBooking.trim();
+    m === 'email' ? true : m === 'call' ? !!senderPhone.trim() : m === 'whatsapp' ? WHATSAPP_LIVE && !!senderWhatsapp.trim() : !!senderBooking.trim();
   const toggleSecondary = (m: ContactMethod) => setSecondary((cur) => (cur.includes(m) ? cur.filter((x) => x !== m) : [...cur, m]));
 
   async function saveDetails() {
@@ -653,10 +662,10 @@ export function Compose({ email, base, items, setItems, seed, onSeedApplied, onH
       mailbox: email || 'unknown@dreamlease.co.uk',
       ...(senderTitle ? { jobTitle: senderTitle } : {}),
       ...(senderPhone ? { phone: senderPhone } : {}),
-      ...(senderWhatsapp.trim() ? { whatsapp: senderWhatsapp.trim() } : {}),
+      ...(WHATSAPP_LIVE && senderWhatsapp.trim() ? { whatsapp: senderWhatsapp.trim() } : {}),
       ...(senderBooking.trim() ? { bookingUrl: senderBooking.trim() } : {}),
       ...(() => {
-        const ready = secondary.filter((m) => (m === 'email' ? true : m === 'call' ? !!senderPhone.trim() : m === 'whatsapp' ? !!senderWhatsapp.trim() : !!senderBooking.trim()));
+        const ready = secondary.filter((m) => (m === 'email' ? true : m === 'call' ? !!senderPhone.trim() : m === 'whatsapp' ? WHATSAPP_LIVE && !!senderWhatsapp.trim() : !!senderBooking.trim()));
         return ready.length ? { secondaryContacts: ready } : {};
       })(),
     }),
@@ -665,6 +674,7 @@ export function Compose({ email, base, items, setItems, seed, onSeedApplied, onH
 
   /** Is the chosen CTA usable — i.e. the sender field it needs is filled in? */
   const ctaAvailable = (kind: CtaKind): boolean => {
+    if (kind === 'whatsapp' && !WHATSAPP_LIVE) return false;
     const need = CTA_OPTIONS.find((o) => o.kind === kind)?.need;
     if (!need) return true;
     return need === 'phone' ? !!senderPhone.trim() : need === 'whatsapp' ? !!senderWhatsapp.trim() : !!senderBooking.trim();
@@ -888,9 +898,9 @@ export function Compose({ email, base, items, setItems, seed, onSeedApplied, onH
         )}</Field>
         <Field label="Use case">{(id) => (
           <Select id={id} value={useCase} onChange={(e) => setUseCase(e.target.value as UseCase)}>
+            <option value="renewal">Renewal</option>
             <option value="follow_up">Cold-lead follow-up</option>
             <option value="offer_pack">Offer pack for an organisation</option>
-            <option value="renewal">Renewal</option>
           </Select>
         )}</Field>
         <Field label="Subject line" help="Shown as the email subject.">{(id) => <Input id={id} value={subject} onChange={(e) => setSubject(e.target.value)} />}</Field>
@@ -901,7 +911,7 @@ export function Compose({ email, base, items, setItems, seed, onSeedApplied, onH
             {CTA_OPTIONS.map((o) => (
               <option key={o.kind} value={o.kind} disabled={!ctaAvailable(o.kind)}>
                 {o.label}
-                {ctaAvailable(o.kind) ? '' : ` — add ${o.needText} in Sender`}
+                {ctaAvailable(o.kind) ? '' : o.kind === 'whatsapp' && !WHATSAPP_LIVE ? SOON : ` — add ${o.needText} in Sender`}
               </option>
             ))}
           </Select>
@@ -912,7 +922,9 @@ export function Compose({ email, base, items, setItems, seed, onSeedApplied, onH
         <Field label="Name">{(id) => <Input id={id} value={senderName} onChange={(e) => setSenderName(e.target.value)} />}</Field>
         <Field label="Job title">{(id) => <Input id={id} value={senderTitle} onChange={(e) => setSenderTitle(e.target.value)} />}</Field>
         <Field label="Direct phone" help="Enables the Call CTA.">{(id) => <Input id={id} value={senderPhone} onChange={(e) => setSenderPhone(e.target.value)} />}</Field>
-        <Field label="WhatsApp number" help="E.164 with country code, e.g. +447700900123. Enables the WhatsApp CTA.">{(id) => <Input id={id} value={senderWhatsapp} onChange={(e) => setSenderWhatsapp(e.target.value)} placeholder="+44…" />}</Field>
+        <div className={WHATSAPP_LIVE ? undefined : 'soon'}>
+          <Field label={`WhatsApp number${WHATSAPP_LIVE ? '' : ' (coming soon)'}`} help={WHATSAPP_LIVE ? 'E.164 with country code, e.g. +447700900123. Enables the WhatsApp CTA.' : 'WhatsApp contact is on the way. You will be able to add your number here and offer a WhatsApp button.'}>{(id) => <Input id={id} value={senderWhatsapp} onChange={(e) => setSenderWhatsapp(e.target.value)} placeholder="+44…" disabled={!WHATSAPP_LIVE} />}</Field>
+        </div>
         <Field label="Booking link" help="Your Microsoft Bookings page (https). Enables the Book CTA.">{(id) => <Input id={id} value={senderBooking} onChange={(e) => setSenderBooking(e.target.value)} placeholder="https://outlook.office365.com/book/…" />}</Field>
         <Field label="Secondary contact links" help="Optional — extra ways to reach you, shown as a row under your signature. This is separate from the green offer button.">{() => (
           <div className="secondary">
@@ -921,7 +933,7 @@ export function Compose({ email, base, items, setItems, seed, onSeedApplied, onH
               return (
                 <label key={o.method} className={`secondary__opt${ok ? '' : ' secondary__opt--off'}`}>
                   <input type="checkbox" checked={secondary.includes(o.method)} disabled={!ok} onChange={() => toggleSecondary(o.method)} />
-                  <span>{o.label}{ok ? '' : ` — add ${o.needText} above`}</span>
+                  <span>{o.label}{ok ? '' : o.method === 'whatsapp' && !WHATSAPP_LIVE ? SOON : ` — add ${o.needText} above`}</span>
                 </label>
               );
             })}
