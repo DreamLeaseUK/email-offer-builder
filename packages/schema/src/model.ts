@@ -18,7 +18,10 @@ export type CtaKind = z.infer<typeof CtaKind>;
 export const ContactMethod = z.enum(['call', 'whatsapp', 'email', 'book']);
 export type ContactMethod = z.infer<typeof ContactMethod>;
 
-export const CampaignUseCase = z.enum(['follow_up', 'offer_pack', 'renewal']);
+/** Why the campaign is sent: recorded in the register, never changes the email. 'other' carries the salesperson's own words (useCaseNote). */
+export const CampaignUseCase = z.enum(['follow_up', 'offer_pack', 'renewal', 'other']);
+/** The salesperson's own description when the use case is 'other' (Matt, 29 Sept 2026). One line of plain text. */
+export const UseCaseNote = z.string().trim().min(1).max(80);
 export const CampaignStatus = z.enum(['draft', 'rendered', 'sent', 'archived']);
 export const SentVia = z.enum(['graph_draft', 'clipboard', 'hosted_only']);
 
@@ -434,6 +437,8 @@ export const Campaign = z.object({
   /** Internal label */
   name: z.string().min(1).max(120),
   useCase: CampaignUseCase,
+  /** Salesperson-authored, set only when useCase is 'other'. Recorded in the register. */
+  useCaseNote: UseCaseNote.optional(),
   templateId: uuid,
   templateVersion: z.number().int().positive(),
   /** Salesperson-authored: recorded in the register. */

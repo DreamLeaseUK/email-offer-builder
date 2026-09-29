@@ -136,6 +136,21 @@ describe('POST /api/campaigns', () => {
     expect(((await preview.json()) as { html: string }).html).not.toMatch(/x2B/i);
   });
 
+  it('records an "Other" use case in the salesperson’s own words, and asks for them', async () => {
+    const res = await post(draft({ useCase: 'other', useCaseNote: '  Staff   event follow-up ' }), authed());
+    expect(res.status).toBe(201);
+    const { campaign } = (await res.json()) as { campaign: Campaign };
+    expect(campaign.useCase).toBe('other');
+    expect(campaign.useCaseNote).toBe('Staff event follow-up');
+    const reg = (await (await app.request('/api/register', {}, authed())).json()) as { rows: Record<string, string>[] };
+    expect(reg.rows.some((r) => r['useCase'] === 'Other: Staff event follow-up')).toBe(true);
+
+    // Other with no words is refused; the words are ignored for any other use case
+    expect((await post(draft({ useCase: 'other' }), authed())).status).toBe(422);
+    const renewal = (await (await post(draft({ useCase: 'renewal', useCaseNote: 'ignored' }), authed())).json()) as { campaign: Campaign };
+    expect(renewal.campaign.useCaseNote).toBeUndefined();
+  });
+
   it('rejects mixed contract types and an invalid body', async () => {
     const mixed = draft();
     (mixed.offers as { contractType: string }[])[1]!.contractType = 'business';

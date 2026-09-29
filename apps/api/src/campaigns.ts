@@ -14,7 +14,7 @@
  */
 import { render } from '@offer-mailer/render';
 import { fixtureTemplate } from '@offer-mailer/render/fixtures';
-import { Campaign, CampaignUseCase, Offer, RecipientContext, Sender, Template, assertNoCapId, decodeOfferText } from '@offer-mailer/schema';
+import { Campaign, CampaignUseCase, Offer, RecipientContext, Sender, Template, UseCaseNote, assertNoCapId, decodeOfferText } from '@offer-mailer/schema';
 import type { Campaign as CampaignT, Template as TemplateT } from '@offer-mailer/schema';
 import { desc, eq } from 'drizzle-orm';
 import { Hono } from 'hono';
@@ -46,6 +46,8 @@ const DEFAULT_TEMPLATE: TemplateT = { ...fixtureUnapproved, id: DEFAULT_TEMPLATE
 export const DraftCampaign = z.object({
   name: z.string().min(1).max(120),
   useCase: CampaignUseCase,
+  /** Required when useCase is 'other': the salesperson's own words. Ignored otherwise. */
+  useCaseNote: UseCaseNote.optional(),
   subject: z.string().min(1).max(150),
   preheader: z.string().max(150).optional(),
   intro: z.string().min(1).max(4000),
@@ -180,7 +182,7 @@ function registerRow(c: CampaignT): Record<string, string> {
   return {
     created: c.createdAt,
     campaign: c.name,
-    useCase: c.useCase,
+    useCase: c.useCase === 'other' ? `Other: ${c.useCaseNote ?? ''}` : c.useCase,
     status: c.status,
     sender: c.sender.displayName,
     senderEmail: c.sender.email,
@@ -221,6 +223,7 @@ function buildCampaign(input: DraftCampaign, template: TemplateT, createdBy: str
     id: newId(),
     name: input.name,
     useCase: input.useCase,
+    ...(input.useCase === 'other' && input.useCaseNote ? { useCaseNote: input.useCaseNote.replace(/\s+/g, ' ') } : {}),
     templateId: template.id,
     templateVersion: template.version,
     subject: input.subject,
@@ -258,6 +261,7 @@ async function assemble(env: Env, input: DraftCampaign, createdBy: string): Prom
   if (!input.offers.every((o) => o.contractType === input.offers[0]!.contractType)) {
     throw new AssembleError('All offers in one campaign must be the same contract type.', 422);
   }
+  if (input.useCase === 'other' && !input.useCaseNote) throw new AssembleError('Describe the use case in a few words (you chose Other).', 422);
   // An offer is a snapshot: one still open in Compose, or taken from the library, from before a parser fix
   // carries the site's entity ("Techno &#x2B; Comfort") into the email. Decode here, whatever the browser sent.
   input.offers = input.offers.map(decodeOfferText);

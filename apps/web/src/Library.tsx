@@ -14,22 +14,26 @@ function offerTerms(o: Offer): string {
   return parts.join(' · ');
 }
 
+type Tab = 'shared' | 'personal';
+
 /**
- * The offer library — a curated repository (23 Sept 2026). Two surfaces: the salesperson's own shelf, and the
- * shared shelves an admin curates. Prices are re-fetched live when an offer is added to a campaign, so nothing
- * stale ships; an entry whose source URL has moved or gone is flagged and cannot be used until it is re-pointed.
+ * The offer library, kept simple (Matt, 29 Sept 2026: "far too complicated"). Two tabs: Team offers (the shared
+ * shelves an admin curates, shown first) and My saved offers. A card has one main action, Add to email (priced live
+ * the moment it is used, so nothing stale ships), and Remove for whoever may remove it: the owner, or an admin on
+ * Team offers. Remove archives the entry; only an admin sees removed offers and can restore them (the daily Cron
+ * purges them after 6 months). An admin shares a saved offer with the team onto a shelf.
  */
 export function Library({ base, role, onAdd }: { base: string; role: Role; onAdd: (o: Offer, brochure?: Brochure) => void }) {
-  const [scope, setScope] = useState<'personal' | 'shared'>('personal');
-  const [shelf, setShelf] = useState<LibraryShelf | null>(null); // selected shared shelf; null = all shared
-  const [showArchived, setShowArchived] = useState(false);
+  const [tab, setTab] = useState<Tab>('shared');
+  const [shelf, setShelf] = useState<LibraryShelf | null>(null); // a Team offers filter; null = all
+  const [showRemoved, setShowRemoved] = useState(false); // admins only
   const [search, setSearch] = useState('');
   const [entries, setEntries] = useState<LibraryEntry[] | null>(null);
   const [shelves, setShelves] = useState<LibraryShelf[]>([]);
   const [error, setError] = useState('');
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState<string | null>(null);
-  const [promoting, setPromoting] = useState<string | null>(null);
+  const [sharing, setSharing] = useState<string | null>(null);
   const isAdmin = role === 'admin';
   const sameOrigin = (u: string): string => (base && u.startsWith(base) ? u.slice(base.length) || '/' : u);
 
@@ -41,9 +45,9 @@ export function Library({ base, role, onAdd }: { base: string; role: Role; onAdd
     setEntries(null);
     setError('');
     try {
-      if (showArchived) {
-        setEntries((await api.listArchivedLibrary(scope)).entries);
-      } else if (scope === 'shared') {
+      if (showRemoved) {
+        setEntries((await api.listArchivedLibrary(tab)).entries);
+      } else if (tab === 'shared') {
         const smart = shelf?.kind === 'smart';
         const r = await api.listLibrary({ scope: 'shared', ...(shelf && !smart ? { category: shelf.name } : {}), ...(smart && shelf?.rule?.maxMonthly ? { maxMonthly: shelf.rule.maxMonthly } : {}), ...(search ? { q: search } : {}) });
         setEntries(r.entries);
@@ -53,7 +57,7 @@ export function Library({ base, role, onAdd }: { base: string; role: Role; onAdd
     } catch (e) {
       setError(errMsg(e));
     }
-  }, [scope, shelf, showArchived, search]);
+  }, [tab, shelf, showRemoved, search]);
 
   useEffect(() => {
     load();
@@ -61,6 +65,7 @@ export function Library({ base, role, onAdd }: { base: string; role: Role; onAdd
 
   const patch = (e: LibraryEntry) => setEntries((es) => (es ?? []).map((x) => (x.id === e.id ? e : x)));
   const drop = (id: string) => setEntries((es) => (es ?? []).filter((x) => x.id !== id));
+  const carName = (e: LibraryEntry) => `${e.offer.vehicle.make} ${e.offer.vehicle.model}`;
 
   async function add(e: LibraryEntry) {
     setBusy(e.id);
@@ -70,24 +75,24 @@ export function Library({ base, role, onAdd }: { base: string; role: Role; onAdd
       const r = await api.repriceLibrary(e.id); // priced live the moment it is used
       if (r.ok) {
         onAdd(r.offer, r.brochure);
-        setNote(`${e.offer.vehicle.make} ${e.offer.vehicle.model} added to the campaign — priced live at ${gbp(r.offer.pricing.monthly)}/mo${r.brochure ? ', brochure attached' : ''}${r.message ? ` (${r.message})` : ''}.`);
+        setNote(`${carName(e)} added to your email at today’s price, ${gbp(r.offer.pricing.monthly)} a month${r.brochure ? ', with its brochure' : ''}.`);
       } else {
         setError(r.error);
-        if (r.entry) patch(r.entry); // show the dead-URL flag on the card
+        if (r.entry) patch(r.entry); // show that the offer has changed on the website
       }
     } finally {
       setBusy(null);
     }
   }
 
-  async function recheck(e: LibraryEntry) {
+  async function checkAgain(e: LibraryEntry) {
     setBusy(e.id);
     setError('');
     try {
       const r = await api.repriceLibrary(e.id);
       if (r.ok) {
         patch(r.entry);
-        setNote(`${e.offer.vehicle.make} ${e.offer.vehicle.model} re-priced at ${gbp(r.offer.pricing.monthly)}/mo — the URL is current again.`);
+        setNote(`${carName(e)} is on the website again, at ${gbp(r.offer.pricing.monthly)} a month.`);
       } else {
         setError(r.error);
         if (r.entry) patch(r.entry);
@@ -97,12 +102,28 @@ export function Library({ base, role, onAdd }: { base: string; role: Role; onAdd
     }
   }
 
-  async function archiveToggle(e: LibraryEntry) {
+  async function removeOrRestore(e: LibraryEntry) {
+    setBusy(e.id);
+    setError('');
+    setNote('');
+    try {
+      await (showRemoved ? api.unarchiveLibrary(e.id) : api.archiveLibrary(e.id));
+      drop(e.id);
+      setNote(showRemoved ? `${carName(e)} restored.` : `${carName(e)} removed.`);
+    } catch (err) {
+      setError(errMsg(err));
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function share(e: LibraryEntry, shelfName: string) {
     setBusy(e.id);
     setError('');
     try {
-      await (showArchived ? api.unarchiveLibrary(e.id) : api.archiveLibrary(e.id));
-      drop(e.id);
+      await api.promoteLibrary(e.id, shelfName);
+      setSharing(null);
+      setNote(`${carName(e)} shared with the team in “${shelfName}”.`);
     } catch (err) {
       setError(errMsg(err));
     } finally {
@@ -110,37 +131,19 @@ export function Library({ base, role, onAdd }: { base: string; role: Role; onAdd
     }
   }
 
-  async function del(e: LibraryEntry) {
-    setBusy(e.id);
-    try {
-      await api.deleteLibraryOffer(e.id);
-      drop(e.id);
-    } catch (err) {
-      setError(errMsg(err));
-    } finally {
-      setBusy(null);
-    }
-  }
-
-  async function promote(e: LibraryEntry, category: string) {
-    setBusy(e.id);
-    setError('');
-    try {
-      await api.promoteLibrary(e.id, category);
-      setPromoting(null);
-      setNote(`Added ${e.offer.vehicle.make} ${e.offer.vehicle.model} to the shared shelf “${category}”. It stays on your own shelf too.`);
-    } catch (err) {
-      setError(errMsg(err));
-    } finally {
-      setBusy(null);
-    }
-  }
-
-  const seg = (v: 'personal' | 'shared', label: string) => (
-    <button type="button" className={`lib-seg${scope === v ? ' is-on' : ''}`} onClick={() => { setScope(v); setShelf(null); setShowArchived(false); }}>
+  const tabButton = (v: Tab, label: string) => (
+    <button type="button" className={`lib-seg${tab === v ? ' is-on' : ''}`} onClick={() => { setTab(v); setShelf(null); setShowRemoved(false); setNote(''); setError(''); }}>
       {label}
     </button>
   );
+
+  const emptyText = showRemoved
+    ? 'Nothing removed here.'
+    : tab === 'shared'
+      ? shelf
+        ? 'No team offers here yet.'
+        : 'No team offers yet. Marketing shares the best deals here.'
+      : 'No saved offers yet. On the Compose tab, add an offer and press “Save to library”.';
 
   return (
     <div className="list">
@@ -148,18 +151,17 @@ export function Library({ base, role, onAdd }: { base: string; role: Role; onAdd
         <div className="lib-head">
           <h2 className="dl-h4">Offer library</h2>
           <div className="lib-segs">
-            {seg('personal', 'My library')}
-            {seg('shared', 'Shared shelves')}
+            {tabButton('shared', 'Team offers')}
+            {tabButton('personal', 'My saved offers')}
           </div>
         </div>
 
-        {scope === 'shared' && !showArchived && (
+        {tab === 'shared' && !showRemoved && (
           <div className="lib-shelves">
             <button type="button" className={`lib-chip${!shelf ? ' is-on' : ''}`} onClick={() => setShelf(null)}>All</button>
             {shelves.map((s) => (
               <button type="button" key={s.name} className={`lib-chip${shelf?.name === s.name ? ' is-on' : ''}`} onClick={() => setShelf(s)}>
                 {s.name}
-                {s.kind === 'smart' && <span className="lib-chip__smart" title="Filled automatically from the live price">auto</span>}
               </button>
             ))}
           </div>
@@ -167,27 +169,27 @@ export function Library({ base, role, onAdd }: { base: string; role: Role; onAdd
 
         <div className="lib-controls">
           <input className="lib-search" placeholder="Search by brand or model" value={search} onChange={(ev) => setSearch(ev.target.value)} />
-          <label className="lib-archtoggle">
-            <input type="checkbox" checked={showArchived} onChange={(ev) => setShowArchived(ev.target.checked)} /> Show archived
-          </label>
+          {isAdmin && (
+            <label className="lib-archtoggle">
+              <input type="checkbox" checked={showRemoved} onChange={(ev) => setShowRemoved(ev.target.checked)} /> Show removed offers
+            </label>
+          )}
         </div>
 
         {error && <Alert tone="error">{error}</Alert>}
         {note && <Alert tone="success">{note}</Alert>}
         {!entries && !error && <p className="dl-small app__muted">Loading…</p>}
-        {entries && entries.length === 0 && (
-          <p className="dl-small app__muted">
-            {showArchived ? 'Nothing archived here.' : scope === 'shared' ? 'This shelf is empty. On the Compose tab, save an offer, then promote it here.' : 'No saved offers yet. On the Compose tab, fetch an offer and click “Save to library”.'}
-          </p>
-        )}
+        {entries && entries.length === 0 && <p className="dl-small app__muted">{emptyText}</p>}
 
         <div className="lib-grid">
           {entries?.map((e) => {
             const o = e.offer;
-            const dead = e.urlHealth.state !== 'ok';
-            const canPromote = isAdmin && scope === 'personal' && !showArchived;
+            const gone = e.urlHealth.state !== 'ok';
+            // the owner removes their own saved offers; an admin curates Team offers
+            const canRemove = tab === 'personal' || isAdmin;
+            const canShare = isAdmin && tab === 'personal' && !showRemoved;
             return (
-              <div key={e.id} className={`lib-item${dead ? ' lib-item--dead' : ''}`}>
+              <div key={e.id} className={`lib-item${gone ? ' lib-item--dead' : ''}`}>
                 <OfferCard
                   make={o.vehicle.make}
                   model={o.vehicle.model}
@@ -199,21 +201,20 @@ export function Library({ base, role, onAdd }: { base: string; role: Role; onAdd
                   ctaLabel="View this offer"
                 />
                 <p className="dl-small app__muted lib-meta">
-                  Added {shortDate(e.addedAt)}
-                  {scope === 'shared' && e.category ? ` · ${e.category}` : ''}
-                  {e.lastPricedAt ? ` · price as of ${shortDate(e.lastPricedAt)}` : ''}
+                  {e.lastPricedAt ? `Price checked ${shortDate(e.lastPricedAt)}` : `Saved ${shortDate(e.addedAt)}`}
+                  {tab === 'shared' && e.category ? ` · ${e.category}` : ''}
                 </p>
-                {dead && (
+                {gone && (
                   <div className="lib-dead">
-                    <strong>URL not current — update with the latest.</strong> {e.urlHealth.note ?? 'The offer page has changed.'} Re-fetch the current offer from Compose and save it, then delete this one.
+                    <strong>This offer has changed on the website.</strong> Press “Check again”. If it has ended, add the current offer from the Compose tab instead.
                   </div>
                 )}
-                {promoting === e.id ? (
+                {sharing === e.id ? (
                   <div className="lib-promote">
-                    <span className="dl-small">Put on shelf:</span>
-                    <select className="lib-search" defaultValue="" onChange={(ev) => ev.target.value && promote(e, ev.target.value)} disabled={busy === e.id}>
+                    <span className="dl-small">Share in:</span>
+                    <select className="lib-search" defaultValue="" onChange={(ev) => ev.target.value && share(e, ev.target.value)} disabled={busy === e.id}>
                       <option value="" disabled>
-                        Choose a shelf…
+                        Choose…
                       </option>
                       {shelves.filter((s) => s.kind === 'manual').map((s) => (
                         <option key={s.name} value={s.name}>
@@ -221,25 +222,26 @@ export function Library({ base, role, onAdd }: { base: string; role: Role; onAdd
                         </option>
                       ))}
                     </select>
-                    <Button variant="ghost" size="sm" onClick={() => setPromoting(null)}>Cancel</Button>
+                    <Button variant="ghost" size="sm" onClick={() => setSharing(null)}>Cancel</Button>
                   </div>
                 ) : (
                   <div className="lib-item__btns">
-                    {!showArchived &&
-                      (dead ? (
-                        <Button size="sm" variant="outline" onClick={() => recheck(e)} disabled={busy === e.id}>
-                          {busy === e.id ? 'Checking…' : 'Re-check URL'}
+                    {!showRemoved &&
+                      (gone ? (
+                        <Button size="sm" variant="outline" onClick={() => checkAgain(e)} disabled={busy === e.id}>
+                          {busy === e.id ? 'Checking…' : 'Check again'}
                         </Button>
                       ) : (
                         <Button size="sm" onClick={() => add(e)} disabled={busy === e.id}>
-                          {busy === e.id ? 'Pricing…' : 'Add to campaign'}
+                          {busy === e.id ? 'Adding…' : 'Add to email'}
                         </Button>
                       ))}
-                    {canPromote && <Button variant="outline" size="sm" onClick={() => setPromoting(e.id)}>Promote</Button>}
-                    <Button variant="ghost" size="sm" onClick={() => archiveToggle(e)} disabled={busy === e.id}>
-                      {showArchived ? 'Restore' : 'Archive'}
-                    </Button>
-                    <Button variant="ghost" size="sm" onClick={() => del(e)} disabled={busy === e.id}>Delete</Button>
+                    {canShare && <Button variant="outline" size="sm" onClick={() => setSharing(e.id)}>Share with team</Button>}
+                    {canRemove && (
+                      <Button variant="ghost" size="sm" onClick={() => removeOrRestore(e)} disabled={busy === e.id}>
+                        {showRemoved ? 'Restore' : 'Remove'}
+                      </Button>
+                    )}
                   </div>
                 )}
               </div>
