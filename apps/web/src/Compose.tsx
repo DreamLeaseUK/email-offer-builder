@@ -456,9 +456,10 @@ export function Compose({ email, base, items, setItems, seed, onSeedApplied, onH
   const sameOrigin = (u: string): string => (base && u.startsWith(base) ? u.slice(base.length) || '/' : u);
   const displayHtml = (html: string): string => (base ? html.split(base).join('') : html);
 
-  const [name, setName] = useState('Follow-up offers');
+  const [name, setName] = useState('Renewal offers');
   const [audience, setAudience] = useState<Audience>('personal');
-  const [useCase, setUseCase] = useState<UseCase>('follow_up');
+  // Renewal first and by default (Matt, 29 Sept 2026): it is the sales team's main use.
+  const [useCase, setUseCase] = useState<UseCase>('renewal');
   const [subject, setSubject] = useState('The options we talked about');
   const [preheader, setPreheader] = useState('');
   const [intro, setIntro] = useState('Thanks for your time. As promised, here are the options that fit what we discussed.');
@@ -888,9 +889,9 @@ export function Compose({ email, base, items, setItems, seed, onSeedApplied, onH
         )}</Field>
         <Field label="Use case">{(id) => (
           <Select id={id} value={useCase} onChange={(e) => setUseCase(e.target.value as UseCase)}>
+            <option value="renewal">Renewal</option>
             <option value="follow_up">Cold-lead follow-up</option>
             <option value="offer_pack">Offer pack for an organisation</option>
-            <option value="renewal">Renewal</option>
           </Select>
         )}</Field>
         <Field label="Subject line" help="Shown as the email subject.">{(id) => <Input id={id} value={subject} onChange={(e) => setSubject(e.target.value)} />}</Field>
