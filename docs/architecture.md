@@ -1,6 +1,6 @@
 # DreamLease Offer Mailer — Solution Design & System Architecture
 
-**Status:** current as of 28 Sept 2026 (session 9: the go-live bundle — addresses, the web app served by the Worker, the compliance-approver role). This is the authoritative technical design document. The
+**Status:** current as of 29 Sept 2026 (session 9: live behind sign-in). **Forward plan: `evolution.md`** — after the demo (29 Sept) the send route changes to Microsoft 365 from the salesperson's own mailbox, with monday.com as the customer record and Mautic for bulk; this document is updated as each phase ships. This is the authoritative technical design document. The
 **production Worker is still v0.5.0** (21 Sept): everything of sessions 6–8 — the offer-library rebuild (**B7c**),
 campaign copy, the brochure carry-over on library use and copy, the salesperson UTM, the auto-preheader and the
 Compose changes — is in `main` (pushed to `origin`) and runs through `pnpm dev:live`, **not yet deployed** (the
@@ -152,6 +152,8 @@ Three audiences / lease products, each with its own compliance wording and terms
   (salesperson emails, contact details, campaign snapshots); only the database's own reason is kept.
 
 ## A5. The real send path, and what the email is built for (21 Sept 2026)
+
+**Superseded direction (29 Sept 2026):** the demo showed that most salespeople use Outlook classic, whose editor is Word; a pasted email is rewritten there and breaks. The paste route below stays in use only until Phase 1 of `evolution.md` ships: the tool will send the email itself via Microsoft 365, so the style block and the `[if mso]` parts arrive intact, and the design will be certified in Outlook classic, new Outlook / web, Gmail and Apple Mail.
 **Scope (Matt, 21 Sept):** get it right in **Gmail (web + mobile app) and New Outlook (desktop + mobile)** first.
 Classic Outlook (Word's engine) and the full client matrix in the implementation notes are **not** the current
 target; the markup still carries the `[if mso]` ghost tables for it, untested.
@@ -557,6 +559,8 @@ the EVs shelf while kept on the personal shelf).
   adapter). It becomes a new rendering target, to be proven with real sends as Gmail and New Outlook are today.
 
 ## B9. Build status & roadmap (brief §8.2)
+
+**From 29 Sept 2026 the roadmap is `evolution.md`:** Phase 1 send properly (Microsoft 365), Phase 2 the monday.com loop, Phase 3 renewals and follow-ups, Phase 4 bulk (Mautic) and brands. The table below is the original build order, kept for history.
 | Step | State |
 |---|---|
 | 1 Scaffold, schema, D1, Worker, Access, deploy | Done, deployed |

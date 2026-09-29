@@ -488,6 +488,14 @@ Where the implementation has departed from this brief, and why. `docs/status-202
 - **Brochures (§5.8):** when nothing verifies, the closest document found is offered for the salesperson to judge;
   it is never attached by itself.
 
+### Direction change — 29 September 2026 (`docs/evolution.md`)
+
+The demo showed Copy for Outlook fails in Outlook classic (its Word editor rewrites a pasted email). §5.4's delivery
+is replaced: the tool sends from the salesperson's own mailbox via Microsoft 365 after automatic checks (Phase 1);
+monday.com becomes the customer record with a "Send offers" button and activity logging (Phase 2); renewals and
+follow-ups (Phase 3); bulk through Mautic and SalSac as a brand (Phase 4). The earlier plan to send through
+monday.com's email tool is superseded.
+
 ## 9. Assumptions and open items
 
 - Salary sacrifice 20% and 40% figures are entered by hand for now. A `salsac.gross` field and a calculator hook are reserved so the HMRC-verified calculator logic can be plugged in later.
