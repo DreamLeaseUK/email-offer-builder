@@ -14,7 +14,7 @@ import { SAME_ORIGIN } from './same-origin.js';
 
 const PLACEHOLDER_ID = 'd1000000-0000-4000-8000-000000000001';
 const as = (email: string): Env => ({ ...env, DEV_USER_EMAIL: email }) as Env;
-const compliance = as('emma.airey@dreamlease.co.uk');
+const compliance = as('emma@dreamlease.co.uk');
 const salesperson = as('sam.carter@dreamlease.co.uk');
 type Tmpl = { id: string; name: string; status: string; approvedBy?: string };
 

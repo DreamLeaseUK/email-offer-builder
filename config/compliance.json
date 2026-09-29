@@ -1,4 +1,4 @@
 {
   "_comment": "Compliance approvers: the only people who can create, edit, approve (publish) and retire the compliance wording (templates). Matt, 28 Sept 2026: Emma alone. Emails matched case-insensitively; extend at runtime with the COMPLIANCE_EMAILS env var (comma-separated). Master admins (admins.json) can read templates but not change them. Approval is stamped with the approver's own Cloudflare Access sign-in, so it only means something once Access is live.",
-  "approvers": ["emma.airey@dreamlease.co.uk"]
+  "approvers": ["emma@dreamlease.co.uk"]
 }

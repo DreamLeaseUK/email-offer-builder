@@ -1,6 +1,6 @@
 /**
  * Template admin (step 7) — compliance alone changes the wording (Matt, 28 Sept 2026), approved templates immutable.
- * Runs inside workerd with real local D1. `emma.airey@dreamlease.co.uk` is the configured compliance approver
+ * Runs inside workerd with real local D1. `emma@dreamlease.co.uk` is the configured compliance approver
  * (config/compliance.json); `matt.wilson@dreamlease.co.uk` is a master admin (config/admins.json), who can read
  * templates but not change them.
  */
@@ -11,7 +11,7 @@ import app from '../src/index.js';
 import type { Env } from '../src/env.js';
 import { SAME_ORIGIN } from './same-origin.js';
 
-const COMPLIANCE = 'emma.airey@dreamlease.co.uk';
+const COMPLIANCE = 'emma@dreamlease.co.uk';
 const as = (email: string, over: Partial<Env> = {}): Env => ({ ...env, DEV_USER_EMAIL: email, ...over }) as Env;
 const compliance = as(COMPLIANCE);
 const admin = as('matt.wilson@dreamlease.co.uk');
