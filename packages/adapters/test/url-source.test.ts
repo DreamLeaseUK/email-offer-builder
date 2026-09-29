@@ -95,6 +95,20 @@ describe('UrlOfferSource', () => {
     await expect(source({ fetch: fakeFetch({ pricingStatus: 500 }) }).lookupFull({ url: PAGE, createdBy: BY })).rejects.toThrow(/pricing service/);
   });
 
+  it('says an ended offer has gone when the site sends its link to a listing page', async () => {
+    // the site's listing page carries window.motorleaseInit settings, but no car
+    const listing = '<html><script>window.motorleaseInit = window.motorleaseInit || {}; window.motorleaseInit.specialOfferLabel = "Special offer";</script></html>';
+    const redirected = vi.fn(async () => Object.defineProperty(new Response(listing, { status: 200, headers: { 'content-type': 'text/html' } }), 'url', { value: 'https://www.dreamlease.co.uk/volkswagen-car-lease-deals/?x=1' })) as unknown as typeof fetch;
+    const fetchHtml = vi.fn(async () => listing);
+    const err = await source({ fetch: redirected, fallback: { fetchHtml } }).lookup({ url: PAGE, createdBy: BY }).catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(LookupError);
+    expect((err as Error).message).toBe('This offer is no longer on the website: the link now opens https://www.dreamlease.co.uk/volkswagen-car-lease-deals/. It has probably ended. Paste the link of a current offer from dreamlease.co.uk.');
+    // the site answered: the fallback fetcher would only be sent to the same listing, so it is not paid for
+    expect(fetchHtml).not.toHaveBeenCalled();
+    // reached through the fallback (the direct fetch refused), the same answer without the address
+    await expect(source({ fetch: fakeFetch({ pageStatus: 403 }), fallback: { fetchHtml } }).lookup({ url: PAGE, createdBy: BY })).rejects.toThrow(/no longer on the website: the link now opens a page with no car on it/);
+  });
+
   it('rejects URLs that are not offer pages before touching the network', async () => {
     const fetch = fakeFetch();
     await expect(source({ fetch }).lookup({ url: 'https://www.dreamlease.co.uk/hubs/in-stock/', createdBy: BY })).rejects.toThrow(OfferUrlError);

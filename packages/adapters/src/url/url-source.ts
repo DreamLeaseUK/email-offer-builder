@@ -71,6 +71,26 @@ export class LookupError extends Error {
 }
 
 export const LOOKUP_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+
+/** What only a single car's page carries. The site's listing pages have `window.motorleaseInit` too, but not this. */
+const VEHICLE_MARKER = 'window.motorleaseInit.manufacturerSlug';
+
+/**
+ * A vehicle address (it passed parseOfferUrl) that answers with the site's own page but no car on it: the site
+ * sends an ended offer to a listing page (seen 29 Sept 2026: three ended Taigo special offers all opened
+ * /volkswagen-car-lease-deals/). Say that, not "not an offer page".
+ */
+export const offerGoneMessage = (landedOn?: string): string =>
+  `This offer is no longer on the website: the link now opens ${landedOn ?? 'a page with no car on it'}. It has probably ended. Paste the link of a current offer from dreamlease.co.uk.`;
+
+const shortUrl = (u: string): string => {
+  try {
+    const x = new URL(u);
+    return `${x.origin}${x.pathname}`;
+  } catch {
+    return u;
+  }
+};
 const DEFAULT_UA = 'DreamLease-OfferMailer/1.0 (+https://mailer.dreamlease.co.uk)';
 
 export class UrlOfferSource implements OfferSource<LookupInput> {
@@ -133,20 +153,25 @@ export class UrlOfferSource implements OfferSource<LookupInput> {
   private async fetchHtml(url: string): Promise<string> {
     let status = 0;
     let loadedButNotVehicle = false;
+    /** Set when the site answered with its own page but no car: the offer has ended. No fallback will change that. */
+    let gone: string | undefined;
     try {
       const res = await this.d.fetch(url, { headers: { 'user-agent': this.d.userAgent ?? DEFAULT_UA, accept: 'text/html' }, redirect: 'follow' });
       status = res.status;
       if (res.ok) {
         const html = await res.text();
-        if (html.includes('window.motorleaseInit')) return html;
-        loadedButNotVehicle = true;
+        if (html.includes(VEHICLE_MARKER)) return html;
+        if (html.includes('window.motorleaseInit')) gone = offerGoneMessage(res.url && shortUrl(res.url) !== shortUrl(url) ? shortUrl(res.url) : undefined);
+        else loadedButNotVehicle = true;
       }
     } catch {
       /* fall through to the fallback */
     }
+    if (gone) throw new LookupError(gone);
     if (this.d.fallback) {
       const html = await this.d.fallback.fetchHtml(url);
-      if (html.includes('window.motorleaseInit')) return html;
+      if (html.includes(VEHICLE_MARKER)) return html;
+      if (html.includes('window.motorleaseInit')) throw new LookupError(offerGoneMessage());
       throw new LookupError('The offer page could not be read, even through the fallback fetcher.');
     }
     if (loadedButNotVehicle) throw new LookupError('That page loaded but has no vehicle data. Open a specific car on dreamlease.co.uk and paste its URL.');

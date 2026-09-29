@@ -261,6 +261,16 @@ body {
   border-color: var(--dl-ignition-red, #e30613);
   background: #fdecee;
 }
+/* the closest document the finder found when nothing verified: offered to the salesperson, never attached by itself */
+.brochure__near {
+  display: grid;
+  gap: 6px;
+  margin: 6px 0;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: var(--dl-white, #fff);
+  border: 1px solid var(--dl-border, #e1e0e4);
+}
 /* an attached European edition: not a fault, but the rep must see it is not the UK brochure */
 .brochure__eu {
   padding: 6px 10px;

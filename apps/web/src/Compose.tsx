@@ -109,6 +109,26 @@ const hostOfUrl = (u: string): string => {
   }
 };
 
+/**
+ * Reasons that mean "the wrong document", not "a document we could not confirm": another car, another market, a
+ * manual or press pack, a dealer's or sharing site's copy, a form. A near miss is never one of these.
+ */
+const WRONG_DOCUMENT = /aggregator|another market|another model|a manual, warranty|archived or used-car|not on the official site|range-wide or unrelated|request \/ contact|make and model are not in the document|not in english|dollar pricing/i;
+
+/**
+ * When nothing verified: the closest document the finder found, for the salesperson to open and judge (Matt,
+ * 29 Sept 2026: "show the latest version it found"). Picked from the stored trace, so it costs nothing: documents
+ * the finder actually read first, the newest edition first, a brochure before a price list. Never attached by
+ * itself; "Use it anyway" goes through the upload / paste route and records who chose it.
+ */
+function nearMiss(search: BrochureSearch): BrochureSearch['candidates'][number] | undefined {
+  const read = (c: BrochureSearch['candidates'][number]) => (c.evidence && Object.keys(c.evidence).length > 0 ? 1 : 0);
+  const date = (c: BrochureSearch['candidates'][number]) => String(c.evidence?.['date'] ?? '');
+  return search.candidates
+    .filter((c) => c.status !== 'accepted' && !c.reasons.some((r) => WRONG_DOCUMENT.test(r)))
+    .sort((a, b) => read(b) - read(a) || date(b).localeCompare(date(a)) || (b.docType === 'brochure' ? 1 : 0) - (a.docType === 'brochure' ? 1 : 0) || b.score - a.score)[0];
+}
+
 /** "What we checked": the queries, the pages opened, and every document with the reason it was kept or dropped. */
 function SearchTrace({ search }: { search: BrochureSearch }) {
   const mark = (s: string) => (s === 'accepted' ? '✓' : s === 'not_checked' ? '·' : '✕');
@@ -205,15 +225,15 @@ function BrochureControl({ item, onAttach, onToggle, onRemove }: { item: Item; o
     }
   }
 
-  async function doManual(file?: File) {
-    if (!file && !murl.trim()) {
+  async function doManual(file?: File, link = murl.trim()) {
+    if (!file && !link) {
       setErr('Paste a PDF or brochure-page link, or choose a PDF file.');
       return;
     }
     setBusy(true);
     setErr('');
     try {
-      const res = await api.manualBrochure(o.vehicle.make, o.vehicle.model, { url: murl.trim() || undefined, file });
+      const res = await api.manualBrochure(o.vehicle.make, o.vehicle.model, { url: link || undefined, file });
       onAttach(res.brochure);
       setManual(false);
       setMurl('');
@@ -294,6 +314,8 @@ function BrochureControl({ item, onAttach, onToggle, onRemove }: { item: Item; o
     const failed = search.status === 'search_failed';
     const europeanOffer = search.market === 'eu' && (search.status === 'verified_pdf' || search.status === 'verified_web_brochure') && !!search.url;
     const canAccept = ((search.status === 'official_page_only' || search.status === 'brochure_request') && !!search.url) || europeanOffer;
+    const near = search.status === 'not_verified' ? nearMiss(search) : undefined;
+    const nearDate = near?.evidence?.['date'] ? String(near.evidence['date']) : undefined;
     const vehicle = `${o.vehicle.make} ${o.vehicle.model}`;
     const google = `https://www.google.com/search?q=${encodeURIComponent(`${vehicle} brochure UK filetype:pdf`)}`;
     return (
@@ -307,6 +329,20 @@ function BrochureControl({ item, onAttach, onToggle, onRemove }: { item: Item; o
           </span>
         )}
         {search.reason && !europeanOffer && <span className="dl-small app__muted">{search.reason}</span>}
+        {near && !manual && (
+          <div className="brochure__near">
+            <span className="dl-small">
+              <strong>Closest match found (not verified):</strong>{' '}
+              <a href={near.url} target="_blank" rel="noreferrer">{hostOfUrl(near.url)}{near.linkText ? ` — ${near.linkText}` : ''}</a>
+              {nearDate ? ` · dated ${nearDate}` : ''}
+            </span>
+            <span className="dl-small app__muted">Not attached because: {near.reasons.length ? near.reasons.join('; ') : 'the search stopped before it was read'}. Open it and judge for yourself.</span>
+            <div className="brochure__btns">
+              <a className="dl-btn dl-btn--outline dl-btn--sm" href={near.url} target="_blank" rel="noreferrer">Open it ↗</a>
+              <Button size="sm" onClick={() => doManual(undefined, near.url)} disabled={busy}>Use it anyway</Button>
+            </div>
+          </div>
+        )}
         {remembered && <span className="dl-small app__muted">This is the result of a search on {new Date(search.searchedAt).toLocaleDateString('en-GB')}; it is re-run automatically after 7 days.</span>}
         {manual ? manualForm : (
           <div className="brochure__btns">
