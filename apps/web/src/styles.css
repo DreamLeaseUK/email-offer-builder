@@ -783,3 +783,12 @@ body {
 .supp__actions {
   flex: none;
 }
+
+/* a planned feature shown to salespeople but not yet released (e.g. WhatsApp): visibly greyed out */
+.soon {
+  opacity: 0.55;
+}
+.soon input:disabled {
+  cursor: not-allowed;
+  background: var(--dl-panel, #f6f6f7);
+}
