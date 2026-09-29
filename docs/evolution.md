@@ -126,6 +126,7 @@ contract types: the Send check refuses the placeholder, so no real send, not eve
 certification morning, can pass before that. **Deploy only after she has**: Copy for Outlook now runs the same checks,
 so on the placeholder it stops too (found by the code review, 29 Sept). (b) **Matt applies the new table to production** (`pnpm db:migrate`)
 before the first local test send (`dev:live` uses production D1) and before the deploy; the deploy does not migrate.
+**Done 29 Sept.**
 (c) IT's CNAME for offers.dreamlease.co.uk should exist before the first real customer email (links to workers.dev
 may be caught by spam filters).
 

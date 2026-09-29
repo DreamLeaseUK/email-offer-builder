@@ -32,7 +32,8 @@ the certification morning, and any fixes those find.
   evidence before theorising**, and **never assume an identity or a cause** (29 Sept: `emma.airey@` and "another
   company's Cloudflare" were both wrong). Addresses come from Zero Trust → Team & Resources → Users.
 - **He is not the Entra/IT administrator.** IT gets click-by-click steps checked against Microsoft's current docs
-  (`docs/it-runbook-sign-in.md` Part D is written and was sent to him on 29 Sept to forward).
+  (`docs/it-runbook-sign-in.md` Part D is written; Emma is the Entra administrator, and her Word copy is
+  `Downloads/DreamLease Offer Mailer - Entra send setup (for Emma).docx` on Matt's PC, sent 29 Sept).
 - **Windows, PowerShell.** `pnpm` lives in the Claude app's private storage: prefix every pnpm command you give him with
   `$env:Path = "$env:LOCALAPPDATA\Packages\Claude_pzs8sxrjxfjjc\LocalCache\Roaming\npm;$env:Path"; Set-Location "$HOME\email-offer-builder";`
   [verified 29 Sept]. In Claude's own Git Bash the path is
@@ -75,7 +76,7 @@ the certification morning, and any fixes those find.
   Bash: under PowerShell the script's `diff` is missing and it falsely reports "all sections match".
 - **Production [verified 29 Sept]:** v0.6.1 at https://marketingtools.dreamelectric.uk (Access app `marketingtools`,
   shared **Staff** policy: dreamlease.co.uk and salsac.co.uk). `/health` on workers.dev → 0.6.1, `firecrawl:true`.
-  Secrets: `ACCESS_AUD`, `FIRECRAWL_API_KEY`. **The `mail_connections` table does NOT exist in production yet.** Only
+  Secrets: `ACCESS_AUD`, `FIRECRAWL_API_KEY`. **Migration `0004_mail_connections` IS applied to production** (Matt, 29 Sept, about 17:00; his terminal showed it applied). Only
   the placeholder compliance template exists [asserted: status 29 Sept §2; Claude cannot read production D1].
   **Keep the four MotorComplete Snippets on the `dreamelectric.uk` zone disabled.**
 - **Customer links:** still workers.dev; `offers.dreamlease.co.uk` has no DNS record yet [verified 29 Sept]; IT's
@@ -107,8 +108,7 @@ the certification morning, and any fixes those find.
    answers (Conditional Access) in the status log.
 2. **Emma publishes the approved wording** (all three contract types). **Deploy only after she has**: Send and Copy for
    Outlook both refuse the placeholder. Chase through Matt.
-3. **Matt applies migration 0004 to production** (`pnpm db:migrate`, answer y). Needed before the local test send
-   (`dev:live` uses production D1) and before the deploy; the deploy does not migrate.
+3. ~~Matt applies migration 0004 to production~~ **Done 29 Sept** (the table exists; the live 0.6.1 code ignores it).
 4. **Local test send:** Matt adds `MAIL_TENANT_ID`, `MAIL_CLIENT_ID`, `MAIL_CLIENT_SECRET` and a test `MAIL_TOKEN_KEY` to
    `apps/api/.dev.vars` himself (see `.dev.vars.example`), starts `api-live` + `web`, connects his Outlook at
    localhost:5173, sends a real campaign (approved wording) to his own test address, checks it arrived and is in his
