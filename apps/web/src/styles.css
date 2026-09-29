@@ -792,3 +792,31 @@ body {
   cursor: not-allowed;
   background: var(--dl-panel, #f6f6f7);
 }
+
+/* numbered steps on Compose (Matt, 29 Sept 2026: guide a new user through the order of the screen) */
+.step {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 20px;
+}
+.panel > .step:first-child {
+  margin-top: 0;
+}
+.step__n {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--dl-green, #31bd51);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+}
+.step__count {
+  color: var(--dl-graphite-grey, #787580);
+  font-weight: 400;
+}

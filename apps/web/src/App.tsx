@@ -55,6 +55,7 @@ export function App() {
       name: c.name,
       audience: c.compliance.variant,
       useCase: c.useCase,
+      useCaseNote: c.useCaseNote ?? '',
       subject: c.subject,
       preheader: c.preheader ?? '',
       intro: c.intro,

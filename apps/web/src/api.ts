@@ -40,7 +40,7 @@ export interface LookupResponse {
 }
 
 export type LayoutChoice = 'auto' | 'single' | 'stack';
-export type UseCase = 'follow_up' | 'offer_pack' | 'renewal';
+export type UseCase = 'follow_up' | 'offer_pack' | 'renewal' | 'other';
 /** The audience / lease product. Drives the compliance block, terms and (for salsac) the pricing shape. */
 export type Audience = 'personal' | 'business' | 'salary_sacrifice';
 export type CtaKindChoice = 'view_offer' | 'email' | 'call' | 'whatsapp' | 'book' | 'link';
@@ -50,6 +50,8 @@ export interface ComposeSeed {
   name: string;
   audience: Audience;
   useCase: UseCase;
+  /** The salesperson's own words when useCase is 'other'. */
+  useCaseNote: string;
   subject: string;
   preheader: string;
   intro: string;
@@ -99,6 +101,8 @@ export interface EnsureBrochureResponse {
 export interface Draft {
   name: string;
   useCase: UseCase;
+  /** Required when useCase is 'other'. */
+  useCaseNote?: string;
   subject: string;
   preheader?: string;
   intro: string;

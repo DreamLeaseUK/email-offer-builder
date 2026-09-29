@@ -192,10 +192,14 @@ libraryApi.post('/offers/library/:id/reprice', async (c) => {
   }
 });
 
+/** Removing (archiving) or restoring an entry is its owner's call, or an admin's (the shared shelves are an admin's). */
+const mayChange = (env: Env, email: string, entry: LibraryEntryT): boolean => entry.addedBy === email || isAdmin(env, email);
+
 libraryApi.post('/offers/library/:id/archive', async (c) => {
   const repo = libraryRepo(c.env);
   const entry = await repo.get(c.req.param('id'));
   if (!entry) return c.json({ error: 'That library entry no longer exists.' }, 404);
+  if (!mayChange(c.env, c.get('user').email, entry)) return c.json({ error: 'That is not yours to remove.' }, 403);
   const now = new Date().toISOString();
   const archived: LibraryEntryT = { ...entry, status: 'archived', archivedAt: now, updatedAt: now };
   await repo.save(archived);
@@ -206,6 +210,7 @@ libraryApi.post('/offers/library/:id/unarchive', async (c) => {
   const repo = libraryRepo(c.env);
   const entry = await repo.get(c.req.param('id'));
   if (!entry) return c.json({ error: 'That library entry no longer exists.' }, 404);
+  if (!mayChange(c.env, c.get('user').email, entry)) return c.json({ error: 'That is not yours to restore.' }, 403);
   const { archivedAt: _drop, ...rest } = entry;
   const restored: LibraryEntryT = { ...rest, status: 'current', updatedAt: new Date().toISOString() };
   await repo.save(restored);

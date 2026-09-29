@@ -98,6 +98,30 @@ describe('offer library', () => {
     expect(promoted!.id).not.toBe(o.id); // its own entry id, distinct from the personal one
   });
 
+  it('lets only the owner, or an admin, remove (archive) or restore an entry', async () => {
+    // the admin's own saved offer, and a shared (team) offer made from it
+    const mine = anOffer({ id: '1a000000-0000-4000-8000-000000000009' });
+    await save(mine, authed());
+    await post(`/api/offers/library/${mine.id}/promote`, authed(), { category: 'EVs' });
+    const team = (await current(authed(), '?scope=shared&category=EVs')).find((x) => x.offer.id === mine.id)!;
+
+    // a salesperson can remove neither someone else's saved offer nor a team offer, nor restore one
+    expect((await post(`/api/offers/library/${mine.id}/archive`, asRep())).status).toBe(403);
+    expect((await post(`/api/offers/library/${team.id}/archive`, asRep())).status).toBe(403);
+    expect((await current(authed(), '?scope=shared&category=EVs')).some((x) => x.id === team.id)).toBe(true);
+
+    // their own saved offer they can remove and restore
+    const theirs = anOffer({ id: '1a000000-0000-4000-8000-00000000000a' });
+    await save(theirs, asRep());
+    expect((await post(`/api/offers/library/${theirs.id}/archive`, asRep())).status).toBe(200);
+    expect((await post(`/api/offers/library/${theirs.id}/unarchive`, asRep())).status).toBe(200);
+
+    // an admin curates the team offers
+    expect((await post(`/api/offers/library/${team.id}/archive`, authed())).status).toBe(200);
+    expect((await post(`/api/offers/library/${team.id}/unarchive`, asRep())).status).toBe(403);
+    expect((await post(`/api/offers/library/${team.id}/unarchive`, authed())).status).toBe(200);
+  });
+
   it('the smart shelf filters by price: "under £300" shows only current shared entries below £300', async () => {
     const cheap = anOffer({ id: '5a000000-0000-4000-8000-000000000001' });
     cheap.pricing = { ...cheap.pricing, monthly: 249 };

@@ -38,6 +38,20 @@ function toSalsac(o: Offer, keep?: Offer): Offer {
 }
 const salsacReady = (o: Offer): boolean => (o.pricing.salsac?.net20 ?? 0) > 0 && (o.pricing.salsac?.net40 ?? 0) > 0;
 
+/** The six steps of a campaign, in the order the screen asks for them (Matt, 29 Sept 2026: guide a new user). */
+const STEPS = ['Who it’s for', 'Your message', 'Your details', 'Add offers', 'Check and create', 'Send from Outlook'] as const;
+
+/** A numbered section heading. `extra` sits on the same line (e.g. the offer count). */
+function Step({ n, extra }: { n: number; extra?: React.ReactNode }) {
+  return (
+    <h2 className="dl-h4 step">
+      <span className="step__n" aria-hidden>{n}</span>
+      <span>{STEPS[n - 1]}</span>
+      {extra}
+    </h2>
+  );
+}
+
 /**
  * WhatsApp is planned but not released (Matt, 29 Sept 2026): salespeople see it, greyed out and marked "coming
  * soon", so they know it is on the way; nothing about WhatsApp reaches an email. A saved number is kept. Set to
@@ -468,6 +482,7 @@ export function Compose({ email, base, items, setItems, seed, onSeedApplied, onH
   const [audience, setAudience] = useState<Audience>('personal');
   // Renewal first and by default (Matt, 29 Sept 2026): it is the sales team's main use.
   const [useCase, setUseCase] = useState<UseCase>('renewal');
+  const [useCaseNote, setUseCaseNote] = useState('');
   const [subject, setSubject] = useState('The options we talked about');
   const [preheader, setPreheader] = useState('');
   const [intro, setIntro] = useState('Thanks for your time. As promised, here are the options that fit what we discussed.');
@@ -586,6 +601,7 @@ export function Compose({ email, base, items, setItems, seed, onSeedApplied, onH
     setName(seed.name);
     setAudience(seed.audience);
     setUseCase(seed.useCase);
+    setUseCaseNote(seed.useCaseNote);
     setSubject(seed.subject);
     setPreheader(seed.preheader);
     setIntro(seed.intro);
@@ -684,6 +700,7 @@ export function Compose({ email, base, items, setItems, seed, onSeedApplied, onH
     () => ({
       name,
       useCase,
+      ...(useCase === 'other' && useCaseNote.trim() ? { useCaseNote: useCaseNote.trim() } : {}),
       subject,
       ...(preheader ? { preheader } : {}),
       intro,
@@ -692,11 +709,11 @@ export function Compose({ email, base, items, setItems, seed, onSeedApplied, onH
       sender,
       ...(recipientFirst ? { recipient: { firstName: recipientFirst } } : {}),
     }),
-    [name, useCase, subject, preheader, intro, layout, items, sender, recipientFirst, ctaKind, ctaLabel],
+    [name, useCase, useCaseNote, subject, preheader, intro, layout, items, sender, recipientFirst, ctaKind, ctaLabel],
   );
 
   const salsacNeedsFigures = items.some((x) => isSalsac(x.offer) && !salsacReady(x.offer));
-  const ready = items.length > 0 && !!name.trim() && !!subject.trim() && !!intro.trim() && !!email && !salsacNeedsFigures && ctaAvailable(ctaKind);
+  const ready = items.length > 0 && !!name.trim() && !!subject.trim() && !!intro.trim() && !!email && !salsacNeedsFigures && ctaAvailable(ctaKind) && (useCase !== 'other' || !!useCaseNote.trim());
 
   // Auto-render the preview as soon as the first offer is added, so the salesperson sees the email straight away.
   // Subsequent changes keep the preview but flag it stale (the salesperson presses Update preview to refresh).
@@ -887,8 +904,8 @@ export function Compose({ email, base, items, setItems, seed, onSeedApplied, onH
     <div className="compose" ref={composeRef} style={gridStyle}>
       {/* ---- details ---- */}
       <section className="panel">
-        <h2 className="dl-h4">Campaign</h2>
-        <Field label="Campaign name">{(id) => <Input id={id} value={name} onChange={(e) => setName(e.target.value)} />}</Field>
+        <Step n={1} />
+        <Field label="Campaign name" help="Your own label, to find it again on the Campaigns tab. The customer never sees it.">{(id) => <Input id={id} value={name} onChange={(e) => setName(e.target.value)} />}</Field>
         <Field label="Audience type" help="Sets the compliance wording, terms and disclaimer for the whole campaign.">{(id) => (
           <Select id={id} value={audience} onChange={(e) => changeAudience(e.target.value as Audience)}>
             {AUDIENCES.map((a) => (
@@ -901,10 +918,16 @@ export function Compose({ email, base, items, setItems, seed, onSeedApplied, onH
             <option value="renewal">Renewal</option>
             <option value="follow_up">Cold-lead follow-up</option>
             <option value="offer_pack">Offer pack for an organisation</option>
+            <option value="other">Other…</option>
           </Select>
         )}</Field>
-        <Field label="Subject line" help="Shown as the email subject.">{(id) => <Input id={id} value={subject} onChange={(e) => setSubject(e.target.value)} />}</Field>
+        {useCase === 'other' && (
+          <Field label="Describe the use case" help="A few words, e.g. “Staff event follow-up”.">{(id) => <Input id={id} value={useCaseNote} onChange={(e) => setUseCaseNote(e.target.value)} maxLength={80} placeholder="e.g. Staff event follow-up" />}</Field>
+        )}
         <Field label="Recipient first name" help="Optional greeting.">{(id) => <Input id={id} value={recipientFirst} onChange={(e) => setRecipientFirst(e.target.value)} />}</Field>
+
+        <Step n={2} />
+        <Field label="Subject line" help="Shown as the email subject.">{(id) => <Input id={id} value={subject} onChange={(e) => setSubject(e.target.value)} />}</Field>
         <Field label="Intro message">{(id) => <Textarea id={id} rows={5} value={intro} onChange={(e) => setIntro(e.target.value)} />}</Field>
         <Field label="Offer button (CTA)" help="What the green button on every offer does.">{(id) => (
           <Select id={id} value={ctaKind} onChange={(e) => setCtaKind(e.target.value as CtaKind)}>
@@ -918,7 +941,7 @@ export function Compose({ email, base, items, setItems, seed, onSeedApplied, onH
         )}</Field>
         <Field label="Button label" help="Optional — rename the button. Up to 30 characters, so it fits.">{(id) => <Input id={id} value={ctaLabel} onChange={(e) => setCtaLabel(e.target.value)} placeholder={ctaDefaultLabel(ctaKind)} maxLength={30} />}</Field>
 
-        <h2 className="dl-h4" style={{ marginTop: 24 }}>Sender</h2>
+        <Step n={3} />
         <Field label="Name">{(id) => <Input id={id} value={senderName} onChange={(e) => setSenderName(e.target.value)} />}</Field>
         <Field label="Job title">{(id) => <Input id={id} value={senderTitle} onChange={(e) => setSenderTitle(e.target.value)} />}</Field>
         <Field label="Direct phone" help="Enables the Call CTA.">{(id) => <Input id={id} value={senderPhone} onChange={(e) => setSenderPhone(e.target.value)} />}</Field>
@@ -951,7 +974,7 @@ export function Compose({ email, base, items, setItems, seed, onSeedApplied, onH
 
       {/* ---- offers ---- */}
       <section className="panel">
-        <h2 className="dl-h4">Offers <span className="dl-small">{items.length}/6</span>{repricing && <span className="dl-small app__muted"> · re-pricing the copied offers…</span>}</h2>
+        <Step n={4} extra={<><span className="dl-small step__count">{items.length}/6</span>{repricing && <span className="dl-small app__muted"> · re-pricing the copied offers…</span>}</>} />
         <form onSubmit={addOffer} className="addoffer">
           <Input id="addoffer-url" placeholder="Paste a dreamlease.co.uk vehicle URL" value={url} onChange={(e) => setUrl(e.target.value)} disabled={items.length >= 6} />
           <Button type="submit" size="sm" disabled={fetching || items.length >= 6}>{fetching ? 'Fetching…' : items.length ? 'Add another offer' : 'Add offer'}</Button>
@@ -1009,6 +1032,7 @@ export function Compose({ email, base, items, setItems, seed, onSeedApplied, onH
 
       {/* ---- preview + send ---- */}
       <section className="panel">
+        <Step n={5} />
         <div className="preview__actions">
           <Button variant="secondary" size="sm" onClick={doPreview} disabled={!ready || previewing}>{previewing ? 'Rendering…' : 'Update preview'}</Button>
           <Button size="sm" onClick={doCreate} disabled={!ready || creating}>{creating ? 'Creating…' : 'Create campaign'}</Button>
@@ -1017,6 +1041,8 @@ export function Compose({ email, base, items, setItems, seed, onSeedApplied, onH
         {previewError && <Alert tone="error">{previewError}</Alert>}
         {createError && <Alert tone="error">{createError}</Alert>}
 
+        <Step n={6} />
+        {!created && <p className="dl-small app__muted">Once the campaign is created: Copy for Outlook, paste it into a new Outlook email, and send it from there.</p>}
         {created && (
           <Alert tone="success" title="Campaign created">
             <div className="created">
