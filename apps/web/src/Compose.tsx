@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Badge, Button, Field, Input, OfferCard, Select, Textarea } from 'dreamlease-design-system';
 import type { Brochure, BrochureSearch, CtaKind, Offer, Sender } from '@offer-mailer/schema';
 import { CTA_DEFAULT_LABELS } from '@offer-mailer/schema';
-import { api, type Audience, type ComposeSeed, type ContactMethod, type CreateResponse, type Draft, type Item, type LayoutChoice, type LeaseOption, type UseCase } from './api';
+import { api, type Audience, type ComposeSeed, type ContactMethod, type CreateResponse, type Draft, type Item, type LayoutChoice, type LeaseOption, type MailStatus, type UseCase } from './api';
 
 const gbp = (n: number): string => '£' + Math.round(n).toLocaleString('en-GB');
 const errMsg = (e: unknown): string => (e instanceof Error ? e.message : String(e));
@@ -39,7 +39,18 @@ function toSalsac(o: Offer, keep?: Offer): Offer {
 const salsacReady = (o: Offer): boolean => (o.pricing.salsac?.net20 ?? 0) > 0 && (o.pricing.salsac?.net40 ?? 0) > 0;
 
 /** The six steps of a campaign, in the order the screen asks for them (Matt, 29 Sept 2026: guide a new user). */
-const STEPS = ['Who it’s for', 'Your message', 'Your details', 'Add offers', 'Check and create', 'Send from Outlook'] as const;
+const STEPS = ['Who it’s for', 'Your message', 'Your details', 'Add offers', 'Check and create', 'Send'] as const;
+
+/** What Microsoft's return from Connect Outlook (?outlook=…) means, in plain words. */
+const OUTLOOK_OUTCOME: Record<string, { tone: 'success' | 'error' | 'warning'; text: string }> = {
+  connected: { tone: 'success', text: 'Outlook connected. Emails you send from the tool now go from your own mailbox.' },
+  cancelled: { tone: 'warning', text: 'Outlook was not connected: the Microsoft sign-in was cancelled.' },
+  mismatch: { tone: 'error', text: 'Outlook was not connected: sign in to Microsoft as yourself (the same account you use for this tool), then try again.' },
+  failed: { tone: 'error', text: 'Outlook could not be connected. Try again; if it keeps failing, tell Matt.' },
+  unavailable: { tone: 'error', text: 'Sending from the tool is not working at the moment. Use Copy for Outlook, and tell Matt.' },
+  not_allowed: { tone: 'warning', text: 'Sending from the tool is not available for your account yet. Use Copy for Outlook.' },
+};
+const hhmm = (iso: string): string => new Date(iso).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
 
 /** A numbered section heading. `extra` sits on the same line (e.g. the offer count). */
 function Step({ n, extra }: { n: number; extra?: React.ReactNode }) {
@@ -520,6 +531,21 @@ export function Compose({ email, base, items, setItems, seed, onSeedApplied, onH
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState('');
   const [copied, setCopied] = useState(false);
+  const [copyProblems, setCopyProblems] = useState<string[]>([]);
+
+  // Sending from the salesperson's own mailbox (Phase 1). `mail` is null until the status arrives.
+  const [mail, setMail] = useState<MailStatus | null>(null);
+  const [outlookNote, setOutlookNote] = useState<{ tone: 'success' | 'error' | 'warning'; text: string } | null>(null);
+  const [recipientEmail, setRecipientEmail] = useState('');
+  const [sending, setSending] = useState(false);
+  const [sentAt, setSentAt] = useState<string | null>(null);
+  const [sendError, setSendError] = useState<{ text: string; problems: string[] } | null>(null);
+  const canSend = !!mail?.available;
+  // The draft as it was when the campaign was created. Send and Copy use the STORED campaign, so any later edit
+  // (subject, message, CTA, your details, the first name) must invalidate it: create again to send the changes.
+  const createdFrom = useRef<string | null>(null);
+  const [changedAfterCreate, setChangedAfterCreate] = useState(false);
+  const connectPoll = useRef<number | null>(null);
 
   // Resizable Compose columns: the salesperson drags the dividers to widen whichever panel they are working in.
   // Two px widths (campaign, offers) are remembered per browser; the preview takes the rest. Wide screens only —
@@ -593,6 +619,83 @@ export function Compose({ email, base, items, setItems, seed, onSeedApplied, onH
       .catch(() => {});
   }, []);
 
+  // Is sending set up and Outlook connected? And, on the way back from Microsoft's sign-in, say how it went
+  // (?outlook=…), then drop the parameter so a reload does not repeat the message.
+  useEffect(() => {
+    api
+      .mailStatus()
+      .then(setMail)
+      .catch(() => setMail({ available: false, connected: false }));
+    const params = new URLSearchParams(window.location.search);
+    const outcome = params.get('outlook');
+    // Back from Microsoft in the Connect window: hand the result to the tool's own window and close.
+    if (outcome && window.opener && window.opener !== window) {
+      try {
+        (window.opener as Window).postMessage({ type: 'dl-outlook', outcome }, window.location.origin);
+        window.close();
+        return;
+      } catch {
+        /* no opener to tell: show the result here */
+      }
+    }
+    if (outcome) {
+      setOutlookNote(OUTLOOK_OUTCOME[outcome] ?? OUTLOOK_OUTCOME.failed!);
+      params.delete('outlook');
+      const rest = params.toString();
+      window.history.replaceState(null, '', `${window.location.pathname}${rest ? `?${rest}` : ''}${window.location.hash}`);
+    }
+    const onMessage = (e: MessageEvent) => {
+      const data = e.data as { type?: string; outcome?: string } | null;
+      if (e.origin !== window.location.origin || data?.type !== 'dl-outlook') return;
+      setOutlookNote(OUTLOOK_OUTCOME[data.outcome ?? ''] ?? OUTLOOK_OUTCOME.failed!);
+      void api.mailStatus().then(setMail).catch(() => {});
+    };
+    window.addEventListener('message', onMessage);
+    return () => {
+      window.removeEventListener('message', onMessage);
+      if (connectPoll.current) window.clearInterval(connectPoll.current);
+    };
+  }, []);
+
+  /**
+   * Connect Outlook in its own window, so the campaign being written here survives the Microsoft sign-in. The status is
+   * polled too, in case Microsoft's pages cut the link between the two windows. If the browser blocks the window,
+   * the whole page goes to Microsoft instead (and comes back to a fresh Compose).
+   */
+  function connectOutlook() {
+    const popup = window.open(api.connectOutlookUrl, 'dl-connect-outlook', 'popup,width=560,height=720');
+    if (!popup) {
+      window.location.assign(api.connectOutlookUrl);
+      return;
+    }
+    setOutlookNote({ tone: 'warning', text: 'Finish signing in to Microsoft in the window that opened. Your campaign stays here.' });
+    if (connectPoll.current) window.clearInterval(connectPoll.current);
+    let tries = 0;
+    connectPoll.current = window.setInterval(() => {
+      tries += 1;
+      if (tries > 90 && connectPoll.current) window.clearInterval(connectPoll.current);
+      void api
+        .mailStatus()
+        .then((st) => {
+          if (!st.connected) return;
+          if (connectPoll.current) window.clearInterval(connectPoll.current);
+          setMail(st);
+          setOutlookNote(OUTLOOK_OUTCOME.connected!);
+        })
+        .catch(() => {});
+    }, 2000);
+  }
+
+  async function disconnectOutlook() {
+    try {
+      await api.disconnectOutlook();
+      setMail((m) => (m ? { ...m, connected: false } : m));
+      setOutlookNote({ tone: 'success', text: 'Outlook disconnected. The tool no longer holds permission to send from your mailbox.' });
+    } catch (e) {
+      setOutlookNote({ tone: 'error', text: errMsg(e) });
+    }
+  }
+
   // Copying a past campaign: pre-fill the reusable parts (never the recipient), load its offers into the tray,
   // and re-price each one live from its source URL so the copy never carries a stale price. Applied after the
   // saved-sender effect above so the copied sender wins, then cleared so it applies once.
@@ -614,6 +717,7 @@ export function Compose({ email, base, items, setItems, seed, onSeedApplied, onH
     setCtaKind(seed.ctaKind === 'whatsapp' && !WHATSAPP_LIVE ? 'view_offer' : seed.ctaKind);
     setCtaLabel(seed.ctaLabel);
     setRecipientFirst('');
+    setRecipientEmail('');
     setItems(seed.offers.map((o) => ({ offer: o }))); // show the copied offers at once…
     void repriceCopied(seed.offers); // …then refresh each price live
     onSeedApplied?.();
@@ -874,6 +978,8 @@ export function Compose({ email, base, items, setItems, seed, onSeedApplied, onH
     setCreateError('');
     try {
       const res = await api.create(draft);
+      createdFrom.current = JSON.stringify(draft);
+      setChangedAfterCreate(false);
       setCreated(res); // res.html stays absolute — Copy-for-Outlook needs it that way
       setPreviewHtml(displayHtml(res.html));
       setPreviewStale(false);
@@ -884,20 +990,88 @@ export function Compose({ email, base, items, setItems, seed, onSeedApplied, onH
     }
   }
 
-  async function copyForOutlook() {
-    if (!created) return;
+  // A new (or cleared) campaign starts with nothing sent, no messages and no customer address (never the last one's).
+  useEffect(() => {
+    setSentAt(null);
+    setSendError(null);
+    setCopyProblems([]);
+    setRecipientEmail('');
+  }, [created]);
+
+  // An edit after Create would not reach the customer (Send and Copy use the stored campaign): drop it, and say so.
+  useEffect(() => {
+    if (!created || createdFrom.current === null || JSON.stringify(draft) === createdFrom.current) return;
+    setCreated(null);
+    setPreviewStale(true);
+    setChangedAfterCreate(true);
+  }, [draft, created]);
+
+  /** Send to the customer from the salesperson's own mailbox. The server runs every check first and refuses a faulty email. */
+  async function doSend() {
+    if (!created || !recipientEmail.trim()) return;
+    setSending(true);
+    setSendError(null);
     try {
-      await navigator.clipboard.write([
-        new ClipboardItem({
-          'text/html': new Blob([created.html], { type: 'text/html' }),
-          'text/plain': new Blob([created.text], { type: 'text/plain' }),
-        }),
-      ]);
-    } catch {
-      await navigator.clipboard.writeText(created.html);
+      const r = await api.send(created.campaign.id, recipientEmail.trim(), recipientFirst.trim() || undefined);
+      if (r.ok) {
+        setSentAt(r.sentAt);
+        setMail((m) => (m ? { ...m, lastSentAt: r.sentAt } : m));
+      } else {
+        const problems = (r.checks ?? []).filter((c) => !c.ok).flatMap((c) => c.problems);
+        setSendError({ text: problems.length ? 'Not sent. Fix these, then press Send again:' : r.error, problems });
+        if (r.code === 'connect' || r.code === 'reconnect') setMail((m) => (m ? { ...m, connected: false } : m));
+      }
+    } catch (e) {
+      setSendError({ text: errMsg(e), problems: [] });
+    } finally {
+      setSending(false);
     }
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  }
+
+  function copyForOutlook() {
+    if (!created) return;
+    const { html, text } = created;
+    // The backup route runs the same checks (all but the customer's address), so it cannot be used to get round them.
+    setCopyProblems([]);
+    const allowed = api.checks(created.campaign.id).then(
+      (r) => {
+        if (!r.ok) {
+          setCopyProblems(r.checks.filter((c) => !c.ok).flatMap((c) => c.problems));
+          throw new Error('blocked by a check');
+        }
+      },
+      (e: unknown) => {
+        setCopyProblems([errMsg(e)]);
+        throw e;
+      },
+    );
+    allowed.catch(() => {});
+    const done = () => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    };
+    // Start the write now, inside the click, with the content arriving once the checks pass: Safari and Firefox refuse
+    // a clipboard write that starts after a network wait.
+    let write: Promise<void>;
+    try {
+      const blob = (body: string, type: string) => allowed.then(() => new Blob([body], { type }));
+      write = navigator.clipboard.write([new ClipboardItem({ 'text/html': blob(html, 'text/html'), 'text/plain': blob(text, 'text/plain') })]);
+    } catch {
+      write = allowed.then(() => navigator.clipboard.writeText(html));
+    }
+    write.then(done).catch(async () => {
+      try {
+        await allowed;
+      } catch {
+        return; // a check failed: its message is already on screen
+      }
+      try {
+        await navigator.clipboard.writeText(html);
+        done();
+      } catch {
+        setCopyProblems(['Your browser did not allow the copy. Press Copy for Outlook again, or use Edge or Chrome.']);
+      }
+    });
   }
 
   return (
@@ -968,6 +1142,23 @@ export function Compose({ email, base, items, setItems, seed, onSeedApplied, onH
           {detailsError && <span className="dl-small brochure__err">{detailsError}</span>}
         </div>
         <SenderPhoto base={base} onChange={onHeadshotChange} />
+        {outlookNote && <Alert tone={outlookNote.tone}>{outlookNote.text}</Alert>}
+        {canSend && (
+          <div className="dl-field outlook">
+            <span className="dl-label">Outlook</span>
+            {mail?.connected ? (
+              <div className="outlook__row">
+                <span className="dl-small">Connected. Emails go from your own mailbox.</span>
+                <Button variant="ghost" size="sm" onClick={disconnectOutlook}>Disconnect</Button>
+              </div>
+            ) : (
+              <div className="outlook__row">
+                <Button size="sm" onClick={connectOutlook}>Connect Outlook</Button>
+                <span className="dl-small app__muted">Once, so the tool can send your emails from your own mailbox. It never reads your mail.</span>
+              </div>
+            )}
+          </div>
+        )}
       </section>
 
       <div className="compose__resizer" onPointerDown={startResize('a')} role="separator" aria-orientation="vertical" aria-label="Drag to resize the campaign panel" title="Drag to resize" />
@@ -1042,19 +1233,64 @@ export function Compose({ email, base, items, setItems, seed, onSeedApplied, onH
         {createError && <Alert tone="error">{createError}</Alert>}
 
         <Step n={6} />
-        {!created && <p className="dl-small app__muted">Once the campaign is created: Copy for Outlook, paste it into a new Outlook email, and send it from there.</p>}
+        {!created && changedAfterCreate && <Alert tone="warning">You changed the email after creating it. Press Create campaign again, then send.</Alert>}
+        {!created && (
+          <p className="dl-small app__muted">
+            {canSend
+              ? 'Once the campaign is created, enter the customer’s email and press Send. It goes from your own mailbox, after the tool has checked it.'
+              : 'Once the campaign is created: Copy for Outlook, paste it into a new Outlook email, and send it from there.'}
+          </p>
+        )}
+        {created && canSend && (
+          <div className="send">
+            {sentAt ? (
+              <Alert tone="success" title={`Sent from your mailbox at ${hhmm(sentAt)}`}>
+                It’s in your Outlook Sent Items, and replies come to you. To send these offers to someone else, create the campaign again.
+              </Alert>
+            ) : (
+              <>
+                <Field label="Customer’s email" help="One customer per email. The address is used for this send and not kept by the tool.">{(id) => (
+                  <Input id={id} type="email" autoComplete="off" value={recipientEmail} onChange={(e) => setRecipientEmail(e.target.value)} placeholder="name@example.com" />
+                )}</Field>
+                <div className="created__btns">
+                  <Button onClick={doSend} disabled={!mail?.connected || !recipientEmail.trim() || sending}>{sending ? 'Checking and sending…' : 'Send'}</Button>
+                  {!mail?.connected && (
+                    <>
+                      <Button variant="outline" size="sm" onClick={connectOutlook}>Connect Outlook</Button>
+                      <span className="dl-small app__muted">once, then Send</span>
+                    </>
+                  )}
+                </div>
+                {sendError && (
+                  <Alert tone="error">
+                    {sendError.text}
+                    {sendError.problems.length > 0 && (
+                      <ul className="send__problems">{sendError.problems.map((p, i) => <li key={i}>{p}</li>)}</ul>
+                    )}
+                  </Alert>
+                )}
+              </>
+            )}
+          </div>
+        )}
         {created && (
-          <Alert tone="success" title="Campaign created">
+          <Alert tone={canSend ? 'info' : 'success'} title={canSend ? 'Other ways to share it' : 'Campaign created'}>
             <div className="created">
               <div>
                 Hosted page: <a href={created.hostedUrl} target="_blank" rel="noreferrer">{created.hostedUrl}</a>
               </div>
               <div className="created__btns">
-                <Button size="sm" onClick={copyForOutlook}>{copied ? 'Copied ✓' : 'Copy for Outlook'}</Button>
+                <Button size="sm" variant={canSend ? 'outline' : undefined} onClick={copyForOutlook}>{copied ? 'Copied ✓' : 'Copy for Outlook'}</Button>
                 <Button variant="outline" size="sm" onClick={() => navigator.clipboard.writeText(created.hostedUrl)}>Copy hosted link</Button>
               </div>
+              {copyProblems.length > 0 && (
+                <Alert tone="error">
+                  Not copied. Fix these first:
+                  <ul className="send__problems">{copyProblems.map((p, i) => <li key={i}>{p}</li>)}</ul>
+                </Alert>
+              )}
               <span className="dl-small app__muted">
-                Paste into a New Outlook message (Ctrl+V) <strong>with Keep source formatting</strong>: the small (Ctrl) paste button under the pasted email, or once in Settings → Mail → Compose and reply → Cut, copy and paste → Pasting from other apps. Outlook's default, Merge formatting, turns the red price black. Then press Send. Drafts only — nothing is sent for you.
+                {canSend ? 'Backup only: Send above is the reliable way. ' : ''}Paste into a New Outlook message (Ctrl+V) <strong>with Keep source formatting</strong>: the small (Ctrl) paste button under the pasted email, or once in Settings → Mail → Compose and reply → Cut, copy and paste → Pasting from other apps. Outlook's default, Merge formatting, turns the red price black. Then press Send.
               </span>
             </div>
           </Alert>
@@ -1063,7 +1299,7 @@ export function Compose({ email, base, items, setItems, seed, onSeedApplied, onH
         <div className="preview">
           {previewHtml && items.length > 0 ? (
             <>
-              {previewStale && <p className="preview__stale dl-small">Offer changed — this preview is out of date. Press “Update preview” to refresh it.</p>}
+              {previewStale && <p className="preview__stale dl-small">You changed the email — this preview is out of date. Press “Update preview” to refresh it.</p>}
               <iframe title="Email preview" srcDoc={previewHtml} className={`preview__frame${previewStale ? ' preview__frame--stale' : ''}`} />
             </>
           ) : (

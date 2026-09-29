@@ -166,6 +166,22 @@ export const suppressions = sqliteTable('suppressions', {
   note: text('note'),
 });
 
+/**
+ * Each salesperson's Microsoft 365 connection (Phase 1: Connect Outlook). One row per signed-in email. The refresh
+ * token is ENCRYPTED (mail-crypto.ts, bound to the email) and replaced on every use, as Microsoft rotates it; it is
+ * never logged or returned. Disconnect deletes the row. No customer data here.
+ */
+export const mailConnections = sqliteTable('mail_connections', {
+  /** The Access-verified sign-in, lowercased; Microsoft confirmed the mailbox is theirs at connect time. */
+  email: text('email').primaryKey(),
+  refreshTokenEnc: text('refresh_token_enc').notNull(),
+  /** The permissions Microsoft granted, space-separated, as it reported them. */
+  scopes: text('scopes').notNull(),
+  connectedAt: text('connected_at').notNull(),
+  updatedAt: text('updated_at').notNull(),
+  lastSentAt: text('last_sent_at'),
+});
+
 /** 24-hour lookup cache: the parsed lookup result (Offer plus the site's configuration options), never HTML. */
 export const lookupCache = sqliteTable('lookup_cache', {
   urlKey: text('url_key').primaryKey(),

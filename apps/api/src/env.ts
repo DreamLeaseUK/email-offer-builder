@@ -31,6 +31,27 @@ export interface Env {
   COMPLIANCE_EMAILS?: string;
   /** Optional retention policy: purge campaign records older than N days (unset/0 = keep — see retention.ts). */
   RETENTION_CAMPAIGN_DAYS?: string;
+  // ---- Sending from the salesperson's own mailbox (Phase 1; the Send app, docs/it-runbook-sign-in.md Part D) ----
+  // All five must be set for Connect Outlook and Send to work; until then the tool offers Copy for Outlook only.
+  /** Directory (tenant) ID (a wrangler.jsonc var; not a secret). */
+  MAIL_TENANT_ID?: string;
+  /** The Send app's Application (client) ID (a wrangler.jsonc var; not a secret). */
+  MAIL_CLIENT_ID?: string;
+  /**
+   * The return address registered in runbook D4, exactly. Production: the wrangler.jsonc var. Locally (the web app on
+   * localhost:5173) both local dev scripts pass http://localhost:5173/api/mail/callback with --var
+   * (apps/api/package.json). Never derived from the request: the Vite proxy rewrites the Host header, so the Worker
+   * cannot see the address the browser used.
+   */
+  MAIL_REDIRECT_URI?: string;
+  /** wrangler secret: the Send app's client secret (runbook D5, renewed yearly). */
+  MAIL_CLIENT_SECRET?: string;
+  /**
+   * wrangler secret: 32 random bytes, base64. Encrypts each salesperson's stored Microsoft permission (AES-GCM,
+   * mail-crypto.ts). Generated and piped by Matt's command, never shown. If it changes, stored connections can no
+   * longer be read and each salesperson is asked to reconnect (never an error).
+   */
+  MAIL_TOKEN_KEY?: string;
 }
 
 export interface AccessUser {

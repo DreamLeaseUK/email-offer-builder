@@ -4,8 +4,8 @@
  * compliance risk): plain-text emails behind Access, a clear lawful basis (held to honour the opt-out),
  * viewable and auditable in the tool + CSV export. Removal (re-permitting contact) is admin-only.
  *
- * Delivery is manual (Copy-for-Outlook → Outlook), so the tool can't block the actual send; this is a
- * register staff add to, view, and check against — not a send gate.
+ * It is a send gate since Phase 1 (29 Sept 2026): Send refuses a suppressed address (presend.ts, the recipient
+ * check). Copy for Outlook has no address to check, so a salesperson using it still checks here by hand.
  *
  *   POST   /api/suppressions          add an opt-out { email, note? }   (any signed-in salesperson)
  *   GET    /api/suppressions          the register, newest first

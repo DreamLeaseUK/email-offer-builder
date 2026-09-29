@@ -39,3 +39,9 @@ export {
 export type { HarvestDeps, BrochureStore, Downloaded, ManualBrochureInput } from './brochure/harvest.js';
 export { ensureBrochure, isEditionTooOld } from './brochure/ensure.js';
 export type { BrochureRepo, EnsureResult, EnsureDeps } from './brochure/ensure.js';
+
+// Microsoft 365: send from the salesperson's own mailbox (Phase 1, docs/evolution.md §6)
+export { createM365Client, M365Error, M365_SCOPES, isSameMailbox, newPkce, randomToken } from './m365/client.js';
+export type { M365Client, M365Config, M365ErrorCode, M365Me, MailMessage, TokenSet } from './m365/client.js';
+export { createM365Output } from './m365/output.js';
+export type { M365OutputDeps } from './m365/output.js';

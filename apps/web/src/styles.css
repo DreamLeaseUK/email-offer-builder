@@ -416,6 +416,30 @@ body {
 }
 .created__btns {
   display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ---- send from the salesperson's own mailbox (step 6) and Connect Outlook (step 3) ---- */
+.send {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.send__problems {
+  margin: 6px 0 0;
+  padding-left: 18px;
+}
+.outlook {
+  display: grid;
+  gap: 6px;
+  margin-top: 12px;
+}
+.outlook__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   gap: 8px;
 }
 
