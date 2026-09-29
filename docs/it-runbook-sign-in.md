@@ -101,7 +101,7 @@ Access → Applications → Add an application → **Self-hosted**:
 | Session duration | 24 hours |
 | Application domain | `marketingtools.dreamelectric.uk`, path left **empty** (the whole host) |
 | Identity providers | Entra ID only; turn on **Instant Auth** so users go straight to Microsoft |
-| Policy | Name `DreamLease staff`, action **Allow**, include **Emails ending in** `@dreamlease.co.uk` (or the Entra group from A7) |
+| Policy | Name `DreamLease staff`, action **Allow**, include **Emails ending in** `@dreamlease.co.uk` (or the Entra group from A7). **As built (29 Sept):** the existing **Staff** policy, shared with the SalSac Broker CRM application: emails ending in dreamlease.co.uk or salsac.co.uk (Matt: SalSac staff may use the tool). A change to Staff changes both applications. |
 
 Save. It is fine to do this before the address exists (C5): the host is then protected from its first request.
 Do not use the Worker-level "Protect this Worker behind Access" with all traffic: it would put a login page in
@@ -170,13 +170,14 @@ dev:live` from running the local code); a deploy leaves them in place.
 **C7. Deploy the 28 Sept code** (Terminal panel, repo folder): `pnpm run deploy`. It builds the web app and deploys
 the Worker. Then do B5.
 
-**C8. For whoever manages DreamLease DNS at GoDaddy** (two records in the `dreamlease.co.uk` zone; nothing else
+**C8. For whoever manages DreamLease DNS at GoDaddy** (the CNAME is the one that matters; the TXT is optional and
+only makes activation immediate — Cloudflare validates the hostname by itself once the CNAME exists; nothing else
 changes):
 
 | Type | Name (host) | Value (points to) | TTL |
 |---|---|---|---|
 | CNAME | `offers` | `saas.dreamelectric.uk` | 1 hour (default) |
-| TXT | `_cf-custom-hostname.offers` | the value copied in C4 | 1 hour (default) |
+| TXT (optional) | `_cf-custom-hostname.offers` | the value copied in C4 | 1 hour (default) |
 
 Within about an hour of both records existing, the custom hostname in C4 shows **Active** with an active
 certificate. Test: `https://offers.dreamlease.co.uk/health` answers with no login. Then Claude changes
@@ -195,6 +196,18 @@ exactly as they are. Two rules for later:
 - **If anyone ever adds CAA records** to `dreamlease.co.uk` (records limiting which certificate authorities may issue
   for it), they must allow `letsencrypt.org` and `pki.goog`, or the `offers` certificate stops renewing (and
   MotorComplete's `www` certificate, from Google Trust Services, would be at risk too). There are none today.
+
+**Seen on go-live (29 Sept 2026).**
+
+- *Microsoft says AADSTS50105, "not assigned to the application".* Step A7 is on: add the person (or their group) under
+  Enterprise apps → Cloudflare Access - DreamLease Offer Mailer → Users and groups, or set **Assignment required?** to
+  **No** (Cloudflare's policy still limits sign-in to the allowed email domains).
+- *After sign-in the address shows another website (it was MotorComplete's password page).* Look at the zone's own
+  Rules → Snippets, Workers Routes and Page Rules first: four Snippets from the MotorComplete test site were proxying
+  every request on `dreamelectric.uk`. They are disabled; keep them off.
+- *Someone has the wrong screens* (e.g. compliance without the Templates tab): the tool matches the exact sign-in
+  address. Read it from Zero Trust → Team & Resources → Users and put that address in `config/compliance.json` or
+  `config/admins.json`.
 
 ## Ongoing
 

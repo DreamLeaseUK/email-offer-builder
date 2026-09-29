@@ -95,7 +95,16 @@ Three audiences / lease products, each with its own compliance wording and terms
   offer that cannot be re-priced keeps its copied price and is not re-brochured, and the warning says so. A campaign
   **never** flows into the library. Client-only (`apps/web/src/Campaigns.tsx`, `App.tsx` `copyCampaign`,
   `Compose.tsx` `repriceCopied`) — no API change.
-- **Promotions register** (master table + CSV).
+- **Promotions register** (master table + CSV). Use case "Other…" carries the salesperson's words (`useCaseNote`, ≤ 80 characters), shown as "Other: …" (29 Sept).
+- **Guidance and defaults (29 Sept):** Compose shows six numbered steps (Who it's for, Your message, Your details, Add
+  offers, Check and create, Send from Outlook); Renewal is the default use case; WhatsApp is shown "coming soon" and
+  cannot reach an email (`WHATSAPP_LIVE` in `Compose.tsx`); preview links point straight at the site in a new tab
+  (the created campaign keeps its tracked `/r/` links).
+- **Library, simplified (29 Sept):** tabs Team offers (first) and My saved offers; Add to email and Remove per card;
+  admins see removed offers, restore them and Share with team. Archive / unarchive need the entry's owner or an admin.
+- **Brochure near miss (29 Sept):** when nothing verifies, the panel offers the closest document from the stored trace
+  (Open it / Use it anyway via the paste route); wrong models, other continents, manuals, dealer copies, forms and
+  non-English files are never offered. An ended offer's link gets "This offer is no longer on the website…".
 - **Compliance templates (compliance approver only, 28 Sept 2026)**: Emma (`config/compliance.json`) authors the
   compliance wording, publishes it (stamped with her verified sign-in), locks approved, new-version/retire. Master
   admins can read it but not change it. The seeded placeholder is labelled "not compliance-approved" and carries no
@@ -188,7 +197,7 @@ validation is Matt's own test sends.
                      └──────┬──────────────┬─────────────────┬──────────────────┬────────────────────────────┘
                           D1 (SQL)      R2 (objects)    Images (TRANSFORM)   Firecrawl (metered, external)
 ```
-Two hosting surfaces on one Worker (decided by Matt, 28 Sept 2026; how and why in `status-2026-09-28.md` §2):
+Two hosting surfaces on one Worker (decided by Matt, 28 Sept 2026; how and why in `status-2026-09-28.md` §2; live since 29 Sept, `status-2026-09-29.md`). **Keep the `dreamelectric.uk` zone's Snippets off:** four from the MotorComplete test site proxied every request on the zone to MotorComplete after sign-in (disabled 29 Sept):
 - **`marketingtools.dreamelectric.uk`** — the tool: the web app (`/app/`) + `/api`, staff-only; Cloudflare Access
   covers the whole host. A Custom Domain on our `dreamelectric.uk` zone. `TOOL_BASE_URL`.
 - **`offers.dreamlease.co.uk`** — hosted pages, redirects, images, brochures — public (noindex, expiring), on the
@@ -608,7 +617,7 @@ Parts B and C, the deploy, the placeholder-template correction (`apps/api/script
 the Firecrawl secret and confirming the Workers Paid plan; Tawk webchat (parked, renewals-only stage one).
 
 ## B10. Testing & verification
-- `pnpm test` — **242 tests** (28 Sept): schema 23, render 35 (incl. the intro-derived preheader), adapters 92, api 92
+- `pnpm test` — **247 tests** (29 Sept: adapters 93 with the ended-offer message, api 96 with direct preview links, the use-case note and the remove/restore rule). Before that, 242 (28 Sept): schema 23, render 35 (incl. the intro-derived preheader), adapters 92, api 92
   (templates: who may read and write, `COMPLIANCE_EMAILS`, `/me`'s `complianceApprover`; the placeholder template
   seeded without an approver and replaced by compliance's first publish; the web app served on the tool host only;
   security: 7, the cross-site guard and safe error logs)
@@ -659,8 +668,9 @@ system, one API, and a UI that only calls the API.
   1. Add it to `packages/schema` as optional (or with a default) so stored JSON snapshots still parse.
   2. D1 changes are additive migrations only (`pnpm db:generate`). Matt applies remote migrations.
   3. Keep `assertNoCapId()` coverage for anything persisted.
+- **Release WhatsApp.** Set `WHATSAPP_LIVE` to true in `apps/web/src/Compose.tsx` and deploy: the number field, the CTA and the signature link come back.
 - **Add a rule, list or wording.** Put it in `config/` (like `badges.json`, `library-shelves.json`), not in code.
-- **Change who approves the compliance wording.** Edit `config/compliance.json` and deploy, or set
+- **Change who approves the compliance wording.** Use the exact sign-in address from Zero Trust → Team & Resources → Users (Emma signs in as `emma@dreamlease.co.uk`; an assumed `emma.airey@` left her without the Templates tab until PR #12). Edit `config/compliance.json` and deploy, or set
   `COMPLIANCE_EMAILS` for a temporary deputy. Never grant it through `admins.json`: admins read templates, they do not
   approve them.
 - **Serve another staff page.** Put it in the web app (a new view in `App.tsx`), not in a new host: everything under

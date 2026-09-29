@@ -1,7 +1,7 @@
 # Pickup prompt — DreamLease Offer Mailer
 
 Paste everything below the line into a new Claude Code session opened in `C:\Users\MatthewWilson\email-offer-builder`.
-**Updated 28 September 2026 (end of session 9).** It supersedes all earlier pickup prompts. Every state claim is
+**Updated 29 September 2026 (session 9, day 2: live).** It supersedes all earlier pickup prompts. Every state claim is
 marked **[verified 28 Sept]** / **[verified 24 Sept]** (checked against the repo or the live system that day) or
 **[asserted]** (recorded, not re-checked). Verify before you act: run the pickup-verify skill if it is available.
 
@@ -49,7 +49,7 @@ web page. It is an FCA-regulated financial-promotions tool (compliance matters).
 
 1. `CLAUDE.md` — the four rules that never bend, the current rendering scope, the working agreement, commands.
 2. **This file.**
-3. **`docs/status-2026-09-28.md`** — the current build log (session 9, the go-live bundle): the address decision and
+3. **`docs/status-2026-09-29.md`** — today's build log (live behind sign-in, the Snippets that blocked it, PRs #8–#12, what is still open). Then **`docs/status-2026-09-28.md`** — day 1 (the go-live bundle): the address decision and
    why, what was built, the evidence, Emma's questions answered, and **Matt's ranked go-live steps (§6)**. Then
    `status-2026-09-24.md` (session 8), `-09-23.md` (the offer-library rebuild, campaign copy) and `-09-21.md` (the
    finder day, the paste fix) as history.
@@ -79,14 +79,19 @@ web page. It is an FCA-regulated financial-promotions tool (compliance matters).
   reports **84** differing lines (2 logo width, 6 the third hero pill, 10 inline-block pills + the stack image column,
   64 the name-before-picture reorder, 2 the plain greeting of 23 Sept), all recorded in the `cards.ts` header.
   `MARKUP_VERSION` is still 2.
-- **Production [verified 28 Sept]:** https://offer-mailer.matt-wilson-9b8.workers.dev/health → **v0.5.0**, db ok,
-  images true, **`firecrawl:false`**; **`/api` answers 503** until Cloudflare Access exists. **The Worker has NOT been
-  redeployed for sessions 6–9**: all of it runs only through `pnpm dev:live` (the code says 0.6.0). D1 migrations 0000–0003 applied
-  (remote too). `wrangler` is signed in as Matt. **Security:** production has `ACCESS_AUD` empty; `/api` is closed
-  only because `DEV_USER_EMAIL` is not defined there. **Never set it in production.**
+- **Production [verified 29 Sept]:** **live** at https://marketingtools.dreamelectric.uk behind Microsoft sign-in
+  (Cloudflare Access application `marketingtools`, the shared **Staff** policy: dreamlease.co.uk and salsac.co.uk
+  addresses; Entra's "Assignment required" decides who reaches it). `/health` on workers.dev → **v0.6.1**, db ok,
+  images true, `firecrawl:true`; `/api` on workers.dev answers 401. PR #11 and #12 are deployed too (version not
+  bumped). Secrets set: `ACCESS_AUD`, `FIRECRAWL_API_KEY`. D1 migrations 0000–0003 applied. **Keep the
+  `dreamelectric.uk` zone's four MotorComplete Snippets DISABLED** (Rules → Snippets): they proxied everything to
+  MotorComplete after sign-in. **Never set `DEV_USER_EMAIL` in production.**
+- **Customer links:** still on workers.dev (`PUBLIC_BASE_URL`) until IT adds the CNAME `offers` →
+  `saas.dreamelectric.uk` at GoDaddy; the custom hostname `offers.dreamlease.co.uk` and its route are ready.
 - **How the tool is run today [verified 28 Sept]:** locally, on production storage. `.claude/launch.json` defines
   `api-live` (`pnpm dev:live`, :8787) and `web` (Vite, http://localhost:5173 — use `localhost`) — start them with the
   desktop app's preview tools; they stop when the app's Browser pane is closed ("restart localhost" = start both).
+  `dev:live` passes `--var ACCESS_AUD:` (the remote preview keeps production secrets; PR #8).
   `api-local` (plain `wrangler dev`, :8788, local storage) checks the built web app as the Worker serves it
   (`localhost:8788/` → `/app/`); `dev:live` cannot, as it runs at Cloudflare's edge.
   Plain `pnpm dev` (local storage) must never be used for an email that will be sent. `dev:live` writes real
@@ -102,12 +107,12 @@ web page. It is an FCA-regulated financial-promotions tool (compliance matters).
 - **Production storage [asserted 23 Sept, not re-counted]** (all test data from `dev:live`): about 11 test campaigns
   on 23 Sept — **more were created in session 8's testing**; 3 library entries (Renault 5 personal, Polestar 2
   personal + on the shared EVs shelf); 4 legacy `offers` rows; 11 current brochures incl. `renault/5` (verified in
-  D1 on 23 Sept); the placeholder template (**still shows "approved by" Emma until Matt runs
-  `apps/api/scripts/fix-placeholder-template.sql`**, status §6 step 6); one saved sender (with a headshot); no
-  suppressions. Wipe test campaigns from the promotions register before go-live.
+  D1 on 23 Sept); the placeholder template, corrected on 28 Sept (no approver) [verified 29 Sept on the Templates
+  screen]; saved senders; no suppressions. Wipe test campaigns from the promotions register before the first real send.
 - **Roles [verified 28 Sept, in code]:** `matt.wilson@dreamlease.co.uk` is the master admin (`config/admins.json`);
-  `emma.airey@dreamlease.co.uk` is the **only compliance approver** (`config/compliance.json`; her address is assumed
-  from her email). Master admins can read templates but not change them.
+  **`emma@dreamlease.co.uk`** is the **only compliance approver** (`config/compliance.json`, corrected by PR #12 from
+  an assumed `emma.airey@`). Read sign-in addresses from Zero Trust → Team & Resources → Users; never assume one.
+  Master admins can read templates but not change them.
 
 ## 3. What exists (build order, brief §8.2)
 
@@ -140,13 +145,11 @@ are unproven in real clients.
 
 ## 5. Open items, in the order I would take them
 
-1. **Go-live, Matt's ranked steps in `status-2026-09-28.md` §6**: "ship it" on the pull request; a test send from
-   `main` (Keep source formatting → Gmail + New Outlook; the first real check of the inbox preview and the plain
-   greeting, none since 22 Sept); Cloudflare sign-in (runbook B2–B4); Cloudflare addresses (C1–C6); IT's two GoDaddy
-   records (C8); the one-line deploy + `ACCESS_AUD` secret + placeholder correction; the test (B6). Ask Matt where he
-   is in that list; lead with it.
-2. **When `https://offers.dreamlease.co.uk/health` answers:** change `PUBLIC_BASE_URL` in `wrangler.jsonc` to it
-   (a one-line change on a branch; Matt deploys). workers.dev stays on for links already sent.
+1. **Customer links:** when IT's CNAME is in and `https://offers.dreamlease.co.uk/health` answers, change
+   `PUBLIC_BASE_URL` in `wrangler.jsonc` to it (a one-line PR; Matt deploys). workers.dev stays on for sent links.
+2. **Emma publishes the compliance wording** (all three contract types; the salary sacrifice text Matt supplied was
+   written for a quotation, status 2026-09-29 §4). Then wipe the test campaigns and set the retention period.
+   **Parked until Matt says:** Templates screen items 1–4 (memory `templates-ux-parked`).
 3. **Offer-library follow-ups** (B7c, small): expiry-based auto-archive; a "re-point the URL" editor; drop the legacy
    `offers` table.
 4. **Campaign curation beyond copy** (rename / archive) — floated, not built.
@@ -161,15 +164,14 @@ are unproven in real clients.
 ## 6. Go-live
 
 **Target: Thursday 1 October 2026, two salespeople. The date is flexible (Matt, 24 Sept): get it right rather than
-rush it.** The build side is done (session 9). What is left is Matt's, in the order of `status-2026-09-28.md` §6, plus:
+rush it.** Live since 29 Sept (status 2026-09-29). What is left before the first real customer email:
 
 - **Emma:** the approved compliance wording for PCH / BCH / salary sacrifice, published by her in the tool once she
   can sign in (the live template is a placeholder, labelled so once corrected); the brochure small print incl. the
   European-edition sentence; the campaign retention period.
 - **Wipe the test campaigns** from the production promotions register. Matt runs the statement.
-- The production Firecrawl secret; confirming the Workers Paid plan.
-- After the deploy, verify: `/health` shows 0.6.0; `marketingtools.dreamelectric.uk` asks for a Microsoft sign-in and
-  then shows the tool; a hosted page opens with no login; `/api/me` on workers.dev answers 401.
+- Confirming the Workers Paid plan.
+- IT's CNAME for `offers`, then `PUBLIC_BASE_URL`.
 
 **Addresses (decided 28 Sept):** the tool on `marketingtools.dreamelectric.uk` (Custom Domain, Access on the whole
 host); customer links on `offers.dreamlease.co.uk` (Cloudflare for SaaS on the `dreamelectric.uk` zone; GoDaddy keeps
@@ -177,6 +179,13 @@ DreamLease DNS). `dreamlease.co.uk` cannot come to our Cloudflare: MotorComplete
 their own account. Project memory `custom-domain-setup-parked` holds the reasoning.
 
 ## 7. Known-good facts & gotchas
+
+- **pnpm on Matt's PC** lives in the Claude app's private storage: give him commands prefixed with
+  `$env:Path = "$env:LOCALAPPDATA\Packages\Claude_pzs8sxrjxfjjc\LocalCache\Roaming\npm;$env:Path"; Set-Location "$HOME\email-offer-builder";`.
+- **Before blaming another account for a hostname problem**, check the zone's own Rules → Snippets, Workers Routes
+  and Page Rules (29 Sept: our own Snippets, not MotorComplete's account).
+- **Claude in Chrome** is the way to act in Matt's Cloudflare; the app's built-in browser fails Cloudflare's sign-in
+  bot check. Never type secrets for him (the Entra secret, the AUD tag are his to paste).
 
 - **Brochures ride along (23 Sept).** A brochure is stored per `vehicleKey`, never on the offer, and a live lookup
   never carries one. `/reprice` (library "Add to campaign") re-attaches the current one via `withStoredBrochure`;
@@ -216,5 +225,5 @@ their own account. Project memory `custom-domain-setup-parked` holds the reasoni
 ## 8. Start
 
 Confirm in a few lines that you have read the docs above; state the git, test and live state as you find them
-(`git status`, `git branch`, `git log --oneline -5`, `pnpm test`, `/health`); then ask Matt where he is in the go-live
-steps of `status-2026-09-28.md` §6, leading with whatever only he can do next. Propose nothing else until he answers.
+(`git status`, `git branch`, `git log --oneline -5`, `pnpm test`, `/health`); then ask Matt where the open items of
+`status-2026-09-29.md` §6 stand (IT's CNAME, Emma's wording), leading with whatever only he can do next. Propose nothing else until he answers.
