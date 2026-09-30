@@ -4,7 +4,8 @@
  *
  * Stage one implements OfferSource: manual, url.
  * Stage one implements BrochureSource: firecrawl, manual.
- * Stage one implements OfferOutput: graph_draft, clipboard.
+ * OfferOutput: m365 (Phase 1, 29 Sept 2026: sent from the salesperson's own mailbox). Copy for Outlook is browser
+ * code (the clipboard), not an adapter; the Graph draft was never built (removed 24 Sept 2026).
  * The hosted page is not an output adapter; every render writes it (§5.4).
  * Stubs with typed interfaces (no logic): feed, monday, ai, mautic (build step 8).
  */
@@ -28,14 +29,23 @@ export interface BrochureSource {
 
 export interface DeliveryResult {
   kind: OfferOutput['kind'];
-  /** e.g. Graph message id, or the hosted URL for hosted_only */
+  /** A reference the output gives back, if any (Graph sendMail gives none). */
   ref?: string;
-  /** Something the UI can open, e.g. the draft's webLink */
+  /** Something the UI can open, if any. */
   openUrl?: string;
+  /** When the output accepted the email (for m365: Microsoft's 202, not delivery to the customer's inbox). */
   deliveredAt: string;
 }
 
+export interface DeliveryInput {
+  rendered: Rendered;
+  campaign: Campaign;
+  sender: Sender;
+  /** The one customer this email goes to. Used for the send only, never stored (the campaign carries no recipient). */
+  to?: { address: string; name?: string };
+}
+
 export interface OfferOutput {
-  readonly kind: 'graph_draft' | 'clipboard' | 'mautic' | 'monday';
-  deliver(rendered: Rendered, campaign: Campaign, sender: Sender): Promise<DeliveryResult>;
+  readonly kind: 'm365' | 'clipboard' | 'mautic' | 'monday';
+  deliver(input: DeliveryInput): Promise<DeliveryResult>;
 }

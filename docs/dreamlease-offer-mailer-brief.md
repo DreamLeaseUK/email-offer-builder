@@ -152,7 +152,8 @@ interface Campaign {
   hostedPage?: { slug: string; url: string; enabled: boolean };
   tracking: { campaignCode: string; utm: Record<string, string> };
   status: 'draft' | 'rendered' | 'sent' | 'archived';
-  sentAt?: string; sentVia?: 'graph_draft' | 'clipboard' | 'hosted_only';
+  sentAt?: string; sentVia?: 'graph_draft' | 'clipboard' | 'hosted_only' | 'm365';   // 'm365' from Phase 1; graph_draft never built
+  sentBy?: string;                  // Phase 1: who pressed Send (the customer's address is never stored)
   createdBy: string; createdAt: string; updatedAt: string;
 }
 
@@ -172,11 +173,11 @@ interface Template {
 ```ts
 interface OfferSource    { kind: string; lookup(input: unknown): Promise<Offer> }
 interface BrochureSource { kind: string; harvest(vehicle: Offer['vehicle']): Promise<Brochure> }
-interface OfferOutput    { kind: string; deliver(rendered: Rendered, campaign: Campaign, sender: Sender): Promise<DeliveryResult> }
+interface OfferOutput    { kind: string; deliver(input: { rendered: Rendered; campaign: Campaign; sender: Sender; to?: { address: string; name?: string } }): Promise<DeliveryResult> }
 interface Rendered       { html: string; text: string; subject: string; hostedHtml: string; layout: TemplateLayout; links: Record<string, string> }  // links: linkId → destination for /r/<slug>/<linkId>
 ```
 
-Stage one implements `OfferSource`: `manual`, `url`. Stage one implements `BrochureSource`: `firecrawl`, `manual`. Stage one implements `OfferOutput`: `graph_draft`, `clipboard`. The hosted page is not an output adapter: every render writes it (see §5.4). Stubs with typed interfaces (no logic) for `feed`, `monday`, `ai`, `mautic`.
+Stage one implements `OfferSource`: `manual`, `url`. Stage one implements `BrochureSource`: `firecrawl`, `manual`. `OfferOutput`: `m365` (Phase 1, 29 Sept 2026: sent from the salesperson's own mailbox; `to` is the one customer, used for the send and never stored). Copy for Outlook is browser code, not an adapter; the Graph draft was never built. The hosted page is not an output adapter: every render writes it (see §5.4). Stubs with typed interfaces (no logic) for `feed`, `monday`, `ai`, `mautic`.
 
 ### 5.3 Vehicle lookup and the image pipeline
 
@@ -224,7 +225,7 @@ No open-tracking pixels; they're unreliable now that Apple and Microsoft prefetc
 
 - **Cloudflare Workers with static assets** for the front end and the API (lookup, render, redirects, hosted pages) in one deploy; Cloudflare steers new projects here rather than Pages. **Workers Paid plan** (about £4 a month): the free plan caps CPU at 10 ms per request, which rules out compiling MJML, resizing images or DOM-parsing an offer page inside the Worker; Paid lifts it to 30 s. This is the one line item above zero (confirmed 11 Sept 2026). Even so, the request path must not compile MJML, resize images in wasm or DOM-parse HTML; see §8.1. **R2** for images, brochures and rendered HTML; **D1** for campaigns, offers, templates, clicks (SQLite, free tier is far beyond our volume). Supabase is acceptable instead of D1 if Claude Code judges the relational tooling worth it; pick one and don't split storage.
 - **Cloudflare Access** in front of the tool, using Microsoft Entra ID (our M365 tenant) as the identity provider. Free for up to 50 users. The Access JWT gives the Worker the user's email; that is the `createdBy`.
-- **Microsoft Graph** via a second Entra app registration (the first is Access's identity provider) with MSAL in the browser (auth code + PKCE), delegated permissions only. Tokens stay in the browser; the Worker never holds mail tokens.
+- **Microsoft Graph** via a second Entra app registration (the first is Access's identity provider), delegated permissions only. *Superseded 29 Sept 2026 (Phase 1, `docs/evolution.md` §6):* no MSAL in the browser. The Worker is a confidential client (Web platform, auth code + PKCE) and holds each salesperson's refresh token, encrypted, to send as them (`Mail.Send`); IT's steps are `docs/it-runbook-sign-in.md` Part D.
 - Secrets (Firecrawl key, Entra client id) in Worker secrets. No secrets in the front end except the public Entra client id.
 - Domain: `offers.dreamlease.co.uk` for hosted pages and redirects; `mailer.dreamlease.co.uk` (behind Access) for the tool. Both in our existing zone.
 - Surge and Netlify: not used. One platform.
@@ -495,6 +496,16 @@ is replaced: the tool sends from the salesperson's own mailbox via Microsoft 365
 monday.com becomes the customer record with a "Send offers" button and activity logging (Phase 2); renewals and
 follow-ups (Phase 3); bulk through Mautic and SalSac as a brand (Phase 4). The earlier plan to send through
 monday.com's email tool is superseded.
+
+### As built — Phase 1, 29 September 2026 (`docs/evolution.md` §6; not yet deployed)
+
+- **Send (§5.4):** Connect Outlook once (step 3), then Send (step 6): the tool re-renders the stored campaign on the
+  server and sends it to one customer from the salesperson's own mailbox via Microsoft Graph, after automatic checks
+  (approved compliance wording, prices, dates, the offer still on the site, pictures and brochures, tracked links,
+  subject and message, size, no CAP ID, the customer's address valid and not suppressed). Once per campaign.
+  `sentAt`, `sentVia: 'm365'` and `sentBy` go in the register; the customer's address is not stored.
+- **Copy for Outlook** stays as a backup and runs the same checks (all but the address).
+- **Who:** dreamlease.co.uk staff only (`config/mail.json`); SalSac is a later iteration.
 
 ## 9. Assumptions and open items
 

@@ -20,6 +20,7 @@ export default defineConfig(({ command }) => ({
     allowedHosts: ['.trycloudflare.com', '.ngrok-free.app', '.ngrok.app', '.ngrok.io', '.loca.lt'],
     // Allow importing source from the sibling workspace packages (schema, design-system).
     fs: { allow: ['../..'] },
-    proxy: Object.fromEntries(['/api', '/r', '/c', '/b', '/f', '/a'].map((p) => [p, { target: WORKER, changeOrigin: true }])),
+    // Trailing slashes: a bare '/f' or '/a' would also catch /favicon.svg and /apple-touch-icon.png from ./public.
+    proxy: Object.fromEntries(['/api/', '/r/', '/c/', '/b/', '/f/', '/a/'].map((p) => [p, { target: WORKER, changeOrigin: true }])),
   },
 }));

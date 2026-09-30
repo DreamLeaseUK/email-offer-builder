@@ -1,10 +1,11 @@
 # DreamLease Offer Mailer — Solution Design & System Architecture
 
-**Status:** current as of 29 Sept 2026 (session 9: live behind sign-in). **Forward plan: `evolution.md`** — after the demo (29 Sept) the send route changes to Microsoft 365 from the salesperson's own mailbox, with monday.com as the customer record and Mautic for bulk; this document is updated as each phase ships. This is the authoritative technical design document. The
-**production Worker is still v0.5.0** (21 Sept): everything of sessions 6–8 — the offer-library rebuild (**B7c**),
-campaign copy, the brochure carry-over on library use and copy, the salesperson UTM, the auto-preheader and the
-Compose changes — is in `main` (pushed to `origin`) and runs through `pnpm dev:live`, **not yet deployed** (the
-`library_entries` table was applied to production D1, migration `0003`, so `dev:live` works). For product
+**Status:** current as of 29 Sept 2026 (session 9: live behind sign-in, production v0.6.1; session 10: **Phase 1, the
+Microsoft 365 send, built on branch `feat/phase1-send-m365` as v0.7.0, not yet deployed**, B13). **Forward plan:
+`evolution.md`**: after the demo (29 Sept) the send route changes to Microsoft 365 from the salesperson's own
+mailbox, with monday.com as the customer record and Mautic for bulk; this document is updated as each phase ships.
+This is the authoritative technical design document. (Until 29 Sept this header said production was still v0.5.0;
+everything of sessions 6–9 is deployed: `status-2026-09-29.md`.) For product
 requirements see `dreamlease-offer-mailer-brief.md` (v1.1, with an as-built log in §9a); for the email-markup
 reference see `offer-mailer-implementation-notes.md` (and the deviations from it in B7); for the build log see
 `status-2026-09-28.md` (`-09-24`, `-09-23`, `-09-21`, `-09-18`, `-09-16`, `-09-15`, `-09-14` are history); for how to resume see
@@ -18,7 +19,7 @@ Where this document and the code disagree, the code wins — fix this document.
 ## A1. What it is
 An internal, FCA-aware tool. A DreamLease salesperson pastes a `dreamlease.co.uk` vehicle URL, assembles a
 branded HTML email of one to six lease offers, and gets back **Outlook-ready HTML** (Copy-for-Outlook) plus a
-**hosted web page** of the same offers. The Worker never sends email — a human always presses Send.
+**hosted web page** of the same offers. A human always presses Send: from Phase 1 (B13) the tool sends it from the salesperson's own mailbox after automatic checks; Copy for Outlook stays as a backup.
 
 Three audiences / lease products, each with its own compliance wording and terms:
 - **PCH** — personal contract hire (`personal`)
@@ -42,7 +43,7 @@ Three audiences / lease products, each with its own compliance wording and terms
    strips any recipient PII, validates, renders, writes the hosted page to R2, stores a snapshot in D1, and
    returns the email HTML/text for Copy-for-Outlook plus the hosted URL.
 4. **Deliver.** Copy-for-Outlook (clipboard `text/html` + `text/plain`), or the hosted link. The Outlook/Graph
-   "create draft" was **removed from the plan** (24 Sept 2026); the next delivery path is monday.com's email tool. A human sends. **The paste into New
+   "create draft" was **removed from the plan** (24 Sept 2026). From Phase 1 (B13): **Send** from the salesperson's own mailbox via Microsoft 365, after the pre-send checks. A human sends. **The paste into New
    Outlook is the real send path today, and Outlook rewrites what is pasted** — see A5; the email is built for
    what survives it.
 5. **Track.** Every http link routes through `/r/<slug>/<linkId>` (logs a click, redirects); hosted-page views
@@ -125,7 +126,7 @@ Three audiences / lease products, each with its own compliance wording and terms
 3. **Compliance is locked.** Each template carries one approved compliance block per contract type; salespeople can't
    edit it; a campaign can't render against a template whose status is not `approved`. Salesperson-authored copy is
    recorded verbatim in the promotions register.
-4. **Drafts only.** The Worker never sends email.
+4. **A human presses Send.** From Phase 1 (B13): only the signed-in salesperson, from their own mailbox, after the pre-send checks, one customer, once; never automatically, never in bulk. Until Phase 1 is deployed the Worker never sends.
 
 ### PII posture — the plan is complete (16 Sept 2026)
 - **Staff (salesperson) data is business contact data** — name, work email/phone/WhatsApp, booking link, signature
@@ -205,11 +206,11 @@ Two hosting surfaces on one Worker (decided by Matt, 28 Sept 2026; how and why i
 - **`offers.dreamlease.co.uk`** — hosted pages, redirects, images, brochures — public (noindex, expiring), on the
   DreamLease domain so customers can trust it. A **Cloudflare for SaaS** custom hostname on the `dreamelectric.uk`
   zone (fallback origin `saas.dreamelectric.uk`, `AAAA 100::`), sent to the Worker by the route
-  `offers.dreamlease.co.uk/*`; GoDaddy keeps DreamLease DNS and holds two records for it (CNAME + TXT).
+  `offers.dreamlease.co.uk/*`; 123-Reg keeps DreamLease DNS and holds two records for it (CNAME + TXT).
   `PUBLIC_BASE_URL` moves to it once it is verified live.
 
 Why not a `dreamlease.co.uk` zone of our own: the main site (`www`) and its certificates are run by MotorComplete
-through their own Cloudflare account (their validation records live in our GoDaddy DNS), DNS is at GoDaddy, and
+through their own Cloudflare account (their validation records live in our 123-Reg DNS), DNS is at 123-Reg, and
 proxying one subdomain from outside DNS needs Cloudflare's Business plan. `mailer.` is taken by an unrelated host.
 
 The Custom Domain and the route are attached once in the dashboard (runbook Part C), **not** listed in
@@ -288,6 +289,7 @@ by setting `DEV_USER_EMAIL` in production (CLAUDE.md).
 | `clicks` | Click/view log: coarse uaClass + timestamp | **none — no IP/UA** |
 | `suppressions` | Opt-out **emails (plain text)** + addedBy/at/note | recipient email (lawful basis; admin-removable) |
 | `lookup_cache` | 24 h parsed lookup results — never raw HTML; purged daily | salesperson email (the cached `Offer` carries the `createdBy` of whoever looked it up first) |
+| `mail_connections` | Phase 1 (migration `0004`, B13): each salesperson's Microsoft 365 connection: the refresh token **encrypted** (AES-GCM, `MAIL_TOKEN_KEY`, bound to the email), scopes, connected / updated / last sent. Deleted on Disconnect, when Microsoft ends it, or after 90 days unused (daily Cron) | salesperson email; **no customer data** |
 
 ### R2 objects
 | Bucket | Holds | Key | Served |
@@ -312,7 +314,7 @@ other host, so the internal tool never appears on the customer-facing address (`
 `/offers/library/:id/reprice`, `/…/archive`, `/…/unarchive`, `/…/promote` **(admin)**, `/library/shelves` ·
 `/brochures/ensure`, `/brochures/accept` (an official page, a request form, or the European edition the finder offered), `/brochures/manual`, `/brochures/current` (the stored copy, no search) · `/campaigns*`, `/register`, `/register.csv` ·
 `/templates*` **(read: admin or compliance; write: compliance only)** · `/suppressions`, `/suppressions.csv`, `/suppressions/check`,
-`/suppressions/remove` **(remove = admin)** · `/dev/*` · `/openapi.json`.
+`/suppressions/remove` **(remove = admin)** · **Phase 1 (B13):** `/mail/status`, `/mail/connect`, `/mail/callback`, `/mail/disconnect`, `/campaigns/:id/checks`, `/campaigns/:id/send` · `/dev/*` · `/openapi.json`.
 **Described in OpenAPI 3.1** at `/api/openapi.json` (behind Access, versioned with `APP_VERSION`; source
 `apps/api/src/openapi.ts`, added 24 Sept). `test/openapi.test.ts` fails if a route is served but not documented, or
 documented but not served, so the description can't drift. Request bodies come from the Zod model where the handler
@@ -333,7 +335,7 @@ validates with Zod; hand-checked bodies are marked `x-validated-by: handler` (se
   JSON writes (`content-type: application/json`), but not the two uploads (`/api/me/photo`, `/api/brochures/manual`)
   or a bodyless write without that header: those are same-origin only until machine sign-in lands (B12). Reads and
   the public routes (all GET) are unaffected. `test/security.test.ts`.
-- **Entra set-up (status 24 Sept)** — **one** app registration, sign-in only (delegated `openid`, `email`,
+- **Entra set-up (status 24 Sept)** — **one** app registration for sign-in (Phase 1 adds a second, the Send app, runbook Part D and B13), sign-in only (delegated `openid`, `email`,
   `profile`, `offline_access`, `User.Read`; a 12-month client secret; redirect
   `https://dreamlease.cloudflareaccess.com/cdn-cgi/access/callback`). Matt is not the Entra administrator: the
   click-by-click instructions for IT are `it-runbook-sign-in.md` Part A (revised 24 Sept to Microsoft's current menu
@@ -616,7 +618,7 @@ subdomain, and a real test send from `main` should come first.
 
 **Remaining build-order:** step 8 stubs + `evolution.md` (low value). **Owed by others / parked:** Emma —
 approved compliance wording (then publish a real template to replace the placeholder) + the retention period;
-IT — the two GoDaddy records for `offers.dreamlease.co.uk` (runbook C8; the Entra app is done); Matt — runbook
+IT — the two 123-Reg records for `offers.dreamlease.co.uk` (runbook C8; the Entra app is done); Matt — runbook
 Parts B and C, the deploy, the placeholder-template correction (`apps/api/scripts/fix-placeholder-template.sql`),
 the Firecrawl secret and confirming the Workers Paid plan; Tawk webchat (parked, renewals-only stage one).
 
@@ -667,7 +669,7 @@ system, one API, and a UI that only calls the API.
 - **Connect a new outside system** (monday.com, Mautic, a CRM…).
   1. Give it its own adapter in `packages/adapters/src/<system>/`: a typed interface, the implementation and contract tests with fixtures validated by `@offer-mailer/schema`.
   2. No adapter imports another; the API wires them.
-  3. The planned monday.com delivery path is an output adapter alongside Copy for Outlook (`CLAUDE.md` rule 4).
+  3. A new delivery route is an `OfferOutput` like `m365` (B13); monday.com is the customer record, not a send route (`evolution.md` decision 6).
 - **Add a field to the model.**
   1. Add it to `packages/schema` as optional (or with a default) so stored JSON snapshots still parse.
   2. D1 changes are additive migrations only (`pnpm db:generate`). Matt applies remote migrations.
@@ -691,3 +693,58 @@ system, one API, and a UI that only calls the API.
   3. ~~Decide whether `/api/dev/preview` should stay in production.~~ Decided by Matt, 24 Sept: it answers only on this
      laptop (`src/local.ts`) and returns 404 on the live site, so a link can't publish a fixture page with made-up prices.
   4. Machine sign-in (Access service tokens mapped to an identity and role, and let through the cross-site guard), when Make or an agent first needs to call the API.
+
+## B13. Sending from the salesperson's own mailbox (Phase 1, 29 Sept 2026; built, not yet deployed)
+
+The plan and the decisions are `evolution.md` §6; IT's side is `it-runbook-sign-in.md` Part D. As built:
+
+- **Connect Outlook** (`apps/api/src/mail.ts`). `GET /api/mail/connect` (a browser navigation) seals the OAuth state,
+  the PKCE verifier and the signed-in email into an HttpOnly, SameSite=Lax cookie on `/api/mail` (10 minutes) and
+  redirects to Microsoft's authorize endpoint for the tenant, with the five delegated scopes and `login_hint`.
+  Microsoft returns the browser to `GET /api/mail/callback` (behind Access like the rest of `/api`): the state, the
+  cookie and the Access user must all match; the code is redeemed with the verifier; `GET /me` must be the Access
+  user (mail or UPN, case-insensitive), or nothing is stored (`?outlook=mismatch`). The refresh token is stored in
+  `mail_connections`, encrypted (`mail-crypto.ts`). The browser goes back to the web app with `?outlook=<outcome>`
+  (`/app/` on the tool host, `/` on localhost:5173). The return address is **configuration** (`MAIL_REDIRECT_URI`),
+  never taken from the request: the Vite proxy rewrites the Host header. `GET /api/mail/status` reads D1 only.
+- **The adapter** (`packages/adapters/src/m365/`). A Microsoft client (authorize URL, code redemption, refresh,
+  `/me`, `/me/sendMail` with `saveToSentItems: true` and never a `from`) and the `m365` `OfferOutput`. Every
+  Microsoft answer maps to one of five outcomes: reconnect, app_credential, throttled (with Retry-After), rejected,
+  unavailable. Contract tests against a stand-in for Microsoft (`packages/adapters/test/m365.test.ts`).
+- **Send** (`apps/api/src/send.ts`). `POST /api/campaigns/{id}/send { to, firstName? }`: the creator only, with their
+  own signature; set up, allowed (`config/mail.json`: dreamlease.co.uk) and connected, else 503 / 403 / 428 before
+  any check runs. Then the email is **re-rendered on the server** (`renderForSend` in `campaigns.ts`: the stored
+  campaign, its own template, the brochure records, the first name for the greeting; a brochure that no longer exists
+  is left out so the checks can name it), the pre-send checks run, the campaign is **reserved** (`claimSend`: status
+  column `sending`, a conditional update, so a double click cannot send twice), the stored permission is opened and
+  renewed (the rotated refresh token is stored), `/me` is checked again, Graph accepts the email (202), and `markSent`
+  writes `status: sent`, `sentAt`, `sentVia: 'm365'` and `sentBy` to the columns and the JSON together (tried twice;
+  if both fail the answer is still "sent", with `recordPending`). **A send is never repeated by the tool:** the
+  reservation is released only when Microsoft certainly did not get the email (a failure before the send, or a clear
+  4xx refusal); when the send itself gets no clear answer (network error, 5xx, not 202: code `uncertain`) it stays
+  reserved for good and the salesperson is told to look in Sent Items and, if it is not there, create the campaign
+  again. Nothing after the 202 (bookkeeping included) can undo the reservation. 422 lists the failed checks; 428 asks
+  to connect (or reconnect: a 401 or 403 from Microsoft, or a permission that cannot be opened because the key
+  changed; the connection is deleted); 429 carries Retry-After; 409 means sent or possibly sent. On the local sign-in
+  bypass (no Access), Send accepts only a page on this PC (`Origin` localhost), so a shared dev tunnel cannot send
+  from the dev user's mailbox; `/mail/connect` refuses a cross-site start (`Sec-Fetch-Site`).
+- **The pre-send checks** (`apps/api/src/presend.ts`, pure; `test/presend.test.ts` rule by rule): wording approved by
+  a compliance approver (the placeholder has none) and still approved; every offer priced (both nets for salary
+  sacrifice); in date (UK date); still on the website (looked up within 24 hours, else looked up again, and the
+  price unchanged); pictures, photo and PDF brochures present in R2, other brochure pages not 404/410; every tracked
+  link in the stored link map; subject and message; the HTML under `maxEmailKb` (90 KB: Gmail clips at about 102 KB,
+  which would hide the compliance wording); no CAP ID; the customer's address valid and not suppressed (Send only).
+  `POST /api/campaigns/{id}/checks` runs them without the address: Copy for Outlook calls it before copying.
+- **Web** (`Compose.tsx`): step 3 Connect / Disconnect Outlook (Connect opens its own window, so the campaign being
+  written survives the Microsoft sign-in; the result comes back by `postMessage` and a status poll) and the
+  `?outlook=` message; step 6 ("Send") the customer's email (empty for every new campaign) and Send, "Sent from your
+  mailbox at 10:42", failed checks in plain words; Copy for Outlook below as the backup (the clipboard write starts
+  inside the click, the content arriving once the checks pass, for Safari and Firefox). Any edit after Create drops
+  the created campaign ("create it again"), because Send and Copy use the stored campaign. When the Send app is not
+  set up, or for a salsac.co.uk sign-in, step 6 is the old Copy flow.
+- **Settings**: vars `MAIL_TENANT_ID`, `MAIL_CLIENT_ID`, `MAIL_REDIRECT_URI` (`wrangler.jsonc`; `pnpm dev` and
+  `dev:live` pass the localhost return address); secrets `MAIL_CLIENT_SECRET`, `MAIL_TOKEN_KEY`. Any missing = not set
+  up. Rules in `config/mail.json` (who may send, the size limit, the 24-hour offer rule).
+- **Privacy**: the customer's address is used for the one send and never stored or logged (a test searches every
+  campaign and connection row for it). The salesperson's sent copy is in their Sent Items under DreamLease's
+  Microsoft 365 retention.

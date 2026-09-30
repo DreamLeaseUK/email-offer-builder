@@ -1,10 +1,11 @@
-# IT runbook — sign-in for the DreamLease Offer Mailer (Cloudflare Access + Microsoft Entra ID)
+# IT runbook — sign-in and sending for the DreamLease Offer Mailer (Cloudflare Access, Microsoft Entra ID, Microsoft 365)
 
-Written 22 September 2026; Part A revised 24 September 2026 (current Entra menu names, a 12-month secret, one
-app registration only); Parts B and C revised 28 September 2026 (the tool's own address, the customer-link address,
-the audience tag as a secret). Steps A1–A8 are for the Entra administrator; B1–B6 and C1–C7 are for the Cloudflare
-account holder (Matt); C8 is two DNS records for whoever manages DreamLease DNS at GoDaddy. Nothing here sends email or
-touches mailboxes.
+Written 22 September 2026; Part A revised 24 September 2026 (current Entra menu names, a 12-month secret); Parts B
+and C revised 28 September 2026 (the tool's own address, the customer-link address, the audience tag as a secret);
+**Part D added 29 September 2026** (the Send app: the tool sends each email from the salesperson's own mailbox).
+Steps A1–A8 and D1–D9 are for the Entra administrator; B1–B6 and C1–C7 are for the Cloudflare account holder (Matt);
+C8 is the DNS record(s) for whoever manages DreamLease DNS at 123-Reg. Parts A–C never touch mailboxes (A and B are
+sign-in, C is the web addresses); Part D is the only part that concerns mail.
 
 ## What it does
 
@@ -14,7 +15,13 @@ verifies the token and uses the verified work email as the author of everything 
 no passwords stored anywhere in the tool, and leavers lose access when their M365 account is disabled. MFA and
 conditional access already enforced in the tenant apply unchanged.
 
-Until this is done the production tool refuses every request to `/api` (HTTP 503), by design.
+Sign-in has been live since 29 September 2026. (Before it was set up, the production tool refused every request to
+`/api` with HTTP 503, by design.)
+
+**Sending (Part D, decided 29 September 2026, being built).** Once built, the tool sends each offer email from the
+salesperson's own mailbox through Microsoft 365, after the salesperson connects their Outlook once and presses Send.
+It uses a second app registration that can send only as the person who connected, never as anyone else, and never
+reads mail. Until then, salespeople keep using Copy for Outlook.
 
 ## Before you start (Matt supplies to IT)
 
@@ -27,10 +34,10 @@ Until this is done the production tool refuses every request to `/api` (HTTP 503
 
 ## Part A — Entra administrator
 
-You need to be a **Global Administrator** or an **Application Administrator**. This is the **only** app
-registration the tool needs: it is for sign-in and never reads, sends or touches mail (an Outlook-draft feature that
-would have needed a second app was removed from the plan on 24 September 2026). Menu names below are those of the
-Microsoft Entra admin center as of September 2026; where Microsoft has used another wording, it is in brackets.
+You need to be a **Global Administrator** or an **Application Administrator**. This app registration is for
+sign-in only: it never reads, sends or touches mail. Sending uses a second, separate registration (Part D, decided
+29 September 2026). Menu names below are those of the Microsoft Entra admin center as of September 2026; where
+Microsoft has used another wording, it is in brackets.
 
 **A1. Open the admin center.** Go to **https://entra.microsoft.com** and sign in with your admin account.
 
@@ -129,16 +136,16 @@ policy is refused. Then confirm the customer side still opens with no login at a
 (`/c/<slug>`) on `offer-mailer.matt-wilson-9b8.workers.dev` (and on `offers.dreamlease.co.uk` once Part C is
 done). The tool is not served there: `/api/me` on those hosts answers 401 and `/app/` answers 404.
 
-## Part C — the two addresses (Matt, plus two DNS records at GoDaddy)
+## Part C — the two addresses (Matt, plus two DNS records at 123-Reg)
 
 Decided by Matt on 28 Sept 2026, after finding that `dreamlease.co.uk` cannot be put on our Cloudflare account
 without moving its DNS (the main site and its certificates are run by MotorComplete through their own Cloudflare
-account, and proxying one subdomain from GoDaddy DNS needs Cloudflare's Business plan):
+account, and proxying one subdomain from 123-Reg DNS needs Cloudflare's Business plan):
 
 - **The tool** goes on **`marketingtools.dreamelectric.uk`**. Staff only, behind Access; the domain does not matter
   to customers, and `dreamelectric.uk` is already a full zone on our account.
 - **Customer links** go on **`offers.dreamlease.co.uk`**, so customers only ever see the DreamLease domain. It is
-  attached with **Cloudflare for SaaS** on the `dreamelectric.uk` zone: GoDaddy keeps DreamLease's DNS, two records
+  attached with **Cloudflare for SaaS** on the `dreamelectric.uk` zone: 123-Reg keeps DreamLease's DNS, two records
   are added there, and nothing about `www`, the main site, email (MX) or MotorComplete's records changes. Free for
   the first 100 hostnames; we need one.
 
@@ -170,7 +177,9 @@ dev:live` from running the local code); a deploy leaves them in place.
 **C7. Deploy the 28 Sept code** (Terminal panel, repo folder): `pnpm run deploy`. It builds the web app and deploys
 the Worker. Then do B5.
 
-**C8. For whoever manages DreamLease DNS at GoDaddy** (the CNAME is the one that matters; the TXT is optional and
+**C8. For whoever manages DreamLease DNS at 123-Reg** (dreamlease.co.uk is registered with 123-Reg, and its DNS runs on
+GoDaddy's servers, `ns15/ns16.domaincontrol.com`, because 123-Reg is part of GoDaddy: the records are changed in the
+123-Reg control panel; checked 30 Sept 2026) (the CNAME is the one that matters; the TXT is optional and
 only makes activation immediate — Cloudflare validates the hostname by itself once the CNAME exists; nothing else
 changes):
 
@@ -191,7 +200,7 @@ Cloudflare answered for `www` only (not `offers`, not the bare domain), and no `
 ever been issued. Leave their records (`www`, `_acme-challenge`, `_acme-challenge.www`, `_cf-custom-hostname.www`)
 exactly as they are. Two rules for later:
 
-- **If the domain's DNS ever moves from GoDaddy to Cloudflare** (its nameservers change, in any account), keep the
+- **If the domain's DNS ever moves from 123-Reg to Cloudflare** (its nameservers change, in any account), keep the
   `offers` record **DNS only** (grey cloud). Proxied, the route in C6 no longer runs the Worker for it.
 - **If anyone ever adds CAA records** to `dreamlease.co.uk` (records limiting which certificate authorities may issue
   for it), they must allow `letsencrypt.org` and `pki.goog`, or the `offers` certificate stops renewing (and
@@ -209,17 +218,148 @@ exactly as they are. Two rules for later:
   address. Read it from Zero Trust → Team & Resources → Users and put that address in `config/compliance.json` or
   `config/admins.json`.
 
+## Part D — the Send app (Entra administrator, about 20 minutes)
+
+Decided by Matt on 29 September 2026. The tool will send each offer email **from the salesperson's own mailbox**, so
+it sits in their Sent Items and replies come back to them. For that it needs a second app registration, separate from
+the sign-in app in Part A. Each salesperson clicks **Connect Outlook** once in the tool and signs in with Microsoft.
+From then on Microsoft lets the tool send email **only as that person**, and never lets it read anyone's mailbox or
+send as anyone else. The tool adds its own rules on top: it sends only while that person is signed in to the tool,
+only when they press **Send**, and never on its own. Each Send is one email to one customer; bulk mailings are not
+sent from personal mailboxes.
+
+You need one of these Entra roles: Global Administrator, Application Administrator or Cloud Application Administrator
+(any of them can do every step here, including the consent in D6). Menu names are those of the Microsoft Entra admin
+center as of September 2026, checked against Microsoft Learn; where Microsoft has used another wording, it is in
+brackets.
+
+**D1. Open the admin center.** Go to **https://entra.microsoft.com** and sign in with your admin account.
+
+**D2. Start a new app registration.** Left menu: **Entra ID** → **App registrations** → **New registration**. This is
+a new registration: leave the Part A app (`Cloudflare Access - DreamLease Offer Mailer`) as it is.
+
+**D3. Fill in the form.**
+
+| Field | Enter or choose |
+|---|---|
+| Name | `DreamLease Offer Mailer - Send` |
+| Supported account types | **Single tenant only – DreamLease** (older screens: *Accounts in this organizational directory only*) |
+| Redirect URI, if the page shows one | Leave it empty; D4 adds them |
+
+Select **Register**. The app's **Overview** page opens.
+
+**D4. Add the two return addresses.** Under **Manage**, select **Authentication** (on some screens *Authentication
+(Preview)*). On the **Redirect URI configuration** tab, select **Add Redirect URI** (older screens: *Add a
+platform*), then the **Web** tile (not *Single-page application*). Paste the address below exactly, leave
+*Front-channel logout URL* empty, then select **Configure**.
+
+```
+https://marketingtools.dreamelectric.uk/api/mail/callback
+```
+
+Then add the second address the same way: **Add Redirect URI** → **Web** → paste → **Configure** (older screens: in
+the Web section, **Add URI**, paste, **Save**).
+
+```
+http://localhost:5173/api/mail/callback
+```
+
+The second is for testing the tool on Matt's PC. Microsoft allows `http` for `localhost` addresses only. Both
+addresses must now be listed under **Web**. Leave the **Access tokens** and **ID tokens** boxes unticked: they are on
+the Authentication page's **Settings** tab, under *Implicit grant and hybrid flows* (older screens: lower down the
+same page). They are unticked by default, so there is nothing to change.
+
+**D5. Create a client secret.** **Certificates & secrets** → **Client secrets** tab → **New client secret**.
+Description `Offer Mailer Send`; expires **365 days (12 months)**, the same as Part A (Microsoft recommends under 12
+months; 24 is the maximum). Select **Add**, then copy the **Value** column straight away, not the Secret ID: it is
+shown only once. If the page is left before it is copied, delete that secret and make another. Note the expiry date.
+Microsoft's notice recommending a certificate instead has been noted: Matt chose a secret, renewed every year (see
+Ongoing). If Microsoft refuses to create the secret (a message that a policy in your organisation blocks client
+secrets or limits their lifetime), do not change the policy: skip the secret, carry on with D6–D9, and tell Matt the
+exact message. The tool can be changed to use a certificate instead.
+
+**D6. Permissions and consent.** **API permissions**: `User.Read` (Microsoft Graph, Delegated) is already listed.
+**Add a permission** → **Microsoft Graph** → **Delegated permissions**. Do **not** choose *Application permissions*:
+those would let the app send as anyone in the company. Use the search box to find and tick `Mail.Send`,
+`offline_access`, `openid` and `email` (if a result sits in a closed group, select the group's name to open it).
+Unlike Part A, do **not** tick `profile`. Then **Add permissions**. Then select **Grant admin consent for DreamLease**
+→ **Yes**, and select **Refresh** if the **Status** column has not changed yet.
+
+Check that the **Configured permissions** table shows exactly these five rows, each with **Type** *Delegated* and
+**Status** *Granted for DreamLease* (DreamLease's tenant shows its name as **individual**, so the button reads *Grant admin
+consent for individual* and the status *Granted for individual*: that is the same thing, as Emma's screenshot of
+30 Sept shows):
+
+| Permission | What it lets the tool do |
+|---|---|
+| `Mail.Send` | Send an email as the salesperson who connected, from their own mailbox |
+| `offline_access` | Stay connected, so the salesperson does not sign in to Microsoft again before every send |
+| `User.Read` | Read the salesperson's own name and email address, to check the mailbox is theirs |
+| `openid` | The Microsoft sign-in itself |
+| `email` | The Microsoft sign-in itself (their email address) |
+
+Do not add `Mail.Send.Shared`, `Mail.Read`, `Mail.ReadWrite` or anything else. None of the five needs an
+administrator by Microsoft's rules. Granting consent once means salespeople are not asked to approve the app
+themselves, and they could not approve it at all if the tenant blocks users from consenting to apps.
+
+**D7. Who can connect: nothing to do (recommended).** The setting below is already at **No**; leave it. The rest of this
+step is only for someone who wants to turn it on. **Entra ID** → **Enterprise apps** → **All applications** →
+search for **DreamLease Offer Mailer - Send** (or, on the Send app's registration **Overview**, select *Managed
+application in local directory*) → **Properties** → **Assignment required?** Leave it at **No**. The sign-in app (A7)
+already decides who can reach the tool, and the tool lets each person send only as themselves. If you do set it to
+**Yes**, assign each salesperson individually under **Users and groups** (assigning a group needs Entra ID P1 or P2).
+Anyone not assigned will see Microsoft's error AADSTS50105 when they click Connect Outlook.
+
+**D8. One question for you.** If **Conditional Access** is not in your menu, answer "not found": the tenant then most
+likely has no Conditional Access policies (they need Entra ID P1), and the first real Connect Outlook proves it either
+way (Emma, 30 Sept: not found). Otherwise: does DreamLease have **Conditional Access** policies that cover Office 365 or all cloud
+apps (for example "UK only", "company devices only", "require MFA", or a sign-in frequency)? To check: **Entra ID** →
+**Conditional Access** → **Policies**, and look at those whose **State** is **On** (this page needs Global
+Administrator, Global Reader, Security Reader or Conditional Access Administrator; if you cannot open it, say so).
+Tell Matt their names and what they do, or "none". Do **not** add an exception for the tool: each salesperson meets
+those policies when they click Connect Outlook, like any Microsoft sign-in, and Matt will test a send with your
+policies in place.
+
+**D9. Hand over to Matt.**
+
+| Value | Where it is | How to send it |
+|---|---|---|
+| Application (client) ID | the Send app's **Overview** page (not the *Object ID* on the same page, and not the Part A app's ID) | email is fine |
+| Directory (tenant) ID | the same **Overview** page (the same value as in Part A) | email is fine |
+| Client secret **Value** | copied in D5 | **not** by plain-text email: a call or a password manager |
+| Secret expiry date | shown in D5 | email is fine; diary it (see Ongoing) |
+| What you did in D7 | left at **No**, or **Yes** with the names you assigned | email is fine |
+| A screenshot of **API permissions** after D6 | the Send app's **API permissions** page | email is fine |
+| Your answer to D8 | — | email is fine |
+
+**What a salesperson then sees.** In the tool, step 3 (Your details): **Connect Outlook** → the usual Microsoft
+sign-in (usually just a click, as they are already signed in) → back to the tool, "Outlook connected". From then on
+**Send** is in step 6. If Microsoft ends the connection later (after about 90 days without use, a password reset by
+an administrator in the Entra or Microsoft 365 admin center, a revoke of their sessions, or their account being
+disabled), the tool asks them to connect Outlook again.
+
 ## Ongoing
 
-- **Client secret renewal** (Entra admin, every 12 months): before the expiry set in A5, make a new secret (A5
-  again) and give it to Matt, who updates the identity provider in Cloudflare (B2). Missing this locks everyone out
-  of the tool until done.
+- **Client secret renewal, sign-in app** (Entra admin, every 12 months): before the expiry set in A5, make a new
+  secret (A5 again) and give it to Matt, who updates the identity provider in Cloudflare (B2). Missing this locks
+  everyone out of the tool until done.
+- **Client secret renewal, Send app** (Entra admin, every 12 months): before the expiry set in D5, make a new secret
+  as in D5 with the description `Offer Mailer Send <year>`, and give it to Matt, who replaces it in the Worker (in the
+  desktop app's Terminal panel, from the repo folder: `pnpm --filter @offer-mailer/api exec wrangler secret put
+  MAIL_CLIENT_SECRET`, then paste the value when asked; no deploy needed). Do not delete the old secret until Matt
+  confirms a test send works; then delete the old one only. Missing the renewal stops sending from the tool until
+  done; Copy for Outlook still works.
 - **Leavers**: disable the M365 account. Their Access session ends at the next check (sessions last 24 hours by
-  B3; Zero Trust → Access → Applications → Revoke existing tokens ends them at once).
-- **What flows where**: Entra gives Cloudflare the user's name and work email (and group membership only if the
-  group permissions are granted). The tool receives the email. Nothing is written back to Entra. There is no
-  second Entra app: the "create draft in Outlook" idea that would have needed one was removed from the plan on
-  24 September 2026 (the next delivery path is monday.com's email tool).
+  B3; Zero Trust → Access → Applications → Revoke existing tokens ends them at once). From then on Microsoft refuses
+  to renew the tool's connection to their mailbox; a connection renewed just before can last up to about an hour,
+  which is why the Cloudflare revoke is the immediate stop. The tool deletes any connection unused for 90 days.
+- **The testing address** `http://localhost:5173/api/mail/callback` (D4) works only on a PC running the tool's
+  development copy. It stays for future testing; IT may remove it at any time, and Matt will ask for it back when it
+  is needed.
+- **What flows where**: the sign-in app gives Cloudflare the user's name and work email (and group membership only
+  if the group permissions are granted); the tool receives the email. The Send app gives the tool, for each
+  salesperson who connects, a permission to send as them, which the tool stores encrypted; the tool reads their own
+  name and address to check the mailbox is theirs. Nothing is written back to Entra, and the tool never reads mail.
 
 ## Data protection
 
@@ -241,13 +381,33 @@ Sign-in adds no customer data and creates no new GDPR issue; it removes two risk
 - Any separate credential store. Access follows the M365 account, so joiners, leavers and MFA are handled where
   they already are.
 
+**What sending adds (Part D)**
+
+- For each salesperson who clicks Connect Outlook, the tool stores their work email, Microsoft's permission to send
+  as them (a refresh token, **encrypted** with a key only the tool's server holds), the permissions granted, and when
+  they connected and last sent. Staff data in a business context. The token itself is never logged or shown to
+  anyone, including the salesperson.
+- It is used only by the tool, only as that salesperson and only while they are signed in to it: once when they
+  connect, to confirm the Microsoft account is the one they signed in with, and after that only when they press Send
+  and the tool's automatic checks pass. It cannot read mail or send as anyone else.
+- The customer's email address is used for that one send and not stored by the tool, as now. The sent email is in
+  the salesperson's Sent Items, under DreamLease's normal Microsoft 365 retention. No customer data goes to any new
+  system: Microsoft 365 already holds DreamLease's email.
+- Switching it off: the salesperson clicks **Disconnect Outlook** (the tool deletes its copy). For a leaver,
+  disabling the account ends it, and the tool deletes any connection unused for 90 days. An administrator can end it
+  for everyone at once with **Entra ID** → **Enterprise apps** → **DreamLease Offer Mailer - Send** → **Properties**
+  → **Enabled for users to sign-in?** → **No** → **Save** (set it back to **Yes** to restore), or for one person with
+  **Entra ID** → **Users** → the person → **Revoke sessions**. A salesperson changing their own password does not end
+  it.
+
 **Keeping it minimal**
 
-- Grant only the five permissions in A6. The two group permissions let Cloudflare read directory group
-  membership; add them only if the policy is to be written by Entra group.
-- Turn on Assignment required (A7), so only the sales group can start a sign-in at all.
+- Grant only the five permissions in A6 and the five in D6. The two group permissions let Cloudflare read directory
+  group membership; add them only if the policy is to be written by Entra group.
+- Turn on Assignment required for the sign-in app (A7), so only the people assigned can start a sign-in at all.
 
 **Compliance items that are not about sign-in.** Before the first real customer send: the live compliance
-template is still a placeholder, not the approved wording (an FCA financial-promotions matter, not GDPR); the
-production register holds test campaigns that should be wiped; and the retention period for campaign records is
-still to be set. Sign-in can go live without any of these. Real sends should not.
+template is still a placeholder, not the approved wording (an FCA financial-promotions matter, not GDPR; once sending is
+built, the tool's Send refuses it automatically until Emma publishes the approved wording); the production register holds test
+campaigns that should be wiped; and the retention period for campaign records is still to be set. Sign-in can go
+live without any of these. Real sends should not.

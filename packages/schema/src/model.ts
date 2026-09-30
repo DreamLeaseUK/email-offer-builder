@@ -23,7 +23,9 @@ export const CampaignUseCase = z.enum(['follow_up', 'offer_pack', 'renewal', 'ot
 /** The salesperson's own description when the use case is 'other' (Matt, 29 Sept 2026). One line of plain text. */
 export const UseCaseNote = z.string().trim().min(1).max(80);
 export const CampaignStatus = z.enum(['draft', 'rendered', 'sent', 'archived']);
-export const SentVia = z.enum(['graph_draft', 'clipboard', 'hosted_only']);
+/** How a campaign reached the customer. 'm365': sent by the tool from the salesperson's own mailbox (Phase 1, 29 Sept 2026).
+ *  'graph_draft' was never built (removed 24 Sept 2026); it stays so nothing stored ever fails to parse. */
+export const SentVia = z.enum(['graph_draft', 'clipboard', 'hosted_only', 'm365']);
 
 /** grid2 / grid3 are accepted so a campaign stored before 22 Sept 2026 still parses; render treats them as stack. */
 export const TemplateLayout = z.enum(['single', 'stack', 'grid2', 'grid3']);
@@ -406,7 +408,7 @@ export const Sender = z.object({
   secondaryContacts: z.array(ContactMethod).optional(),
   /** Square headshot, 112px or larger, on our origin. Absent for department senders (brief §7.1). */
   headshotUrl: httpsUrl.optional(),
-  /** Graph mailbox to draft into (user's own, or sales@/renewals@). */
+  /** The mailbox the email goes out from. The tool sends only from the signed-in salesperson's own mailbox (rule 4). */
   mailbox: email,
 });
 export type Sender = z.infer<typeof Sender>;
@@ -457,8 +459,11 @@ export const Campaign = z.object({
   hostedPage: z.object({ slug: z.string().regex(/^[A-Za-z0-9_-]{16,}$/), url: httpsUrl, enabled: z.boolean() }),
   tracking: z.object({ campaignCode: z.string().min(1), utm: z.record(z.string(), z.string()) }),
   status: CampaignStatus,
+  /** When Microsoft 365 accepted the email (sentVia 'm365'), set once: a campaign is sent to one customer, once. */
   sentAt: isoDateTime.optional(),
   sentVia: SentVia.optional(),
+  /** Who pressed Send (the Access-verified salesperson). The customer's address is never stored. */
+  sentBy: email.optional(),
   createdBy: email,
   createdAt: isoDateTime,
   updatedAt: isoDateTime,

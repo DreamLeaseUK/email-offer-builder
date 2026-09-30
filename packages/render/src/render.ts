@@ -251,8 +251,9 @@ function emailBody(campaign: Campaign, template: Template, cards: CardVM[], layo
   </tr>`;
 
   // The recipient greeting is personalisation for the salesperson's own email only — never on the public hosted
-  // page (data minimisation: no customer name on a shareable URL).
-  const greeting = !ctx.forHostedPage && campaign.recipient?.firstName ? `<p class="lock-ink" style="margin:0 0 14px 0; font-size:22px; line-height:28px; ${LH}; color:${C.black};">Hi ${esc(campaign.recipient.firstName)},</p>\n` : '';
+  // page (data minimisation: no customer name on a shareable URL). Styled exactly like the message under it (Matt,
+  // 30 Sept 2026: the 22px black greeting was "too big" and read as bold).
+  const greeting = !ctx.forHostedPage && campaign.recipient?.firstName ? `<p class="lock-body" style="margin:0 0 14px 0; font-size:16px; line-height:26px; ${LH}; color:${C.graphite};">Hi ${esc(campaign.recipient.firstName)},</p>\n` : '';
   const intro = `  <!-- Intro -->
   <tr>
     <td class="gutter" style="padding:28px ${SIDE}px 8px ${SIDE}px; ${FF}">

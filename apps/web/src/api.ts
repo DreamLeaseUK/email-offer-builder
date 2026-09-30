@@ -125,6 +125,27 @@ export interface CreateResponse {
   text: string;
 }
 
+/** Is sending from the tool set up, may this person use it, and is their Outlook connected (GET /api/mail/status). */
+export interface MailStatus {
+  available: boolean;
+  reason?: 'not_configured' | 'not_allowed';
+  connected: boolean;
+  connectedAt?: string;
+  lastSentAt?: string | null;
+}
+
+/** One pre-send check (apps/api/src/presend.ts). `problems` says what to fix when it failed. */
+export interface SendCheck {
+  id: string;
+  label: string;
+  ok: boolean;
+  problems: string[];
+}
+
+export type SendResult =
+  | { ok: true; sentAt: string }
+  | { ok: false; status: number; error: string; code?: string; checks?: SendCheck[] };
+
 export interface RegisterColumn {
   key: string;
   label: string;
@@ -167,6 +188,19 @@ export const api = {
   lookup: (url: string) => jsonPost('/api/offers/lookup', { url }).then((r) => jsonOrThrow<LookupResponse>(r)),
   preview: (draft: Draft) => jsonPost('/api/campaigns/preview', draft).then((r) => jsonOrThrow<PreviewResponse>(r)),
   create: (draft: Draft) => jsonPost('/api/campaigns', draft).then((r) => jsonOrThrow<CreateResponse>(r)),
+  // ---- sending from the salesperson's own mailbox (Phase 1) ----
+  mailStatus: () => fetch('/api/mail/status').then((r) => jsonOrThrow<MailStatus>(r)),
+  /** A full-page navigation, not a fetch: Microsoft's sign-in takes over the window and comes back to the app. */
+  connectOutlookUrl: '/api/mail/connect',
+  disconnectOutlook: () => jsonPost('/api/mail/disconnect', {}).then((r) => jsonOrThrow<{ connected: false }>(r)),
+  /** The pre-send checks, run on the server on the email exactly as it would go out. Copy for Outlook runs them too. */
+  checks: (id: string, to?: string) => jsonPost(`/api/campaigns/${id}/checks`, to === undefined ? {} : { to }).then((r) => jsonOrThrow<{ ok: boolean; checks: SendCheck[] }>(r)),
+  send: async (id: string, to: string, firstName?: string): Promise<SendResult> => {
+    const r = await jsonPost(`/api/campaigns/${id}/send`, { to, ...(firstName ? { firstName } : {}) });
+    const body = (await r.json().catch(() => ({}))) as { sentAt?: string; error?: string; code?: string; checks?: SendCheck[] };
+    if (r.ok && body.sentAt) return { ok: true, sentAt: body.sentAt };
+    return { ok: false, status: r.status, error: body.error ?? `Sending failed (HTTP ${r.status}).`, ...(body.code ? { code: body.code } : {}), ...(body.checks ? { checks: body.checks } : {}) };
+  },
   listCampaigns: () => fetch('/api/campaigns').then((r) => jsonOrThrow<{ campaigns: Campaign[] }>(r)),
   stats: (id: string) => fetch(`/api/campaigns/${id}/stats`).then((r) => jsonOrThrow<CampaignStats>(r)),
   /** Attach a brochure for a vehicle: the stored copy, or a search. Throws only when search is not configured (503). */

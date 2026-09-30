@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Badge, Button, Field, Input, OfferCard, Select, Textarea } from 'dreamlease-design-system';
 import type { Brochure, BrochureSearch, CtaKind, Offer, Sender } from '@offer-mailer/schema';
 import { CTA_DEFAULT_LABELS } from '@offer-mailer/schema';
-import { api, type Audience, type ComposeSeed, type ContactMethod, type CreateResponse, type Draft, type Item, type LayoutChoice, type LeaseOption, type UseCase } from './api';
+import { api, type Audience, type ComposeSeed, type ContactMethod, type CreateResponse, type Draft, type Item, type LayoutChoice, type LeaseOption, type MailStatus, type UseCase } from './api';
 
 const gbp = (n: number): string => '£' + Math.round(n).toLocaleString('en-GB');
 const errMsg = (e: unknown): string => (e instanceof Error ? e.message : String(e));
@@ -39,7 +39,101 @@ function toSalsac(o: Offer, keep?: Offer): Offer {
 const salsacReady = (o: Offer): boolean => (o.pricing.salsac?.net20 ?? 0) > 0 && (o.pricing.salsac?.net40 ?? 0) > 0;
 
 /** The six steps of a campaign, in the order the screen asks for them (Matt, 29 Sept 2026: guide a new user). */
-const STEPS = ['Who it’s for', 'Your message', 'Your details', 'Add offers', 'Check and create', 'Send from Outlook'] as const;
+const STEPS = ['Who it’s for', 'Your message', 'Your details', 'Add offers', 'Check and create', 'Send'] as const;
+
+/** A fresh campaign's starting text (also what "New campaign" resets to). Renewal first (Matt, 29 Sept 2026). */
+const DEFAULT_NAME = 'Renewal offers';
+const DEFAULT_SUBJECT = 'The options we talked about';
+const DEFAULT_INTRO = 'Thanks for your time. As promised, here are the options that fit what we discussed.';
+
+/**
+ * Auto-save (Matt, 30 Sept 2026): what the salesperson is writing survives a reload, closing the tab or coming back
+ * tomorrow, in this browser. Kept per signed-in person, for 30 days. Never the customer's name or email address (they
+ * are not kept anywhere), and never the created campaign (Create again after a restore). Browser storage can be
+ * missing or blocked (private windows): every read and write is guarded, and Compose works the same without it.
+ */
+const DRAFT_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+const DRAFT_STALE_MS = 24 * 60 * 60 * 1000; // older than this: re-price the offers live on restore
+const draftKey = (email: string): string => `dl-compose-draft:v1:${email.trim().toLowerCase()}`;
+/** The parts of a draft that are saved (fixed key order, so two saves of the same draft compare equal). */
+interface DraftBody {
+  name: string;
+  audience: Audience;
+  useCase: UseCase;
+  useCaseNote: string;
+  subject: string;
+  preheader: string;
+  intro: string;
+  ctaKind: CtaKind;
+  ctaLabel: string;
+  items: Item[];
+}
+const draftBody = (b: DraftBody): DraftBody => ({ name: b.name, audience: b.audience, useCase: b.useCase, useCaseNote: b.useCaseNote, subject: b.subject, preheader: b.preheader, intro: b.intro, ctaKind: b.ctaKind, ctaLabel: b.ctaLabel, items: b.items });
+const AUDIENCE_VALUES = ['personal', 'business', 'salary_sacrifice'];
+const USE_CASE_VALUES = ['follow_up', 'offer_pack', 'renewal', 'other'];
+const CTA_VALUES = ['view_offer', 'email', 'call', 'whatsapp', 'book', 'link'];
+const isItem = (x: unknown): x is Item => {
+  const o = (x as { offer?: Partial<Offer> } | null)?.offer;
+  return !!o && typeof o.id === 'string' && typeof o.offerUrl === 'string' && typeof o.vehicle?.make === 'string' && typeof o.pricing?.monthly === 'number';
+};
+interface SavedDraft {
+  savedAt: string;
+  name: string;
+  audience: Audience;
+  useCase: UseCase;
+  useCaseNote: string;
+  subject: string;
+  preheader: string;
+  intro: string;
+  ctaKind: CtaKind;
+  ctaLabel: string;
+  items: Item[];
+}
+function readSavedDraft(email: string): SavedDraft | null {
+  try {
+    const raw = localStorage.getItem(draftKey(email));
+    if (!raw) return null;
+    const d = JSON.parse(raw) as Partial<SavedDraft> | null;
+    const strings = d && [d.savedAt, d.name, d.useCaseNote, d.subject, d.preheader, d.intro, d.ctaLabel].every((v) => typeof v === 'string');
+    const valid =
+      !!d && strings && AUDIENCE_VALUES.includes(d.audience as string) && USE_CASE_VALUES.includes(d.useCase as string) && CTA_VALUES.includes(d.ctaKind as string) && Array.isArray(d.items) && d.items.every(isItem);
+    // Malformed (an older shape) or older than 30 days: forget it, so it can never break Compose or linger.
+    if (!valid || !(Date.now() - Date.parse(d.savedAt as string) <= DRAFT_TTL_MS)) {
+      clearSavedDraft(email);
+      return null;
+    }
+    return d as SavedDraft;
+  } catch {
+    clearSavedDraft(email);
+    return null;
+  }
+}
+function writeSavedDraft(email: string, d: SavedDraft): void {
+  try {
+    localStorage.setItem(draftKey(email), JSON.stringify(d));
+  } catch {
+    /* storage full or blocked: auto-save is a convenience only */
+  }
+}
+function clearSavedDraft(email: string): void {
+  try {
+    localStorage.removeItem(draftKey(email));
+  } catch {
+    /* ignore */
+  }
+}
+const whenSaved = (iso: string): string => new Date(iso).toLocaleString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+
+/** What Microsoft's return from Connect Outlook (?outlook=…) means, in plain words. */
+const OUTLOOK_OUTCOME: Record<string, { tone: 'success' | 'error' | 'warning'; text: string }> = {
+  connected: { tone: 'success', text: 'Outlook connected. Emails you send from the tool now go from your own mailbox.' },
+  cancelled: { tone: 'warning', text: 'Outlook was not connected: the Microsoft sign-in was cancelled.' },
+  mismatch: { tone: 'error', text: 'Outlook was not connected: sign in to Microsoft as yourself (the same account you use for this tool), then try again.' },
+  failed: { tone: 'error', text: 'Outlook could not be connected. Try again; if it keeps failing, tell Matt.' },
+  unavailable: { tone: 'error', text: 'Sending from the tool is not working at the moment. Use Copy for Outlook, and tell Matt.' },
+  not_allowed: { tone: 'warning', text: 'Sending from the tool is not available for your account yet. Use Copy for Outlook.' },
+};
+const hhmm = (iso: string): string => new Date(iso).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
 
 /** A numbered section heading. `extra` sits on the same line (e.g. the offer count). */
 function Step({ n, extra }: { n: number; extra?: React.ReactNode }) {
@@ -471,25 +565,35 @@ function SenderPhoto({ base, onChange }: { base: string; onChange?: (url: string
   );
 }
 
-export function Compose({ email, base, items, setItems, seed, onSeedApplied, onHeadshotChange }: { email: string; base: string; items: Item[]; setItems: React.Dispatch<React.SetStateAction<Item[]>>; seed?: ComposeSeed | null; onSeedApplied?: () => void; onHeadshotChange?: (url: string | null) => void }) {
+export function Compose({ email, base, items, setItems, seed, onSeedApplied, onHeadshotChange, newCampaignRequest = 0 }: { email: string; base: string; items: Item[]; setItems: React.Dispatch<React.SetStateAction<Item[]>>; seed?: ComposeSeed | null; onSeedApplied?: () => void; onHeadshotChange?: (url: string | null) => void; /** Bumped by the top bar's "+ New campaign". */ newCampaignRequest?: number }) {
   // Our-origin asset/link URLs are stamped absolute (the email needs that), but they only resolve on
   // the public origin. For in-app display, strip our origin so they become same-origin (served by the
   // Vite proxy in dev, the Worker in production). The Copy-for-Outlook HTML stays absolute.
   const sameOrigin = (u: string): string => (base && u.startsWith(base) ? u.slice(base.length) || '/' : u);
   const displayHtml = (html: string): string => (base ? html.split(base).join('') : html);
 
-  const [name, setName] = useState('Renewal offers');
+  const [name, setName] = useState(DEFAULT_NAME);
   const [audience, setAudience] = useState<Audience>('personal');
   // Renewal first and by default (Matt, 29 Sept 2026): it is the sales team's main use.
   const [useCase, setUseCase] = useState<UseCase>('renewal');
   const [useCaseNote, setUseCaseNote] = useState('');
-  const [subject, setSubject] = useState('The options we talked about');
+  const [subject, setSubject] = useState(DEFAULT_SUBJECT);
   const [preheader, setPreheader] = useState('');
-  const [intro, setIntro] = useState('Thanks for your time. As promised, here are the options that fit what we discussed.');
+  const [intro, setIntro] = useState(DEFAULT_INTRO);
   // One offer per row, always (Matt, 21 Sept 2026): a single offer is the hero card, two or more are stacked
   // rows. The two-up / three-up grids are no longer offered, so there is nothing for the salesperson to choose.
   const layout: LayoutChoice = 'auto';
   const [recipientFirst, setRecipientFirst] = useState('');
+  // Auto-save: restore once (when the signed-in email is known), then save as the draft changes.
+  const draftRestored = useRef(false);
+  const [restoredAt, setRestoredAt] = useState<string | null>(null);
+  /** The draft as last saved or restored (JSON, without its time): unchanged content is not saved again, so the saved
+   *  time stays the time of the last real edit (it drives the 30-day expiry). '' means nothing saved. */
+  const lastSavedBody = useRef<string | null>(null);
+  /** The save waiting on its half-second timer, run at once if the page is being left. */
+  const pendingSave = useRef<(() => void) | null>(null);
+  /** Each re-price takes a number; a newer one, or New campaign / an audience switch, makes an older one's result void. */
+  const repriceRun = useRef(0);
 
   const [senderName, setSenderName] = useState('');
   const [senderTitle, setSenderTitle] = useState('Account Manager, DreamLease');
@@ -520,6 +624,21 @@ export function Compose({ email, base, items, setItems, seed, onSeedApplied, onH
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState('');
   const [copied, setCopied] = useState(false);
+  const [copyProblems, setCopyProblems] = useState<string[]>([]);
+
+  // Sending from the salesperson's own mailbox (Phase 1). `mail` is null until the status arrives.
+  const [mail, setMail] = useState<MailStatus | null>(null);
+  const [outlookNote, setOutlookNote] = useState<{ tone: 'success' | 'error' | 'warning'; text: string } | null>(null);
+  const [recipientEmail, setRecipientEmail] = useState('');
+  const [sending, setSending] = useState(false);
+  const [sentAt, setSentAt] = useState<string | null>(null);
+  const [sendError, setSendError] = useState<{ text: string; problems: string[] } | null>(null);
+  const canSend = !!mail?.available;
+  // The draft as it was when the campaign was created. Send and Copy use the STORED campaign, so any later edit
+  // (subject, message, CTA, your details, the first name) must invalidate it: create again to send the changes.
+  const createdFrom = useRef<string | null>(null);
+  const [changedAfterCreate, setChangedAfterCreate] = useState(false);
+  const connectPoll = useRef<number | null>(null);
 
   // Resizable Compose columns: the salesperson drags the dividers to widen whichever panel they are working in.
   // Two px widths (campaign, offers) are remembered per browser; the preview takes the rest. Wide screens only —
@@ -593,6 +712,84 @@ export function Compose({ email, base, items, setItems, seed, onSeedApplied, onH
       .catch(() => {});
   }, []);
 
+  // Is sending set up and Outlook connected? And, on the way back from Microsoft's sign-in, say how it went
+  // (?outlook=…), then drop the parameter so a reload does not repeat the message.
+  useEffect(() => {
+    api
+      .mailStatus()
+      .then(setMail)
+      .catch(() => setMail({ available: false, connected: false }));
+    const params = new URLSearchParams(window.location.search);
+    const outcome = params.get('outlook');
+    // Back from Microsoft in the Connect window: hand the result to the tool's own window and close.
+    if (outcome && window.opener && window.opener !== window) {
+      try {
+        (window.opener as Window).postMessage({ type: 'dl-outlook', outcome }, window.location.origin);
+        window.close();
+        return;
+      } catch {
+        /* no opener to tell: show the result here */
+      }
+    }
+    if (outcome) {
+      setOutlookNote(OUTLOOK_OUTCOME[outcome] ?? OUTLOOK_OUTCOME.failed!);
+      params.delete('outlook');
+      const rest = params.toString();
+      window.history.replaceState(null, '', `${window.location.pathname}${rest ? `?${rest}` : ''}${window.location.hash}`);
+    }
+    const onMessage = (e: MessageEvent) => {
+      const data = e.data as { type?: string; outcome?: string } | null;
+      if (e.origin !== window.location.origin || data?.type !== 'dl-outlook') return;
+      setOutlookNote(OUTLOOK_OUTCOME[data.outcome ?? ''] ?? OUTLOOK_OUTCOME.failed!);
+      void api.mailStatus().then(setMail).catch(() => {});
+    };
+    window.addEventListener('message', onMessage);
+    return () => {
+      window.removeEventListener('message', onMessage);
+      if (connectPoll.current) window.clearInterval(connectPoll.current);
+    };
+  }, []);
+
+  /**
+   * Connect Outlook in its own window, so the campaign being written here survives the Microsoft sign-in. The status is
+   * polled too, in case Microsoft's pages cut the link between the two windows. If the browser blocks the window,
+   * the whole page goes to Microsoft instead (and comes back to a fresh Compose).
+   */
+  function connectOutlook() {
+    const popup = window.open(api.connectOutlookUrl, 'dl-connect-outlook', 'popup,width=560,height=720');
+    if (!popup) {
+      pendingSave.current?.();
+      window.location.assign(api.connectOutlookUrl);
+      return;
+    }
+    setOutlookNote({ tone: 'warning', text: 'Finish signing in to Microsoft in the window that opened. Your campaign stays here.' });
+    if (connectPoll.current) window.clearInterval(connectPoll.current);
+    let tries = 0;
+    connectPoll.current = window.setInterval(() => {
+      tries += 1;
+      if (tries > 90 && connectPoll.current) window.clearInterval(connectPoll.current);
+      void api
+        .mailStatus()
+        .then((st) => {
+          if (!st.connected) return;
+          if (connectPoll.current) window.clearInterval(connectPoll.current);
+          setMail(st);
+          setOutlookNote(OUTLOOK_OUTCOME.connected!);
+        })
+        .catch(() => {});
+    }, 2000);
+  }
+
+  async function disconnectOutlook() {
+    try {
+      await api.disconnectOutlook();
+      setMail((m) => (m ? { ...m, connected: false } : m));
+      setOutlookNote({ tone: 'success', text: 'Outlook disconnected. The tool no longer holds permission to send from your mailbox.' });
+    } catch (e) {
+      setOutlookNote({ tone: 'error', text: errMsg(e) });
+    }
+  }
+
   // Copying a past campaign: pre-fill the reusable parts (never the recipient), load its offers into the tray,
   // and re-price each one live from its source URL so the copy never carries a stale price. Applied after the
   // saved-sender effect above so the copied sender wins, then cleared so it applies once.
@@ -614,38 +811,115 @@ export function Compose({ email, base, items, setItems, seed, onSeedApplied, onH
     setCtaKind(seed.ctaKind === 'whatsapp' && !WHATSAPP_LIVE ? 'view_offer' : seed.ctaKind);
     setCtaLabel(seed.ctaLabel);
     setRecipientFirst('');
+    setRecipientEmail('');
+    setRestoredAt(null);
     setItems(seed.offers.map((o) => ({ offer: o }))); // show the copied offers at once…
     void repriceCopied(seed.offers); // …then refresh each price live
     onSeedApplied?.();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [seed]);
 
+  // Restore the unsent campaign saved in this browser, once, as soon as we know who is signed in. A campaign being
+  // copied (seed), or offers already in the tray (the Library), win over it.
+  useEffect(() => {
+    if (!email || draftRestored.current) return;
+    draftRestored.current = true;
+    if (seed || items.length > 0) return;
+    const d = readSavedDraft(email);
+    if (!d) {
+      lastSavedBody.current = '';
+      return;
+    }
+    setName(d.name);
+    setAudience(d.audience);
+    setUseCase(d.useCase);
+    setUseCaseNote(d.useCaseNote);
+    setSubject(d.subject);
+    setPreheader(d.preheader);
+    setIntro(d.intro);
+    const ctaRestored = d.ctaKind === 'whatsapp' && !WHATSAPP_LIVE ? 'view_offer' : d.ctaKind;
+    setCtaKind(ctaRestored);
+    setCtaLabel(d.ctaLabel);
+    const offers = d.items.slice(0, 6);
+    setItems(offers);
+    setRestoredAt(d.savedAt);
+    lastSavedBody.current = JSON.stringify(draftBody({ ...d, ctaKind: ctaRestored, items: offers }));
+    // An offer looked up more than a day ago: refresh the prices live, keeping the salesperson's brochure choices.
+    const oldest = Math.min(...offers.map((x) => Date.parse(x.offer.source.fetchedAt ?? '') || 0));
+    if (offers.length && Date.now() - oldest > DRAFT_STALE_MS) void repriceCopied(offers.map((x) => x.offer), { keepBrochureChoice: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [email]);
+
+  // Save as the draft changes (half a second after the last change). An untouched Compose leaves nothing behind.
+  useEffect(() => {
+    if (!email || !draftRestored.current) return;
+    const untouched =
+      items.length === 0 && name === DEFAULT_NAME && audience === 'personal' && useCase === 'renewal' && !useCaseNote && subject === DEFAULT_SUBJECT && !preheader && intro === DEFAULT_INTRO && ctaKind === 'view_offer' && !ctaLabel;
+    const body = draftBody({ name, audience, useCase, useCaseNote, subject, preheader, intro, ctaKind, ctaLabel, items });
+    const json = untouched ? '' : JSON.stringify(body);
+    if (json === lastSavedBody.current) {
+      pendingSave.current = null;
+      return;
+    }
+    const save = () => {
+      pendingSave.current = null;
+      lastSavedBody.current = json;
+      if (untouched) clearSavedDraft(email);
+      else writeSavedDraft(email, { savedAt: new Date().toISOString(), ...body });
+    };
+    pendingSave.current = save;
+    const t = window.setTimeout(save, 500);
+    return () => {
+      window.clearTimeout(t);
+      pendingSave.current = null;
+    };
+  }, [email, name, audience, useCase, useCaseNote, subject, preheader, intro, ctaKind, ctaLabel, items]);
+
+  // Leaving the page (reload, closing the tab, switching away): save the last half-second of typing too.
+  useEffect(() => {
+    const flush = () => pendingSave.current?.();
+    const onHide = () => {
+      if (document.visibilityState === 'hidden') flush();
+    };
+    window.addEventListener('pagehide', flush);
+    document.addEventListener('visibilitychange', onHide);
+    return () => {
+      window.removeEventListener('pagehide', flush);
+      document.removeEventListener('visibilitychange', onHide);
+    };
+  }, []);
+
   /**
    * Re-price the offers of a copied campaign live from each offer's own source URL, so the new campaign never
    * ships a stale price. Salary-sacrifice nets are hand-entered, so they are kept (like reLook). A source page
    * that has moved keeps its copied price and is reported, so nothing silently goes out wrong.
    */
-  async function repriceCopied(offers: Offer[]) {
+  async function repriceCopied(offers: Offer[], opts: { keepBrochureChoice?: boolean } = {}) {
+    const run = ++repriceRun.current;
     setRepricing(true);
     setWarnings([]);
     setAddError('');
-    const out: Item[] = [];
+    const refreshed = new Map<Offer, Item>();
     const failed: string[] = [];
     for (const o of offers) {
       try {
         const res = await api.lookup(o.offerUrl);
         const offer = isSalsac(o) ? toSalsac(res.offer, o) : res.offer;
-        // Re-attach the model's stored brochure so the copied campaign carries it (like the library). Uses the
-        // stored copy only — never a search — keeps the prior include, and a European edition stays unticked.
-        const b = await api.currentBrochure(offer.vehicle.make, offer.vehicle.model);
-        if (b) out.push({ offer: { ...offer, brochure: { brochureId: b.id, include: o.brochure?.include ?? b.market !== 'eu' } }, options: res.options, brochure: b });
-        else out.push({ offer, options: res.options });
+        // Re-attach the model's stored brochure (like the library). Uses the stored copy only — never a search — keeps
+        // the prior include, and a European edition stays unticked. A restored draft keeps the salesperson's choice:
+        // an offer whose brochure they removed gets none back.
+        const b = opts.keepBrochureChoice && !o.brochure ? null : await api.currentBrochure(offer.vehicle.make, offer.vehicle.model);
+        if (b) refreshed.set(o, { offer: { ...offer, brochure: { brochureId: b.id, include: o.brochure?.include ?? b.market !== 'eu' } }, options: res.options, brochure: b });
+        else refreshed.set(o, { offer, options: res.options });
       } catch {
-        failed.push(`${o.vehicle.make} ${o.vehicle.model}`);
-        out.push({ offer: o }); // keep the copied price rather than lose the offer
+        failed.push(`${o.vehicle.make} ${o.vehicle.model}`); // keeps the copied price rather than lose the offer
       }
     }
-    setItems(out);
+    // A newer campaign (New campaign, another copy, an audience switch) started meanwhile: this result is void.
+    if (run !== repriceRun.current) return;
+    // Merge into the tray as it is NOW: only offers still there and untouched since this started are replaced, so
+    // anything added, removed or changed meanwhile stays as the salesperson left it.
+    setItems((cur) => cur.map((x) => refreshed.get(x.offer) ?? x));
     setRepricing(false);
     setWarnings(failed.length ? [`Couldn't re-price ${failed.join(', ')} — the copied price is shown and its brochure was not re-attached. That offer page may have changed; re-fetch it (the chips reload it) or remove it before sending.`] : []);
   }
@@ -801,6 +1075,8 @@ export function Compose({ email, base, items, setItems, seed, onSeedApplied, onH
    */
   function changeAudience(next: Audience) {
     if (next === audience) return;
+    repriceRun.current += 1; // an in-flight re-price belongs to the old audience
+    setRepricing(false);
     const had = items.length;
     setAudience(next);
     setItems([]);
@@ -869,11 +1145,54 @@ export function Compose({ email, base, items, setItems, seed, onSeedApplied, onH
     }
   }
 
+  /**
+   * Start a new campaign (Matt, 30 Sept 2026): clear the offers, the message and the customer, back to the defaults.
+   * Your own details and the Outlook connection stay. Asks first only when there is work that was never sent.
+   */
+  function startNew() {
+    const unsent = items.length > 0 && !sentAt;
+    if (unsent && !window.confirm('Start a new campaign? This clears the offers and your message. Nothing has been sent.')) return;
+    setName(DEFAULT_NAME);
+    setAudience('personal');
+    setUseCase('renewal');
+    setUseCaseNote('');
+    setSubject(DEFAULT_SUBJECT);
+    setPreheader('');
+    setIntro(DEFAULT_INTRO);
+    setRecipientFirst('');
+    setCtaKind('view_offer');
+    setCtaLabel('');
+    setUrl('');
+    setAddError('');
+    setWarnings([]);
+    setSavedIds(new Set());
+    setItems([]);
+    createdFrom.current = null;
+    setChangedAfterCreate(false);
+    setOutlookNote(null);
+    setRestoredAt(null);
+    repriceRun.current += 1;
+    setRepricing(false);
+    if (email) clearSavedDraft(email);
+    lastSavedBody.current = '';
+    resetPreview();
+    composeRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // The top bar's "+ New campaign" (App.tsx): start again here, asking first if unsent work would be lost.
+  useEffect(() => {
+    if (newCampaignRequest > 0) startNew();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [newCampaignRequest]);
+
   async function doCreate() {
     setCreating(true);
     setCreateError('');
     try {
       const res = await api.create(draft);
+      createdFrom.current = JSON.stringify(draft);
+      setChangedAfterCreate(false);
       setCreated(res); // res.html stays absolute — Copy-for-Outlook needs it that way
       setPreviewHtml(displayHtml(res.html));
       setPreviewStale(false);
@@ -884,20 +1203,90 @@ export function Compose({ email, base, items, setItems, seed, onSeedApplied, onH
     }
   }
 
-  async function copyForOutlook() {
-    if (!created) return;
+  // A new (or cleared) campaign starts with nothing sent, no messages and no customer address (never the last one's).
+  useEffect(() => {
+    setSentAt(null);
+    setSendError(null);
+    setCopyProblems([]);
+    setRecipientEmail('');
+  }, [created]);
+
+  // An edit after Create would not reach the customer (Send and Copy use the stored campaign): drop it, and say so.
+  useEffect(() => {
+    if (!created || createdFrom.current === null || JSON.stringify(draft) === createdFrom.current) return;
+    setCreated(null);
+    setPreviewStale(true);
+    setChangedAfterCreate(true);
+  }, [draft, created]);
+
+  /** Send to the customer from the salesperson's own mailbox. The server runs every check first and refuses a faulty email. */
+  async function doSend() {
+    if (!created || !recipientEmail.trim()) return;
+    setSending(true);
+    setSendError(null);
     try {
-      await navigator.clipboard.write([
-        new ClipboardItem({
-          'text/html': new Blob([created.html], { type: 'text/html' }),
-          'text/plain': new Blob([created.text], { type: 'text/plain' }),
-        }),
-      ]);
-    } catch {
-      await navigator.clipboard.writeText(created.html);
+      const r = await api.send(created.campaign.id, recipientEmail.trim(), recipientFirst.trim() || undefined);
+      if (r.ok) {
+        setSentAt(r.sentAt);
+        if (email) clearSavedDraft(email); // sent: nothing to come back to
+        setRestoredAt(null);
+        setMail((m) => (m ? { ...m, lastSentAt: r.sentAt } : m));
+      } else {
+        const problems = (r.checks ?? []).filter((c) => !c.ok).flatMap((c) => c.problems);
+        setSendError({ text: problems.length ? 'Not sent. Fix these, then press Send again:' : r.error, problems });
+        if (r.code === 'connect' || r.code === 'reconnect') setMail((m) => (m ? { ...m, connected: false } : m));
+      }
+    } catch (e) {
+      setSendError({ text: errMsg(e), problems: [] });
+    } finally {
+      setSending(false);
     }
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  }
+
+  function copyForOutlook() {
+    if (!created) return;
+    const { html, text } = created;
+    // The backup route runs the same checks (all but the customer's address), so it cannot be used to get round them.
+    setCopyProblems([]);
+    const allowed = api.checks(created.campaign.id).then(
+      (r) => {
+        if (!r.ok) {
+          setCopyProblems(r.checks.filter((c) => !c.ok).flatMap((c) => c.problems));
+          throw new Error('blocked by a check');
+        }
+      },
+      (e: unknown) => {
+        setCopyProblems([errMsg(e)]);
+        throw e;
+      },
+    );
+    allowed.catch(() => {});
+    const done = () => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    };
+    // Start the write now, inside the click, with the content arriving once the checks pass: Safari and Firefox refuse
+    // a clipboard write that starts after a network wait.
+    let write: Promise<void>;
+    try {
+      const blob = (body: string, type: string) => allowed.then(() => new Blob([body], { type }));
+      write = navigator.clipboard.write([new ClipboardItem({ 'text/html': blob(html, 'text/html'), 'text/plain': blob(text, 'text/plain') })]);
+    } catch {
+      write = allowed.then(() => navigator.clipboard.writeText(html));
+    }
+    write.then(done).catch(async () => {
+      try {
+        await allowed;
+      } catch {
+        return; // a check failed: its message is already on screen
+      }
+      try {
+        await navigator.clipboard.writeText(html);
+        done();
+      } catch {
+        setCopyProblems(['Your browser did not allow the copy. Press Copy for Outlook again, or use Edge or Chrome.']);
+      }
+    });
   }
 
   return (
@@ -905,6 +1294,7 @@ export function Compose({ email, base, items, setItems, seed, onSeedApplied, onH
       {/* ---- details ---- */}
       <section className="panel">
         <Step n={1} />
+        {restoredAt && <p className="dl-small app__muted">Picked up where you left off (saved {whenSaved(restoredAt)}). “+ New campaign” at the top clears it.</p>}
         <Field label="Campaign name" help="Your own label, to find it again on the Campaigns tab. The customer never sees it.">{(id) => <Input id={id} value={name} onChange={(e) => setName(e.target.value)} />}</Field>
         <Field label="Audience type" help="Sets the compliance wording, terms and disclaimer for the whole campaign.">{(id) => (
           <Select id={id} value={audience} onChange={(e) => changeAudience(e.target.value as Audience)}>
@@ -968,6 +1358,23 @@ export function Compose({ email, base, items, setItems, seed, onSeedApplied, onH
           {detailsError && <span className="dl-small brochure__err">{detailsError}</span>}
         </div>
         <SenderPhoto base={base} onChange={onHeadshotChange} />
+        {outlookNote && <Alert tone={outlookNote.tone}>{outlookNote.text}</Alert>}
+        {canSend && (
+          <div className="dl-field outlook">
+            <span className="dl-label">Outlook</span>
+            {mail?.connected ? (
+              <div className="outlook__row">
+                <span className="dl-small">Connected. Emails go from your own mailbox.</span>
+                <Button variant="ghost" size="sm" onClick={disconnectOutlook}>Disconnect</Button>
+              </div>
+            ) : (
+              <div className="outlook__row">
+                <Button size="sm" onClick={connectOutlook}>Connect Outlook</Button>
+                <span className="dl-small app__muted">Once, so the tool can send your emails from your own mailbox. It never reads your mail.</span>
+              </div>
+            )}
+          </div>
+        )}
       </section>
 
       <div className="compose__resizer" onPointerDown={startResize('a')} role="separator" aria-orientation="vertical" aria-label="Drag to resize the campaign panel" title="Drag to resize" />
@@ -1034,7 +1441,7 @@ export function Compose({ email, base, items, setItems, seed, onSeedApplied, onH
       <section className="panel">
         <Step n={5} />
         <div className="preview__actions">
-          <Button variant="secondary" size="sm" onClick={doPreview} disabled={!ready || previewing}>{previewing ? 'Rendering…' : 'Update preview'}</Button>
+          <Button variant="secondary" size="sm" className={`btn-orange${previewStale && previewHtml && !previewing ? ' btn-pulse' : ''}`} onClick={doPreview} disabled={!ready || previewing}>{previewing ? 'Rendering…' : previewHtml && !previewStale ? 'Updated ✓' : 'Update preview'}</Button>
           <Button size="sm" onClick={doCreate} disabled={!ready || creating}>{creating ? 'Creating…' : 'Create campaign'}</Button>
         </div>
         {salsacNeedsFigures && <p className="dl-small app__muted" style={{ marginBottom: 12 }}>Enter the 20% and 40% net figures for every salary-sacrifice offer to preview and create.</p>}
@@ -1042,19 +1449,69 @@ export function Compose({ email, base, items, setItems, seed, onSeedApplied, onH
         {createError && <Alert tone="error">{createError}</Alert>}
 
         <Step n={6} />
-        {!created && <p className="dl-small app__muted">Once the campaign is created: Copy for Outlook, paste it into a new Outlook email, and send it from there.</p>}
+        {!created && changedAfterCreate && <Alert tone="warning">You changed the email after creating it. Press Create campaign again, then send.</Alert>}
+        {!created && (
+          <p className="dl-small app__muted">
+            {canSend
+              ? 'Once the campaign is created, enter the customer’s email and press Send. It goes from your own mailbox, after the tool has checked it.'
+              : 'Once the campaign is created: Copy for Outlook, paste it into a new Outlook email, and send it from there.'}
+          </p>
+        )}
+        {created && canSend && (
+          <div className="send">
+            {sentAt ? (
+              <Alert tone="success" title={`Sent from your mailbox at ${hhmm(sentAt)}`}>
+                <div className="created">
+                  <span>It’s in your Outlook Sent Items, and replies come to you. To send these offers to someone else, create the campaign again.</span>
+                  <div className="created__btns">
+                    <Button size="sm" onClick={startNew}>Start a new campaign</Button>
+                  </div>
+                </div>
+              </Alert>
+            ) : (
+              <>
+                <Field label="Customer’s email" help="One customer per email. The address is used for this send and not kept by the tool.">{(id) => (
+                  <Input id={id} type="email" autoComplete="off" value={recipientEmail} onChange={(e) => setRecipientEmail(e.target.value)} placeholder="name@example.com" />
+                )}</Field>
+                <div className="created__btns">
+                  <Button onClick={doSend} disabled={!mail?.connected || !recipientEmail.trim() || sending}>{sending ? 'Checking and sending…' : 'Send'}</Button>
+                  {!mail?.connected && (
+                    <>
+                      <Button variant="outline" size="sm" onClick={connectOutlook}>Connect Outlook</Button>
+                      <span className="dl-small app__muted">once, then Send</span>
+                    </>
+                  )}
+                </div>
+                {sendError && (
+                  <Alert tone="error">
+                    {sendError.text}
+                    {sendError.problems.length > 0 && (
+                      <ul className="send__problems">{sendError.problems.map((p, i) => <li key={i}>{p}</li>)}</ul>
+                    )}
+                  </Alert>
+                )}
+              </>
+            )}
+          </div>
+        )}
         {created && (
-          <Alert tone="success" title="Campaign created">
+          <Alert tone={canSend ? 'info' : 'success'} title={canSend ? 'Other ways to share it' : 'Campaign created'}>
             <div className="created">
               <div>
                 Hosted page: <a href={created.hostedUrl} target="_blank" rel="noreferrer">{created.hostedUrl}</a>
               </div>
               <div className="created__btns">
-                <Button size="sm" onClick={copyForOutlook}>{copied ? 'Copied ✓' : 'Copy for Outlook'}</Button>
+                <Button size="sm" variant={canSend ? 'outline' : undefined} onClick={copyForOutlook}>{copied ? 'Copied ✓' : 'Copy for Outlook'}</Button>
                 <Button variant="outline" size="sm" onClick={() => navigator.clipboard.writeText(created.hostedUrl)}>Copy hosted link</Button>
               </div>
+              {copyProblems.length > 0 && (
+                <Alert tone="error">
+                  Not copied. Fix these first:
+                  <ul className="send__problems">{copyProblems.map((p, i) => <li key={i}>{p}</li>)}</ul>
+                </Alert>
+              )}
               <span className="dl-small app__muted">
-                Paste into a New Outlook message (Ctrl+V) <strong>with Keep source formatting</strong>: the small (Ctrl) paste button under the pasted email, or once in Settings → Mail → Compose and reply → Cut, copy and paste → Pasting from other apps. Outlook's default, Merge formatting, turns the red price black. Then press Send. Drafts only — nothing is sent for you.
+                {canSend ? 'Backup only: Send above is the reliable way. ' : ''}Paste into a New Outlook message (Ctrl+V) <strong>with Keep source formatting</strong>: the small (Ctrl) paste button under the pasted email, or once in Settings → Mail → Compose and reply → Cut, copy and paste → Pasting from other apps. Outlook's default, Merge formatting, turns the red price black. Then press Send.
               </span>
             </div>
           </Alert>
@@ -1063,7 +1520,7 @@ export function Compose({ email, base, items, setItems, seed, onSeedApplied, onH
         <div className="preview">
           {previewHtml && items.length > 0 ? (
             <>
-              {previewStale && <p className="preview__stale dl-small">Offer changed — this preview is out of date. Press “Update preview” to refresh it.</p>}
+              {previewStale && <p className="preview__stale dl-small">You changed the email — this preview is out of date. Press “Update preview” to refresh it.</p>}
               <iframe title="Email preview" srcDoc={previewHtml} className={`preview__frame${previewStale ? ' preview__frame--stale' : ''}`} />
             </>
           ) : (

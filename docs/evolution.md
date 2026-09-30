@@ -1,6 +1,6 @@
 # DreamLease Offer Mailer — evolution plan (multi-year)
 
-**Status: decided by Matt on 29 September 2026, after the demo. Nothing below is built yet; Phase 1 is next.**
+**Status: decided by Matt on 29 September 2026, after the demo. Phase 1 is built on branch `feat/phase1-send-m365` (session 10, 29 Sept; not yet deployed): §6 records it as built.**
 Requirements come from Matt's interview the same afternoon. This document is the plan; `docs/architecture.md` stays
 the description of what exists, and is updated as each phase ships.
 
@@ -21,7 +21,7 @@ change, not the markup.
 | Start point | A **"Send offers" button on the monday.com lead** opens the tool with the customer filled in (the tool can also start on its own). |
 | Back to monday.com | The sent email and its offers; opens and clicks per customer; web enquiries that came from the email; replies. Follow-up reminders. |
 | Email types | One-to-one offers first; then renewal reminders (from contract end dates), quote follow-ups, employer offer packs, bulk campaigns. |
-| Bulk | Split by size: up to about 50 recipients from the salesperson's mailbox via Microsoft 365; larger lists through a marketing platform (Mautic) with unsubscribe and consent handling. |
+| Bulk | Split by size: up to about 50 recipients from the salesperson's mailbox via Microsoft 365; larger lists through a marketing platform (Mautic) with unsubscribe and consent handling. *Phase 1 decision (Matt, 29 Sept): one customer per email from the salesperson's mailbox, as rule 4 says; any bulk goes through Mautic (Phase 4).* |
 | Readers | Must display correctly in **Outlook classic**, new Outlook and Outlook on the web, Gmail (web and app), and Apple Mail / iPhone. |
 | Compliance | Emma approves the legal wording only (as now). |
 | Brands | DreamLease now. SalSac is a future iteration, added as configuration, not a rebuild. |
@@ -53,7 +53,7 @@ change, not the markup.
 |---|---|---|
 | What the customer receives | A personal email from the salesperson's real mailbox | A marketing email (unsubscribe footer, tracking); Gmail tends to file it under Promotions |
 | Salesperson's Outlook | In Sent Items; replies thread normally | Not in Sent Items; replies arrive without the original |
-| Deliverability | Already set up for dreamlease.co.uk | New sending records in the GoDaddy DNS; its own reputation to build |
+| Deliverability | Already set up for dreamlease.co.uk | New sending records in the 123-Reg DNS; its own reputation to build |
 | Customer data | Nothing new | Every recipient copied into Mautic as a contact: another processor (GDPR) |
 | Extra system | None | Mautic (hosting, updates) plus an email-sending service |
 
@@ -107,18 +107,52 @@ dependency on them, slotted in whenever they can do it.
 - The recipient's address is valid and **not on the suppression list**.
 - Subject and intro are present; the message is under Microsoft's size limit; no CAP ID (rule 2).
 
-**What changes in the code** (one PR, contract-tested):
+**Decisions taken before the build (Matt, 29 Sept, session 10: "go", "yes" to all).**
 
-- `packages/adapters/src/m365/`: a typed `MailSender` output adapter — send via Microsoft Graph `POST /me/sendMail`
-  (HTML body, `saveToSentItems: true`), with I/O injected so it is tested against a stand-in for Graph.
-- `apps/api`: the OAuth routes (connect, callback, status, disconnect), the send route for a created campaign, and the
-  pre-send checks; all in `OPERATIONS` / OpenAPI. The connected account must be the Access-verified user.
-- D1, additive: a `mail_connections` table (the salesperson's email, the encrypted refresh token, scopes, connected /
-  last used). Tokens encrypted with a key held as a Worker secret; never logged.
-- The campaign record gains `sentAt`, `sentVia: 'm365'` and `sentBy` (already columns in the register). The recipient's
-  address is used to send and not stored, as now.
-- `apps/web`: Connect / Disconnect Outlook (Step 3, Your details), the recipient field and **Send** (Step 6), clear
-  success and failure messages.
+1. One customer per email, one send per campaign; only the person who created the campaign can send it, from their
+   own mailbox. To send the same offers to someone else, create the campaign again.
+2. Offer check at Send: an offer looked up within the last 24 hours counts as checked (`config/mail.json`); an older
+   one is looked up again (up to one Firecrawl credit each, only when the direct fetch is refused). An ended, unpriced
+   or out-of-date offer, or one whose website price has changed, blocks the send.
+3. Copy for Outlook runs the same checks before copying (all but the customer's address), so the backup cannot be used
+   to get round them.
+4. SalSac staff are left for a later iteration: Connect Outlook and Send are for dreamlease.co.uk addresses only
+   (`config/mail.json`); SalSac staff keep Copy for Outlook. Nothing about salsac.co.uk in IT's Part D.
+5. Security: the full checks run, and the part-time developer gets a short review pack before the deploy.
+6. A 12-month client secret, not a certificate (as for the sign-in app); if IT's policy blocks secrets, switch.
+
+**Dependencies found in the hand-over check (29 Sept).** (a) **Emma publishes the approved wording** for all three
+contract types: the Send check refuses the placeholder, so no real send, not even the local proof or the
+certification morning, can pass before that. **Deploy only after she has**: Copy for Outlook now runs the same checks,
+so on the placeholder it stops too (found by the code review, 29 Sept). (b) **Matt applies the new table to production** (`pnpm db:migrate`)
+before the first local test send (`dev:live` uses production D1) and before the deploy; the deploy does not migrate.
+**Done 29 Sept.**
+(c) IT's CNAME for offers.dreamlease.co.uk should exist before the first real customer email (links to workers.dev
+may be caught by spam filters).
+
+**What changed in the code** (as built, one PR, contract-tested):
+
+- `packages/adapters/src/m365/`: the `m365` `OfferOutput` (the existing interface, now taking the one recipient) and a
+  Microsoft client: authorization code + PKCE against the tenant's own endpoints, token refresh (Microsoft rotates the
+  refresh token on every use; the new one is always stored), `GET /me` to confirm whose mailbox it is, and
+  `POST /me/sendMail` (HTML body, `saveToSentItems: true`, never a `from`). Microsoft's answers map to five outcomes
+  the tool acts on (reconnect, app credential, throttled, rejected, unavailable). I/O injected; contract tests against a
+  stand-in for Microsoft.
+- `apps/api`: `/api/mail/status`, `/connect`, `/callback`, `/disconnect` (`mail.ts`); `/api/campaigns/{id}/checks` and
+  `/send` (`send.ts`); the checks themselves (`presend.ts`, pure, tested rule by rule); all in `OPERATIONS` / OpenAPI.
+  The connected account must be the Access-verified user, checked at connect and again at every send. The return
+  address is configuration (`MAIL_REDIRECT_URI`), never taken from the request: `pnpm dev` and `dev:live` pass the
+  localhost one. The email is **re-rendered on the server** from the stored campaign and its own template, never taken
+  from the browser. A send reserves the campaign first, so a double click cannot send it twice.
+- D1, additive: migration `0004_mail_connections` (email, the encrypted refresh token, scopes, connected, updated, last
+  sent). AES-GCM with the `MAIL_TOKEN_KEY` secret, bound to the owner's email; never logged. A permission Microsoft no
+  longer honours, or one that cannot be opened (a changed key), is deleted and the salesperson is asked to connect
+  again. The daily Cron deletes connections unused for 90 days.
+- The campaign record: `sentAt` and `sentVia` existed; `sentVia` gains `'m365'` and `sentBy` is new (schema and a
+  "Sent by" register column; no new D1 column). The recipient's address is used to send and not stored, as now.
+- `apps/web`: Connect / Disconnect Outlook (Step 3, Your details), the customer's email and **Send** (Step 6, now
+  called "Send"), "Sent from your mailbox at 10:42", failed checks listed in plain words; Copy for Outlook below as
+  the backup, blocked with the same messages when a check fails.
 - `CLAUDE.md` rule 4 rewritten as decided; runbook Part D with IT's steps.
 
 **IT's part (runbook Part D, click by click, about 20 minutes).** A second Entra app registration "DreamLease Offer
@@ -128,8 +162,10 @@ Mailer - Send" (single tenant); redirect URIs `https://marketingtools.dreamelect
 to Matt by phone; the application ID sent by email. Optional: "Assignment required" with the salespeople assigned
 individually.
 
-**Matt's part.** Paste two secrets in the Terminal (IT's client secret; an encryption key the command generates
-without showing it); ship it; deploy; take part in the certification morning.
+**Matt's part.** Apply the new table to production (`pnpm db:migrate`); paste two secrets in the Terminal (IT's client
+secret; an encryption key the command generates without showing it); send Claude the two IDs from IT (not secret, they
+go in `wrangler.jsonc`); ship it; deploy; take part in the certification morning. After the local test send,
+Disconnect Outlook, so no permission encrypted with the local key stays in production.
 
 **Proof.**
 

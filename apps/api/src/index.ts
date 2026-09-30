@@ -10,10 +10,12 @@ import { files } from './files.js';
 import { hosted } from './hosted.js';
 import { libraryApi, purgeArchivedLibrary, recheckLibraryUrls } from './library.js';
 import { lookup } from './lookup.js';
+import { mailApi, purgeStaleMailConnections } from './mail.js';
 import { requireAccess } from './middleware/access.js';
 import { buildOpenApi } from './openapi.js';
 import { profileApi } from './profile.js';
 import { safeErrorLine } from './safe-log.js';
+import { sendApi } from './send.js';
 import { suppressionsApi } from './suppressions.js';
 import { templatesApi } from './templates.js';
 import { ui } from './ui.js';
@@ -57,8 +59,10 @@ api.route('/', profileApi); // /me + /me/photo — the salesperson's profile and
 api.route('/', lookup);
 api.route('/', brochuresApi);
 api.route('/', campaignsApi);
+api.route('/', sendApi); // /campaigns/:id/checks and /send: the pre-send checks and the Microsoft 365 send
+api.route('/', mailApi); // /mail/*: Connect Outlook (the salesperson's own mailbox, runbook Part D)
 api.route('/', libraryApi);
-api.route('/', templatesApi); // /templates — master-admin only (requireAdmin inside)
+api.route('/', templatesApi); // /templates: read by admins or compliance, changed by compliance only (templates.ts)
 api.route('/', suppressionsApi); // /suppressions — opt-out register (remove is admin only)
 api.route('/dev', dev);
 app.route('/api', api);
@@ -94,6 +98,12 @@ handler.scheduled = (_controller, env, ctx) => {
     recheckLibraryUrls(env)
       .then((r) => console.log('library urls:', JSON.stringify(r)))
       .catch((e) => console.error('library url re-check failed:', safeErrorLine(e))),
+  );
+  // Microsoft refuses a connection unused for 90 days: delete it, so no dead token is kept
+  ctx.waitUntil(
+    purgeStaleMailConnections(env, new Date())
+      .then((n) => console.log('mail connections purged:', n))
+      .catch((e) => console.error('mail connection purge failed:', safeErrorLine(e))),
   );
   ctx.waitUntil(
     purgeArchivedLibrary(env, new Date())

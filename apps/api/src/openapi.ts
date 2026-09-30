@@ -16,6 +16,7 @@
 import { z } from 'zod';
 import { ContactMethod, Offer } from '@offer-mailer/schema';
 import { DraftCampaign } from './campaigns.js';
+import { SendBody, SendChecksBody } from './send.js';
 import { SuppressionAdd, SuppressionEmail } from './suppressions.js';
 import { TemplateBody, TemplateBodyPatch } from './templates.js';
 
@@ -63,6 +64,8 @@ const PhotoForm = z.object({ photo: binary().meta({ description: 'A portrait ima
 const registry = z.registry<{ id: string }>();
 const SCHEMAS: Record<string, z.ZodType> = {
   DraftCampaign,
+  SendBody,
+  SendChecksBody,
   Offer,
   TemplateBody,
   TemplateBodyPatch,
@@ -113,6 +116,12 @@ export const OPERATIONS: Operation[] = [
   { method: 'get', path: '/api/campaigns', tag: 'Campaigns', summary: "The signed-in salesperson's campaigns", access: 'signed-in', returns: 'json' },
   { method: 'get', path: '/api/campaigns/{id}', tag: 'Campaigns', summary: 'One campaign', access: 'signed-in', returns: 'json' },
   { method: 'get', path: '/api/campaigns/{id}/stats', tag: 'Campaigns', summary: "A campaign's click statistics", access: 'signed-in', returns: 'json' },
+  { method: 'post', path: '/api/campaigns/{id}/checks', tag: 'Send', summary: "Run the pre-send checks on a campaign as it would be sent (the creator only). Without `to` the recipient check is skipped: Copy for Outlook runs this first", access: 'signed-in', body: { schema: 'SendChecksBody', validatedBy: 'zod' }, returns: 'json' },
+  { method: 'post', path: '/api/campaigns/{id}/send', tag: 'Send', summary: "Send a campaign to one customer from the signed-in salesperson's own mailbox via Microsoft 365, after the pre-send checks pass (the creator only; once per campaign). 422 lists failed checks; 428 means connect Outlook; 409 already sent", access: 'signed-in', body: { schema: 'SendBody', validatedBy: 'zod' }, returns: 'json' },
+  { method: 'get', path: '/api/mail/status', tag: 'Send', summary: 'Is sending set up, may the signed-in person send, and is their Outlook connected', access: 'signed-in', returns: 'json' },
+  { method: 'get', path: '/api/mail/connect', tag: 'Send', summary: "Connect Outlook: a browser navigation to Microsoft's sign-in for the Send app (PKCE; state in a sealed cookie)", access: 'signed-in', returns: 'redirect' },
+  { method: 'get', path: '/api/mail/callback', tag: 'Send', summary: "Microsoft's return from Connect Outlook: stores the encrypted permission if the mailbox is the signed-in person's own, then back to the web app", access: 'signed-in', query: q('code', 'state', 'error'), returns: 'redirect' },
+  { method: 'post', path: '/api/mail/disconnect', tag: 'Send', summary: "Disconnect Outlook: delete the signed-in person's stored permission", access: 'signed-in', returns: 'json' },
   { method: 'get', path: '/api/register', tag: 'Register', summary: 'The promotions register: every campaign with its salesperson-authored copy', access: 'signed-in', returns: 'json' },
   { method: 'get', path: '/api/register.csv', tag: 'Register', summary: 'The promotions register as CSV', access: 'signed-in', returns: 'csv' },
 
@@ -199,7 +208,7 @@ export function buildOpenApi(version: string): object {
       title: 'DreamLease Offer Mailer API',
       version,
       description:
-        'Build branded lease-offer emails from dreamlease.co.uk offer URLs. Public routes serve hosted pages, files and email links; the tool API under /api sits behind Cloudflare Access (Microsoft Entra sign-in) and fails closed (503) until Access is configured. Cross-site form posts are refused (403): writes come from the tool itself, or send content-type: application/json (the photo and brochure uploads are same-origin only until machine sign-in exists). The Worker never sends email.',
+        'Build branded lease-offer emails from dreamlease.co.uk offer URLs. Public routes serve hosted pages, files and email links; the tool API under /api sits behind Cloudflare Access (Microsoft Entra sign-in) and fails closed (503) until Access is configured. Cross-site form posts are refused (403): writes come from the tool itself, or send content-type: application/json (the photo and brochure uploads are same-origin only until machine sign-in exists). Email is sent only when a signed-in salesperson presses Send, from their own Microsoft 365 mailbox, to one customer, after the pre-send checks pass; never automatically and never in bulk.',
     },
     servers: [{ url: '/' }],
     tags: [...new Set(OPERATIONS.map((o) => o.tag))].map((name) => ({ name })),

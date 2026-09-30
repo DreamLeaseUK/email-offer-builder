@@ -4,8 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "wrangler dev",
-    "dev:live": "wrangler dev --remote --var ACCESS_AUD:",
+    "dev": "wrangler dev --var MAIL_REDIRECT_URI:http://localhost:5173/api/mail/callback",
+    "dev:live": "wrangler dev --remote --var ACCESS_AUD: --var MAIL_REDIRECT_URI:http://localhost:5173/api/mail/callback",
     "deploy": "wrangler deploy",
     "types": "wrangler types",
     "test": "vitest run",

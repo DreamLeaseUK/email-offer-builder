@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Alert, Logo } from 'dreamlease-design-system';
+import { Alert, Button, Logo } from 'dreamlease-design-system';
 import type { Brochure, Campaign, Offer } from '@offer-mailer/schema';
 import { api, type ComposeSeed, type Item, type LayoutChoice, type Role } from './api';
 import { Campaigns } from './Campaigns';
@@ -26,6 +26,12 @@ export function App() {
   const [items, setItems] = useState<Item[]>([]);
   // A campaign being copied pre-fills Compose (its reusable parts; never the recipient).
   const [seed, setSeed] = useState<ComposeSeed | null>(null);
+  // "+ New campaign" in the top bar: each press asks Compose (which owns the draft) to start again.
+  const [newCampaignRequest, setNewCampaignRequest] = useState(0);
+  const newCampaign = () => {
+    setView('compose');
+    setNewCampaignRequest((n) => n + 1);
+  };
 
   useEffect(() => {
     api
@@ -93,6 +99,9 @@ export function App() {
           {seesTemplates && tab('templates', 'Templates')}
         </nav>
         <span className="app__spacer" />
+        <span className="app__new">
+          <Button size="sm" onClick={newCampaign}>+ New campaign</Button>
+        </span>
         <span className="app__user">
           {headshotUrl && <img className="app__avatar" src={sameOrigin(headshotUrl)} alt="" />}
           <span className="dl-small">{email || (meError ? 'not signed in' : '…')}</span>
@@ -109,7 +118,7 @@ export function App() {
 
       {/* Compose stays mounted so its draft survives tab switches; the others mount fresh. */}
       <div hidden={view !== 'compose'}>
-        <Compose email={email} base={base} items={items} setItems={setItems} seed={seed} onSeedApplied={() => setSeed(null)} onHeadshotChange={setHeadshotUrl} />
+        <Compose email={email} base={base} items={items} setItems={setItems} seed={seed} onSeedApplied={() => setSeed(null)} onHeadshotChange={setHeadshotUrl} newCampaignRequest={newCampaignRequest} />
       </div>
       {view === 'campaigns' && <Campaigns onCopy={copyCampaign} />}
       {view === 'library' && <Library base={base} role={role} onAdd={addFromLibrary} />}

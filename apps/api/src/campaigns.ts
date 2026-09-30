@@ -5,6 +5,7 @@
  *   GET  /api/campaigns            the caller's campaigns, newest first
  *   GET  /api/campaigns/:id        one campaign
  *   GET  /api/campaigns/:id/stats  clicks and hosted views, scanner hits excluded
+ *   (send.ts: POST /api/campaigns/:id/checks and /send, the pre-send checks and the Microsoft 365 send)
  *   GET  /r/:slug/:link            public: resolve a stored link, log the click, redirect (was a stub)
  *
  * The salesperson supplies the parts they author (name, subject, intro, layout, offers, sender); the server
@@ -16,7 +17,7 @@ import { render } from '@offer-mailer/render';
 import { fixtureTemplate } from '@offer-mailer/render/fixtures';
 import { Campaign, CampaignUseCase, Offer, RecipientContext, Sender, Template, UseCaseNote, assertNoCapId, decodeOfferText } from '@offer-mailer/schema';
 import type { Campaign as CampaignT, Template as TemplateT } from '@offer-mailer/schema';
-import { desc, eq } from 'drizzle-orm';
+import { and, desc, eq, isNull, notInArray } from 'drizzle-orm';
 import { Hono } from 'hono';
 import { z } from 'zod';
 import { d1BrochureRepo } from './brochures.js';
@@ -26,7 +27,7 @@ import type { AppEnv, Env } from './env.js';
 import { writeHostedPage } from './hosted.js';
 import { sendersRepo } from './profile.js';
 import { logHit } from './tracking.js';
-import type { Brochure } from '@offer-mailer/schema';
+import type { Brochure, Rendered } from '@offer-mailer/schema';
 
 /**
  * The PLACEHOLDER template, seeded into an empty database so the tool can be tested before compliance publishes
@@ -77,7 +78,7 @@ export function salespersonTag(email: string): string {
 
 // ---------- repositories ----------
 
-function templatesRepo(env: Env) {
+export function templatesRepo(env: Env) {
   const d = db(env.DB);
   return {
     async getById(id: string): Promise<TemplateT | undefined> {
@@ -103,7 +104,7 @@ function templatesRepo(env: Env) {
   };
 }
 
-function campaignsRepo(env: Env) {
+export function campaignsRepo(env: Env) {
   const d = db(env.DB);
   return {
     async save(campaign: CampaignT, links: Record<string, string>): Promise<void> {
@@ -145,6 +146,41 @@ function campaignsRepo(env: Env) {
       const rows = await d.select({ data: campaignsTable.data }).from(campaignsTable).where(eq(campaignsTable.createdBy, email)).orderBy(desc(campaignsTable.createdAt)).all();
       return rows.map((r) => Campaign.parse(r.data));
     },
+    /** The link ids stored at creation: the /r redirect resolves only these. */
+    async linkIds(id: string): Promise<string[]> {
+      const row = await d.select({ links: campaignsTable.links }).from(campaignsTable).where(eq(campaignsTable.id, id)).get();
+      return Object.keys((row?.links ?? {}) as Record<string, string>);
+    },
+    /**
+     * Reserve the campaign for one send, atomically, so a double click or two tabs cannot send it twice. Only a
+     * campaign never reserved qualifies. A reservation is released only when Microsoft certainly did not get the
+     * email; one left behind by a send with no clear answer is never taken again (the email may have gone: the
+     * salesperson checks Sent Items and creates the campaign again if it did not). Returns false otherwise.
+     */
+    async claimSend(id: string, at: string): Promise<boolean> {
+      const res = await d
+        .update(campaignsTable)
+        .set({ status: 'sending', sentAt: at, sentVia: 'm365' })
+        .where(and(eq(campaignsTable.id, id), isNull(campaignsTable.sentAt), notInArray(campaignsTable.status, ['sent', 'sending'])))
+        .run();
+      return (res.meta.changes ?? 0) > 0;
+    },
+    /** The send did not happen: give the reservation back (only our own). */
+    async releaseSend(id: string, at: string, status: CampaignT['status']): Promise<void> {
+      await d
+        .update(campaignsTable)
+        .set({ status, sentAt: null, sentVia: null })
+        .where(and(eq(campaignsTable.id, id), eq(campaignsTable.sentAt, at), eq(campaignsTable.status, 'sending')))
+        .run();
+    },
+    /** Microsoft accepted it: record who sent it and when, in the columns and the register's JSON together. */
+    async markSent(campaign: CampaignT, sentAt: string, sentBy: string): Promise<CampaignT> {
+      const { recipient: _recipientPii, ...stored } = campaign;
+      const sent = Campaign.parse({ ...stored, status: 'sent', sentAt, sentVia: 'm365', sentBy, updatedAt: sentAt });
+      assertNoCapId(sent, 'campaign');
+      await d.update(campaignsTable).set({ status: 'sent', sentAt, sentVia: 'm365', updatedAt: sentAt, data: sent }).where(eq(campaignsTable.id, campaign.id)).run();
+      return sent;
+    },
     /** Every campaign, for the promotions register (Emma's compliance record). */
     async listAll(): Promise<CampaignT[]> {
       const rows = await d.select({ data: campaignsTable.data }).from(campaignsTable).orderBy(desc(campaignsTable.createdAt)).all();
@@ -175,6 +211,7 @@ const REGISTER_FIELDS = [
   ['hostedUrl', 'Hosted URL'],
   ['sentAt', 'Sent at'],
   ['sentVia', 'Sent via'],
+  ['sentBy', 'Sent by'],
 ] as const;
 
 /** One campaign flattened to the register's fields (the salesperson-authored copy plus the metadata). */
@@ -198,6 +235,7 @@ function registerRow(c: CampaignT): Record<string, string> {
     hostedUrl: c.hostedPage.url,
     sentAt: c.sentAt ?? '',
     sentVia: c.sentVia ?? '',
+    sentBy: c.sentBy ?? '',
   };
 }
 
@@ -294,6 +332,34 @@ async function assemble(env: Env, input: DraftCampaign, createdBy: string): Prom
     return { campaign, rendered };
   } catch (err) {
     throw new AssembleError(err instanceof Error ? err.message : 'The campaign could not be rendered.', 422);
+  }
+}
+
+/**
+ * The email exactly as it will be sent, rebuilt on the server from the stored campaign and its own template (rule 1:
+ * render() is the only producer; rule 3: the wording stays the approved one). Nothing from the browser but the
+ * customer's first name, for the greeting. Missing pieces are reported, not thrown: the pre-send checks name them.
+ */
+export async function renderForSend(
+  env: Env,
+  campaign: CampaignT,
+  firstName?: string,
+): Promise<{ template?: TemplateT; rendered?: Rendered; renderError?: string; brochures: Record<string, Brochure | undefined> }> {
+  const template = await templatesRepo(env).getById(campaign.templateId);
+  const brochureRepo = d1BrochureRepo(env);
+  const brochures: Record<string, Brochure | undefined> = {};
+  for (const o of campaign.offers) if (o.brochure?.include) brochures[o.brochure.brochureId] = await brochureRepo.findById(o.brochure.brochureId);
+  if (!template) return { brochures };
+  const found = Object.fromEntries(Object.entries(brochures).filter((e): e is [string, Brochure] => !!e[1]));
+  // A brochure that no longer exists is left out of the build, so the email still renders and the checks name the
+  // missing brochure (assets) instead of failing to build at all.
+  const offers = campaign.offers.map((o) => (o.brochure?.include && !found[o.brochure.brochureId] ? { ...o, brochure: { ...o.brochure, include: false } } : o));
+  const name = firstName?.trim();
+  const toRender = { ...campaign, offers, ...(name ? { recipient: { firstName: name } } : {}) };
+  try {
+    return { template, rendered: render(toRender, template, { publicBaseUrl: env.PUBLIC_BASE_URL.replace(/\/$/, ''), brochures: found }), brochures };
+  } catch (err) {
+    return { template, renderError: err instanceof Error ? err.message : 'the email could not be built', brochures };
   }
 }
 
