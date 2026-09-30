@@ -436,6 +436,9 @@ body {
   gap: 6px;
   margin-top: 12px;
 }
+.step__new {
+  margin-left: auto;
+}
 .outlook__row {
   display: flex;
   flex-wrap: wrap;

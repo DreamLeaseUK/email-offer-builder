@@ -41,6 +41,11 @@ const salsacReady = (o: Offer): boolean => (o.pricing.salsac?.net20 ?? 0) > 0 &&
 /** The six steps of a campaign, in the order the screen asks for them (Matt, 29 Sept 2026: guide a new user). */
 const STEPS = ['Who it’s for', 'Your message', 'Your details', 'Add offers', 'Check and create', 'Send'] as const;
 
+/** A fresh campaign's starting text (also what "New campaign" resets to). Renewal first (Matt, 29 Sept 2026). */
+const DEFAULT_NAME = 'Renewal offers';
+const DEFAULT_SUBJECT = 'The options we talked about';
+const DEFAULT_INTRO = 'Thanks for your time. As promised, here are the options that fit what we discussed.';
+
 /** What Microsoft's return from Connect Outlook (?outlook=…) means, in plain words. */
 const OUTLOOK_OUTCOME: Record<string, { tone: 'success' | 'error' | 'warning'; text: string }> = {
   connected: { tone: 'success', text: 'Outlook connected. Emails you send from the tool now go from your own mailbox.' },
@@ -489,14 +494,14 @@ export function Compose({ email, base, items, setItems, seed, onSeedApplied, onH
   const sameOrigin = (u: string): string => (base && u.startsWith(base) ? u.slice(base.length) || '/' : u);
   const displayHtml = (html: string): string => (base ? html.split(base).join('') : html);
 
-  const [name, setName] = useState('Renewal offers');
+  const [name, setName] = useState(DEFAULT_NAME);
   const [audience, setAudience] = useState<Audience>('personal');
   // Renewal first and by default (Matt, 29 Sept 2026): it is the sales team's main use.
   const [useCase, setUseCase] = useState<UseCase>('renewal');
   const [useCaseNote, setUseCaseNote] = useState('');
-  const [subject, setSubject] = useState('The options we talked about');
+  const [subject, setSubject] = useState(DEFAULT_SUBJECT);
   const [preheader, setPreheader] = useState('');
-  const [intro, setIntro] = useState('Thanks for your time. As promised, here are the options that fit what we discussed.');
+  const [intro, setIntro] = useState(DEFAULT_INTRO);
   // One offer per row, always (Matt, 21 Sept 2026): a single offer is the hero card, two or more are stacked
   // rows. The two-up / three-up grids are no longer offered, so there is nothing for the salesperson to choose.
   const layout: LayoutChoice = 'auto';
@@ -973,6 +978,36 @@ export function Compose({ email, base, items, setItems, seed, onSeedApplied, onH
     }
   }
 
+  /**
+   * Start a new campaign (Matt, 30 Sept 2026): clear the offers, the message and the customer, back to the defaults.
+   * Your own details and the Outlook connection stay. Asks first only when there is work that was never sent.
+   */
+  function startNew() {
+    const unsent = items.length > 0 && !sentAt;
+    if (unsent && !window.confirm('Start a new campaign? This clears the offers and your message. Nothing has been sent.')) return;
+    setName(DEFAULT_NAME);
+    setAudience('personal');
+    setUseCase('renewal');
+    setUseCaseNote('');
+    setSubject(DEFAULT_SUBJECT);
+    setPreheader('');
+    setIntro(DEFAULT_INTRO);
+    setRecipientFirst('');
+    setCtaKind('view_offer');
+    setCtaLabel('');
+    setUrl('');
+    setAddError('');
+    setWarnings([]);
+    setSavedIds(new Set());
+    setItems([]);
+    createdFrom.current = null;
+    setChangedAfterCreate(false);
+    setOutlookNote(null);
+    resetPreview();
+    composeRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
   async function doCreate() {
     setCreating(true);
     setCreateError('');
@@ -1078,7 +1113,7 @@ export function Compose({ email, base, items, setItems, seed, onSeedApplied, onH
     <div className="compose" ref={composeRef} style={gridStyle}>
       {/* ---- details ---- */}
       <section className="panel">
-        <Step n={1} />
+        <Step n={1} extra={<span className="step__new"><Button variant="ghost" size="sm" onClick={startNew}>New campaign</Button></span>} />
         <Field label="Campaign name" help="Your own label, to find it again on the Campaigns tab. The customer never sees it.">{(id) => <Input id={id} value={name} onChange={(e) => setName(e.target.value)} />}</Field>
         <Field label="Audience type" help="Sets the compliance wording, terms and disclaimer for the whole campaign.">{(id) => (
           <Select id={id} value={audience} onChange={(e) => changeAudience(e.target.value as Audience)}>
@@ -1245,7 +1280,12 @@ export function Compose({ email, base, items, setItems, seed, onSeedApplied, onH
           <div className="send">
             {sentAt ? (
               <Alert tone="success" title={`Sent from your mailbox at ${hhmm(sentAt)}`}>
-                It’s in your Outlook Sent Items, and replies come to you. To send these offers to someone else, create the campaign again.
+                <div className="created">
+                  <span>It’s in your Outlook Sent Items, and replies come to you. To send these offers to someone else, create the campaign again.</span>
+                  <div className="created__btns">
+                    <Button size="sm" onClick={startNew}>Start a new campaign</Button>
+                  </div>
+                </div>
               </Alert>
             ) : (
               <>
