@@ -48,7 +48,8 @@
  *     the card's rounded top corners; the image is square below it (Matt: "it should match").
  *  e. (23 Sept) the recipient greeting ("Hi {name},") is plain, not bold: the v5 reference has it font-weight:bold
  *     in the intro section (which diff-reference compares). Matt asked for it plain; it is email-only
- *     personalisation in render.ts, not card markup.
+ *     personalisation in render.ts, not card markup. (30 Sept) It is also the message's size and colour (16px Graphite,
+ *     not 22px black): Matt, "too big".
  * And the tool sends one offer per row (auto: 1 → single, 2+ → stack).
  */
 import { C, FF, LH, esc, mso, spacer, table } from './html.js';
