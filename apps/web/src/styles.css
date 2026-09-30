@@ -445,6 +445,18 @@ body {
 .dl-btn.btn-orange:not(:disabled):hover {
   background: #e67300;
 }
+/* While the preview is out of date the orange button pulses gently (Matt, 30 Sept 2026); never for reduced motion. */
+@keyframes dl-pulse-orange {
+  0% { box-shadow: 0 0 0 0 rgba(255, 136, 17, 0.55); }
+  70% { box-shadow: 0 0 0 10px rgba(255, 136, 17, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(255, 136, 17, 0); }
+}
+.dl-btn.btn-pulse:not(:disabled) {
+  animation: dl-pulse-orange 1.8s ease-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .dl-btn.btn-pulse:not(:disabled) { animation: none; }
+}
 .step__new {
   margin-left: auto;
 }

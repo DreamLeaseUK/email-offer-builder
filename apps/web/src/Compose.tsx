@@ -1435,7 +1435,7 @@ export function Compose({ email, base, items, setItems, seed, onSeedApplied, onH
       <section className="panel">
         <Step n={5} />
         <div className="preview__actions">
-          <Button variant="secondary" size="sm" className="btn-orange" onClick={doPreview} disabled={!ready || previewing}>{previewing ? 'Rendering…' : 'Update preview'}</Button>
+          <Button variant="secondary" size="sm" className={`btn-orange${previewStale && previewHtml && !previewing ? ' btn-pulse' : ''}`} onClick={doPreview} disabled={!ready || previewing}>{previewing ? 'Rendering…' : 'Update preview'}</Button>
           <Button size="sm" onClick={doCreate} disabled={!ready || creating}>{creating ? 'Creating…' : 'Create campaign'}</Button>
         </div>
         {salsacNeedsFigures && <p className="dl-small app__muted" style={{ marginBottom: 12 }}>Enter the 20% and 40% net figures for every salary-sacrifice offer to preview and create.</p>}
