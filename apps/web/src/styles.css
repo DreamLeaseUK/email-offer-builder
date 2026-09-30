@@ -457,8 +457,9 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .dl-btn.btn-pulse:not(:disabled) { animation: none; }
 }
-.step__new {
-  margin-left: auto;
+/* "+ New campaign" in the top bar, before the signed-in user */
+.app__new {
+  margin-right: 16px;
 }
 .outlook__row {
   display: flex;

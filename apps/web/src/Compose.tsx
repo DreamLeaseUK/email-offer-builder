@@ -565,7 +565,7 @@ function SenderPhoto({ base, onChange }: { base: string; onChange?: (url: string
   );
 }
 
-export function Compose({ email, base, items, setItems, seed, onSeedApplied, onHeadshotChange }: { email: string; base: string; items: Item[]; setItems: React.Dispatch<React.SetStateAction<Item[]>>; seed?: ComposeSeed | null; onSeedApplied?: () => void; onHeadshotChange?: (url: string | null) => void }) {
+export function Compose({ email, base, items, setItems, seed, onSeedApplied, onHeadshotChange, newCampaignRequest = 0 }: { email: string; base: string; items: Item[]; setItems: React.Dispatch<React.SetStateAction<Item[]>>; seed?: ComposeSeed | null; onSeedApplied?: () => void; onHeadshotChange?: (url: string | null) => void; /** Bumped by the top bar's "+ New campaign". */ newCampaignRequest?: number }) {
   // Our-origin asset/link URLs are stamped absolute (the email needs that), but they only resolve on
   // the public origin. For in-app display, strip our origin so they become same-origin (served by the
   // Vite proxy in dev, the Worker in production). The Copy-for-Outlook HTML stays absolute.
@@ -1180,6 +1180,12 @@ export function Compose({ email, base, items, setItems, seed, onSeedApplied, onH
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
+  // The top bar's "+ New campaign" (App.tsx): start again here, asking first if unsent work would be lost.
+  useEffect(() => {
+    if (newCampaignRequest > 0) startNew();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [newCampaignRequest]);
+
   async function doCreate() {
     setCreating(true);
     setCreateError('');
@@ -1287,8 +1293,8 @@ export function Compose({ email, base, items, setItems, seed, onSeedApplied, onH
     <div className="compose" ref={composeRef} style={gridStyle}>
       {/* ---- details ---- */}
       <section className="panel">
-        <Step n={1} extra={<span className="step__new"><Button variant="ghost" size="sm" onClick={startNew}>New campaign</Button></span>} />
-        {restoredAt && <p className="dl-small app__muted">Picked up where you left off (saved {whenSaved(restoredAt)}). “New campaign” clears it.</p>}
+        <Step n={1} />
+        {restoredAt && <p className="dl-small app__muted">Picked up where you left off (saved {whenSaved(restoredAt)}). “+ New campaign” at the top clears it.</p>}
         <Field label="Campaign name" help="Your own label, to find it again on the Campaigns tab. The customer never sees it.">{(id) => <Input id={id} value={name} onChange={(e) => setName(e.target.value)} />}</Field>
         <Field label="Audience type" help="Sets the compliance wording, terms and disclaimer for the whole campaign.">{(id) => (
           <Select id={id} value={audience} onChange={(e) => changeAudience(e.target.value as Audience)}>
