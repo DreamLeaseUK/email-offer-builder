@@ -31,7 +31,7 @@
     "PUBLIC_BASE_URL": "https://offer-mailer.matt-wilson-9b8.workers.dev",
     // The tool's own origin: the only host that serves the web app.
     "TOOL_BASE_URL": "https://marketingtools.dreamelectric.uk",
-    "APP_VERSION": "0.6.1"
+    "APP_VERSION": "0.6.2"
   },
   "d1_databases": [
     {

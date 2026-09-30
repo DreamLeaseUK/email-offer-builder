@@ -4,7 +4,7 @@
  */
 import { CTA_DEFAULT_LABELS, availableCtaKinds } from '@offer-mailer/schema';
 import type { Brochure, Campaign, Offer, Sender } from '@offer-mailer/schema';
-import { gbp, gbpPence, longDate, number } from './format.js';
+import { gbp, gbpPence, number } from './format.js';
 import { Links, campaignUtm, withUtm } from './links.js';
 
 export class RenderError extends Error {
@@ -152,7 +152,8 @@ export function buildCards(campaign: Campaign, opts: VmOptions): CardVM[] {
     // salary sacrifice keep whatever their pricing carried (first stage; those audiences revisited later).
     const processingFee = offer.contractType === 'personal' ? PCH_PROCESSING_FEE : p.processingFee;
     if (processingFee !== undefined) smallPrintParts.push(`Processing fee ${gbpPence(processingFee)} inc VAT`);
-    smallPrintParts.push(`Offer valid until ${longDate(offer.validUntil)}`);
+    // No "Offer valid until …" line (Matt, 30 Sept 2026): validUntil still expires the hosted page and is checked before a
+    // send, but the email and the page no longer state a date.
     if (brochure) smallPrintParts.push(`Brochure figures are the manufacturer's and may differ from this offer.${brochure.european ? ` ${EUROPEAN_BROCHURE_NOTE}` : ''}`);
 
     const vm: CardVM = {
