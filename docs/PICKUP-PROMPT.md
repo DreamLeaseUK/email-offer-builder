@@ -103,9 +103,8 @@ the certification morning, and any fixes those find.
 
 ## 4. The job now, in order
 
-1. **Wait for IT (runbook Part D).** When Matt pastes the Application (client) ID and Directory (tenant) ID, put them in
-   `apps/api/wrangler.jsonc` (`MAIL_CLIENT_ID`, `MAIL_TENANT_ID`; not secrets) on the PR branch. Note IT's D7 and D8
-   answers (Conditional Access) in the status log.
+1. ~~Wait for IT (runbook Part D)~~ **Done 30 Sept** (Emma): both IDs are in `wrangler.jsonc`; the secret is with Matt
+   (expires 30/09/2027); D7 left at No; D8 Conditional Access not found (treated as none).
 2. **Emma publishes the approved wording** (all three contract types). **Deploy only after she has**: Send and Copy for
    Outlook both refuse the placeholder. Chase through Matt.
 3. ~~Matt applies migration 0004 to production~~ **Done 29 Sept** (the table exists; the live 0.6.1 code ignores it).

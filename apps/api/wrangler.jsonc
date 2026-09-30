@@ -36,8 +36,8 @@
     // IDs are not secret; IT emails them (D9). Empty = not set up: the tool offers Copy for Outlook only. The client
     // secret and the token-encryption key are secrets (MAIL_CLIENT_SECRET, MAIL_TOKEN_KEY). The return address must
     // match D4 exactly; `pnpm dev` and `pnpm dev:live` override it with the localhost one (apps/api/package.json).
-    "MAIL_TENANT_ID": "",
-    "MAIL_CLIENT_ID": "",
+    "MAIL_TENANT_ID": "62c0e616-b19d-4087-ae4a-3cfe43bab437",
+    "MAIL_CLIENT_ID": "e4dd2d33-b1ec-4c84-88e1-0b46f8eb3cc6",
     "MAIL_REDIRECT_URI": "https://marketingtools.dreamelectric.uk/api/mail/callback"
   },
   "d1_databases": [

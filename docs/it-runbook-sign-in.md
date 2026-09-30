@@ -284,7 +284,9 @@ Unlike Part A, do **not** tick `profile`. Then **Add permissions**. Then select 
 → **Yes**, and select **Refresh** if the **Status** column has not changed yet.
 
 Check that the **Configured permissions** table shows exactly these five rows, each with **Type** *Delegated* and
-**Status** *Granted for DreamLease*:
+**Status** *Granted for DreamLease* (DreamLease's tenant shows its name as **individual**, so the button reads *Grant admin
+consent for individual* and the status *Granted for individual*: that is the same thing, as Emma's screenshot of
+30 Sept shows):
 
 | Permission | What it lets the tool do |
 |---|---|
@@ -298,14 +300,17 @@ Do not add `Mail.Send.Shared`, `Mail.Read`, `Mail.ReadWrite` or anything else. N
 administrator by Microsoft's rules. Granting consent once means salespeople are not asked to approve the app
 themselves, and they could not approve it at all if the tenant blocks users from consenting to apps.
 
-**D7. Who can connect: leave it open (recommended).** **Entra ID** → **Enterprise apps** → **All applications** →
+**D7. Who can connect: nothing to do (recommended).** The setting below is already at **No**; leave it. The rest of this
+step is only for someone who wants to turn it on. **Entra ID** → **Enterprise apps** → **All applications** →
 search for **DreamLease Offer Mailer - Send** (or, on the Send app's registration **Overview**, select *Managed
 application in local directory*) → **Properties** → **Assignment required?** Leave it at **No**. The sign-in app (A7)
 already decides who can reach the tool, and the tool lets each person send only as themselves. If you do set it to
 **Yes**, assign each salesperson individually under **Users and groups** (assigning a group needs Entra ID P1 or P2).
 Anyone not assigned will see Microsoft's error AADSTS50105 when they click Connect Outlook.
 
-**D8. One question for you.** Does DreamLease have **Conditional Access** policies that cover Office 365 or all cloud
+**D8. One question for you.** If **Conditional Access** is not in your menu, answer "not found": the tenant then most
+likely has no Conditional Access policies (they need Entra ID P1), and the first real Connect Outlook proves it either
+way (Emma, 30 Sept: not found). Otherwise: does DreamLease have **Conditional Access** policies that cover Office 365 or all cloud
 apps (for example "UK only", "company devices only", "require MFA", or a sign-in frequency)? To check: **Entra ID** →
 **Conditional Access** → **Policies**, and look at those whose **State** is **On** (this page needs Global
 Administrator, Global Reader, Security Reader or Conditional Access Administrator; if you cannot open it, say so).
