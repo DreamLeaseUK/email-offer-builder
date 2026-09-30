@@ -108,7 +108,8 @@ the certification morning, and any fixes those find.
 2. **Emma publishes the approved wording** (all three contract types). **Deploy only after she has**: Send and Copy for
    Outlook both refuse the placeholder. Chase through Matt.
 3. ~~Matt applies migration 0004 to production~~ **Done 29 Sept** (the table exists; the live 0.6.1 code ignores it).
-4. **Local test send:** Matt adds `MAIL_TENANT_ID`, `MAIL_CLIENT_ID`, `MAIL_CLIENT_SECRET` and a test `MAIL_TOKEN_KEY` to
+4. **Local test send** (Connect Outlook already proven on 30 Sept; the client secret and a test `MAIL_TOKEN_KEY` are in
+   Matt's `.dev.vars`, and his connection row is in production, encrypted with that test key). Matt adds `MAIL_TENANT_ID`, `MAIL_CLIENT_ID`, `MAIL_CLIENT_SECRET` and a test `MAIL_TOKEN_KEY` to
    `apps/api/.dev.vars` himself (see `.dev.vars.example`), starts `api-live` + `web`, connects his Outlook at
    localhost:5173, sends a real campaign (approved wording) to his own test address, checks it arrived and is in his
    Sent Items, then **Disconnects** (so no permission encrypted with the local key stays in production).
