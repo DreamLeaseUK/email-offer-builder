@@ -124,7 +124,7 @@ export const fixtureTemplate: Template = {
       paragraphs: [
         'Prices shown include VAT and are based on the term, annual mileage and initial payment stated on each offer. Excess mileage charges and a fair wear and tear standard apply at the end of the agreement.',
         'A processing fee of £299.99 inc VAT is payable on all orders. At the end of the lease the vehicle must be returned in its original condition. You will not own the vehicle.',
-        'Offers are subject to status and availability, are for UK residents aged 18 or over, and are valid until the date shown on each offer. Guarantees may be required.',
+        'Offers are subject to status and availability, and are for UK residents aged 18 or over. Guarantees may be required.',
         'DreamLease Ltd is a credit broker, not a lender, and is authorised and regulated by the Financial Conduct Authority, firm reference number [000000]. We may receive commission from the funder for introducing your business.',
       ],
     },
@@ -133,7 +133,7 @@ export const fixtureTemplate: Template = {
       paragraphs: [
         'Prices shown exclude VAT and are based on the term, annual mileage and initial payment stated on each offer. Business contract hire is available to limited companies, partnerships and sole traders. Excess mileage charges and a fair wear and tear standard apply.',
         'A processing fee of £299.99 inc VAT is payable on all orders. At the end of the lease the vehicle must be returned in its original condition. Your business will not own the vehicle.',
-        "Offers are subject to status and availability and are valid until the date shown on each offer. Directors' guarantees may be required.",
+        "Offers are subject to status and availability. Directors' guarantees may be required.",
         'DreamLease Ltd is a credit broker, not a lender, and is authorised and regulated by the Financial Conduct Authority, firm reference number [000000]. We may receive commission from the funder for introducing your business.',
       ],
     },
@@ -142,7 +142,7 @@ export const fixtureTemplate: Template = {
       paragraphs: [
         "Net monthly figures are illustrative, based on a 20% and 40% income tax payer with standard National Insurance, and depend on your employer's scheme rules and your personal circumstances. Your take-home pay will reduce and Benefit in Kind tax applies.",
         'The agreement is between your employer and the funder. Term, mileage, maintenance and insurance are as stated on each offer. Early termination and excess mileage charges may apply through the scheme.',
-        'Offers are subject to scheme eligibility, status and availability, and are valid until the date shown on each offer. Your employer will confirm the final figures before any order is placed.',
+        'Offers are subject to scheme eligibility, status and availability. Your employer will confirm the final figures before any order is placed.',
         'DreamLease Ltd is a credit broker, not a lender, and is authorised and regulated by the Financial Conduct Authority, firm reference number [000000].',
       ],
     },
