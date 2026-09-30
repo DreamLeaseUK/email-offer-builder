@@ -80,7 +80,7 @@ the certification morning, and any fixes those find.
   the placeholder compliance template exists [asserted: status 29 Sept §2; Claude cannot read production D1].
   **Keep the four MotorComplete Snippets on the `dreamelectric.uk` zone disabled.**
 - **Customer links:** still workers.dev; `offers.dreamlease.co.uk` has no DNS record yet [verified 29 Sept]; IT's
-  GoDaddy CNAME `offers` → `saas.dreamelectric.uk` is outstanding. Then a one-line PR switches `PUBLIC_BASE_URL`.
+  123-Reg CNAME `offers` → `saas.dreamelectric.uk` is outstanding. Then a one-line PR switches `PUBLIC_BASE_URL`.
 - **People [verified 29 Sept]:** `matt.wilson@dreamlease.co.uk` master admin; **`emma@dreamlease.co.uk`** the only
   compliance approver (`config/compliance.json`; `COMPLIANCE_EMAILS` can add a deputy at runtime). Richard Quilter
   and `adam@salsac.co.uk` appear in Zero Trust Users [asserted].

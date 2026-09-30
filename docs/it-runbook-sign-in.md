@@ -4,7 +4,7 @@ Written 22 September 2026; Part A revised 24 September 2026 (current Entra menu 
 and C revised 28 September 2026 (the tool's own address, the customer-link address, the audience tag as a secret);
 **Part D added 29 September 2026** (the Send app: the tool sends each email from the salesperson's own mailbox).
 Steps A1–A8 and D1–D9 are for the Entra administrator; B1–B6 and C1–C7 are for the Cloudflare account holder (Matt);
-C8 is the DNS record(s) for whoever manages DreamLease DNS at GoDaddy. Parts A–C never touch mailboxes (A and B are
+C8 is the DNS record(s) for whoever manages DreamLease DNS at 123-Reg. Parts A–C never touch mailboxes (A and B are
 sign-in, C is the web addresses); Part D is the only part that concerns mail.
 
 ## What it does
@@ -136,16 +136,16 @@ policy is refused. Then confirm the customer side still opens with no login at a
 (`/c/<slug>`) on `offer-mailer.matt-wilson-9b8.workers.dev` (and on `offers.dreamlease.co.uk` once Part C is
 done). The tool is not served there: `/api/me` on those hosts answers 401 and `/app/` answers 404.
 
-## Part C — the two addresses (Matt, plus two DNS records at GoDaddy)
+## Part C — the two addresses (Matt, plus two DNS records at 123-Reg)
 
 Decided by Matt on 28 Sept 2026, after finding that `dreamlease.co.uk` cannot be put on our Cloudflare account
 without moving its DNS (the main site and its certificates are run by MotorComplete through their own Cloudflare
-account, and proxying one subdomain from GoDaddy DNS needs Cloudflare's Business plan):
+account, and proxying one subdomain from 123-Reg DNS needs Cloudflare's Business plan):
 
 - **The tool** goes on **`marketingtools.dreamelectric.uk`**. Staff only, behind Access; the domain does not matter
   to customers, and `dreamelectric.uk` is already a full zone on our account.
 - **Customer links** go on **`offers.dreamlease.co.uk`**, so customers only ever see the DreamLease domain. It is
-  attached with **Cloudflare for SaaS** on the `dreamelectric.uk` zone: GoDaddy keeps DreamLease's DNS, two records
+  attached with **Cloudflare for SaaS** on the `dreamelectric.uk` zone: 123-Reg keeps DreamLease's DNS, two records
   are added there, and nothing about `www`, the main site, email (MX) or MotorComplete's records changes. Free for
   the first 100 hostnames; we need one.
 
@@ -177,7 +177,9 @@ dev:live` from running the local code); a deploy leaves them in place.
 **C7. Deploy the 28 Sept code** (Terminal panel, repo folder): `pnpm run deploy`. It builds the web app and deploys
 the Worker. Then do B5.
 
-**C8. For whoever manages DreamLease DNS at GoDaddy** (the CNAME is the one that matters; the TXT is optional and
+**C8. For whoever manages DreamLease DNS at 123-Reg** (dreamlease.co.uk is registered with 123-Reg, and its DNS runs on
+GoDaddy's servers, `ns15/ns16.domaincontrol.com`, because 123-Reg is part of GoDaddy: the records are changed in the
+123-Reg control panel; checked 30 Sept 2026) (the CNAME is the one that matters; the TXT is optional and
 only makes activation immediate — Cloudflare validates the hostname by itself once the CNAME exists; nothing else
 changes):
 
@@ -198,7 +200,7 @@ Cloudflare answered for `www` only (not `offers`, not the bare domain), and no `
 ever been issued. Leave their records (`www`, `_acme-challenge`, `_acme-challenge.www`, `_cf-custom-hostname.www`)
 exactly as they are. Two rules for later:
 
-- **If the domain's DNS ever moves from GoDaddy to Cloudflare** (its nameservers change, in any account), keep the
+- **If the domain's DNS ever moves from 123-Reg to Cloudflare** (its nameservers change, in any account), keep the
   `offers` record **DNS only** (grey cloud). Proxied, the route in C6 no longer runs the Worker for it.
 - **If anyone ever adds CAA records** to `dreamlease.co.uk` (records limiting which certificate authorities may issue
   for it), they must allow `letsencrypt.org` and `pki.goog`, or the `offers` certificate stops renewing (and

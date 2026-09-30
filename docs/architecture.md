@@ -206,11 +206,11 @@ Two hosting surfaces on one Worker (decided by Matt, 28 Sept 2026; how and why i
 - **`offers.dreamlease.co.uk`** — hosted pages, redirects, images, brochures — public (noindex, expiring), on the
   DreamLease domain so customers can trust it. A **Cloudflare for SaaS** custom hostname on the `dreamelectric.uk`
   zone (fallback origin `saas.dreamelectric.uk`, `AAAA 100::`), sent to the Worker by the route
-  `offers.dreamlease.co.uk/*`; GoDaddy keeps DreamLease DNS and holds two records for it (CNAME + TXT).
+  `offers.dreamlease.co.uk/*`; 123-Reg keeps DreamLease DNS and holds two records for it (CNAME + TXT).
   `PUBLIC_BASE_URL` moves to it once it is verified live.
 
 Why not a `dreamlease.co.uk` zone of our own: the main site (`www`) and its certificates are run by MotorComplete
-through their own Cloudflare account (their validation records live in our GoDaddy DNS), DNS is at GoDaddy, and
+through their own Cloudflare account (their validation records live in our 123-Reg DNS), DNS is at 123-Reg, and
 proxying one subdomain from outside DNS needs Cloudflare's Business plan. `mailer.` is taken by an unrelated host.
 
 The Custom Domain and the route are attached once in the dashboard (runbook Part C), **not** listed in
@@ -618,7 +618,7 @@ subdomain, and a real test send from `main` should come first.
 
 **Remaining build-order:** step 8 stubs + `evolution.md` (low value). **Owed by others / parked:** Emma —
 approved compliance wording (then publish a real template to replace the placeholder) + the retention period;
-IT — the two GoDaddy records for `offers.dreamlease.co.uk` (runbook C8; the Entra app is done); Matt — runbook
+IT — the two 123-Reg records for `offers.dreamlease.co.uk` (runbook C8; the Entra app is done); Matt — runbook
 Parts B and C, the deploy, the placeholder-template correction (`apps/api/scripts/fix-placeholder-template.sql`),
 the Firecrawl secret and confirming the Workers Paid plan; Tawk webchat (parked, renewals-only stage one).
 

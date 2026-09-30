@@ -15,7 +15,7 @@
   //  - marketingtools.dreamelectric.uk: the tool (web app + /api), a Custom Domain on our dreamelectric.uk zone.
   //    Cloudflare Access protects the whole host.
   //  - offers.dreamlease.co.uk: customer links (hosted pages, /r, /b, /f, /a), a Cloudflare for SaaS custom hostname
-  //    on the dreamelectric.uk zone (CNAME at GoDaddy), sent to the Worker by the route offers.dreamlease.co.uk/*.
+  //    on the dreamelectric.uk zone (CNAME at 123-Reg), sent to the Worker by the route offers.dreamlease.co.uk/*.
   //  - workers.dev stays on so links in emails already sent keep working.
   // The Custom Domain and the route are attached ONCE in the dashboard (docs/it-runbook-sign-in.md Part C), NOT
   // listed here: with a "routes" key, `wrangler dev --remote` (pnpm dev:live) previews on the first route's zone

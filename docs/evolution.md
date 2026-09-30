@@ -53,7 +53,7 @@ change, not the markup.
 |---|---|---|
 | What the customer receives | A personal email from the salesperson's real mailbox | A marketing email (unsubscribe footer, tracking); Gmail tends to file it under Promotions |
 | Salesperson's Outlook | In Sent Items; replies thread normally | Not in Sent Items; replies arrive without the original |
-| Deliverability | Already set up for dreamlease.co.uk | New sending records in the GoDaddy DNS; its own reputation to build |
+| Deliverability | Already set up for dreamlease.co.uk | New sending records in the 123-Reg DNS; its own reputation to build |
 | Customer data | Nothing new | Every recipient copied into Mautic as a contact: another processor (GDPR) |
 | Extra system | None | Mautic (hosting, updates) plus an email-sending service |
 
