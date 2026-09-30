@@ -4,6 +4,13 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>DreamLease Offer Mailer</title>
+    <!-- The DreamLease pictogram, so the tool is easy to find among browser tabs (Matt, 30 Sept 2026) -->
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <!-- Installable as an app (own window, pinned to the taskbar). The tool sits behind Cloudflare Access, so the manifest
+         must be fetched with the sign-in cookie: use-credentials. -->
+    <link rel="manifest" href="/manifest.webmanifest" crossorigin="use-credentials" />
   </head>
   <body>
     <div id="root"></div>
