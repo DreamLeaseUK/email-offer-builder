@@ -32,9 +32,9 @@
  *
  * Knowing deviations of 21 and 22 Sept 2026 (Matt's tests: HTML pasted into New Outlook, read in Gmail and
  * Outlook mobile). The paste drops the <style> block and the conditional comments, so nothing may depend on either.
- * diff-reference reports 150 lines in all: 8 pre-date 21 Sept (2 the logo width, 6 the third hero pill), 10 are
+ * diff-reference reports 172 lines in all: 8 pre-date 21 Sept (2 the logo width, 6 the third hero pill), 10 are
  * a (6) and b (4), 64 are d (50 the row card, 14 the hero), 2 are e (the plain recipient greeting, in
- * render.ts's intro), and 66 are f (8 the footer, the rest the two cards); c sits outside the sections the script
+ * render.ts's intro), and 88 are f (8 the footer, the rest the two cards); c sits outside the sections the script
  * compares:
  *  a. pills are inline-block tables, not align="left" floats: the clearing spacer did not survive, and the
  *     make name ran beside the pill and broke in Gmail ("VOLKSWA / GEN").
@@ -58,8 +58,10 @@
  *     side; the ones adopted (B1, G1) changed nothing in Gmail, Apple Mail, iPhone or Outlook.com. So: the button
  *     cell has no mso-padding-alt:0 (it made Word drop the padding); every gap that was a margin on a table (Word
  *     ignores those) is a spacer cell: under the spec boxes, between cards, above the brochure link and the footer's
- *     opt-out line, under the salary-sacrifice nets; the spec-box gap cells are empty; and spacers no longer hold a
- *     font-size:0 line, which Word drew as a grey sliver. The tool's preview and the other clients look the same, so
+ *     opt-out line, under the salary-sacrifice nets; the spec-box gap cells are empty (with a min-width, so long values
+ *     cannot squeeze them to nothing on a phone); spacers no longer hold a font-size:0 line, which Word drew as a grey
+ *     sliver; and the badge pills sit in an Outlook-only ghost row, one cell each (Word had stacked the hero's three
+ *     into one orange block). The tool's preview and the other clients look the same, so
  *     MARKUP_VERSION stays: Outlook classic now shows what Emma approved.
  * And the tool sends one offer per row (auto: 1 → single, 2+ → stack).
  */
@@ -90,7 +92,11 @@ const badgeList = (vm: CardVM, max: number): string[] => [vm.hot, ...vm.badges].
 function badgeRow(vm: CardVM, max: number, width: number, padV: number, padH: number, font: number, lh: number, mb: number): string {
   const all = badgeList(vm, max);
   if (all.length === 0) return '';
-  return `${all.map((b) => pill(b, width, padV, padH, font, lh, mb)).join('\n')}\n${spacer(8)}`;
+  // Word cannot sit inline-block tables side by side: Outlook classic stacked the hero's three pills into one orange
+  // block (unspam.email, 6 Oct 2026; deviation f). An Outlook-only ghost row gives each pill its own cell with an empty
+  // 6px gap cell between, the reference's own construction for groups of inline-blocks; every other client ignores it.
+  const pills = all.map((b) => pill(b, width, padV, padH, font, lh, mb)).join(`\n${mso('</td><td width="6" style="width:6px;"></td><td valign="top">')}\n`);
+  return `${mso('<table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr><td valign="top">')}\n${pills}\n${mso('</td></tr></table>')}\n${spacer(8)}`;
 }
 
 const eyebrow = (vm: CardVM, font: number, lh: number, mb: number) =>
@@ -133,9 +139,10 @@ ${spacer(6)}
 
 // ---------- stat tiles: background, padding and radius on the td; gaps are spacer cells ----------
 
-// Empty, width only (deviation f): with the reference's font-size:0 non-breaking space, Word drew a grey notch on the
-// left edge of the next tile (unspam.email, Outlook 2016 and 2019, 6 Oct 2026; option G1 of scripts/diag-outlook.ts).
-const gapTd = `<td width="8" style="width:8px;"></td>`;
+// Empty (deviation f): with the reference's font-size:0 non-breaking space, Word drew a grey notch on the left edge of
+// the next tile (unspam.email, Outlook 2016 and 2019, 6 Oct 2026; option G1 of scripts/diag-outlook.ts). min-width keeps
+// the gap on a phone, where long values squeezed the gap cells to nothing (old and new alike); Word ignores it.
+const gapTd = `<td width="8" style="width:8px; min-width:8px;"></td>`;
 
 function tile(s: Stat, widthPct: number, pad: string, labelFont: number, labelLh: number, ls: number, valueFont: number, valueLh: number, valueMt: number): string {
   return `<td width="${widthPct}%" class="lock-tint" style="background-color:${C.panel}; border-radius:6px; padding:${pad}; vertical-align:top;">

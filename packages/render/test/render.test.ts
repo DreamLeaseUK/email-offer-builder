@@ -266,8 +266,17 @@ describe('render()', () => {
       const html = r({ layout, offerCount: layout === 'single' ? 1 : 3, brochure: 'pdf' }).out.html;
       expect(html).not.toMatch(/font-size:0; line-height:0;[^>]*>&nbsp;/);
       expect(html).not.toMatch(/<table [^>]*style="[^"]*margin-(bottom|top):/);
-      expect(html).toMatch(/<td width="8" style="width:8px;"><\/td>/);
+      expect(html).toMatch(/<td width="8" style="width:8px; min-width:8px;"><\/td>/);
     }
+  });
+
+  // Word stacked the hero's pills into one orange block (6 Oct 2026): an Outlook-only ghost row puts each in its own cell.
+  it('puts the badge pills side by side in Outlook classic with a ghost row, invisible to other clients', () => {
+    const html = r({ layout: 'single', offerCount: 1 }).out.html;
+    const pills = html.match(/background-color:#FF8811;/g)?.length ?? 0;
+    expect(pills).toBeGreaterThan(1);
+    expect(html).toContain('<!--[if mso]><table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr><td valign="top"><![endif]-->');
+    expect(html.split('<!--[if mso]></td><td width="6" style="width:6px;"></td><td valign="top"><![endif]-->').length - 1).toBe(pills - 1);
   });
 
   it('fixes the image sizes and pill widths the reference specifies, inside a fluid wrapper that tops out at 600px', () => {
