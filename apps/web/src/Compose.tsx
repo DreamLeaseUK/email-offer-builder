@@ -154,6 +154,13 @@ function Step({ n, extra }: { n: number; extra?: React.ReactNode }) {
 const WHATSAPP_LIVE = false;
 const SOON = ' — coming soon';
 
+/**
+ * Salary sacrifice is parked (Matt, 6 Oct 2026: its template will not be in use for a few months): the audience list
+ * shows it greyed out and marked "coming soon", so new campaigns are PCH or BCH only. A draft or a copied campaign that
+ * is already salary sacrifice still opens. Set to true to bring it back.
+ */
+const SALSAC_LIVE = false;
+
 /** The green-button CTA options (brief §5.9). `need` is the sender field that unlocks the option. */
 const CTA_OPTIONS: { kind: CtaKind; label: string; need?: 'phone' | 'whatsapp' | 'booking'; needText?: string }[] = [
   { kind: 'view_offer', label: 'View offer — open the offer page' },
@@ -1301,9 +1308,15 @@ export function Compose({ email, base, items, setItems, seed, onSeedApplied, onH
         <Field label="Campaign name" help="Your own label, to find it again on the Campaigns tab. The customer never sees it.">{(id) => <Input id={id} value={name} onChange={(e) => setName(e.target.value)} />}</Field>
         <Field label="Audience type" help="Sets the compliance wording, terms and disclaimer for the whole campaign.">{(id) => (
           <Select id={id} value={audience} onChange={(e) => changeAudience(e.target.value as Audience)}>
-            {AUDIENCES.map((a) => (
-              <option key={a.value} value={a.value}>{a.label}</option>
-            ))}
+            {AUDIENCES.map((a) => {
+              const parked = a.value === 'salary_sacrifice' && !SALSAC_LIVE;
+              return (
+                <option key={a.value} value={a.value} disabled={parked}>
+                  {a.label}
+                  {parked ? SOON : ''}
+                </option>
+              );
+            })}
           </Select>
         )}</Field>
         <Field label="Use case">{(id) => (
