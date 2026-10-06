@@ -15,7 +15,7 @@ import { buildOffer } from './build-offer.js';
 import { parseOfferUrl } from './normalise.js';
 import { parseOfferPage } from './parse-page.js';
 import type { HtmlRewriterCtor } from './parse-page.js';
-import { parsePricingResponse, pricingUrl } from './pricing.js';
+import { PRICING_VERSION, parsePricingResponse, pricingUrl } from './pricing.js';
 import type { PricingOptions } from './pricing.js';
 
 export interface LookupInput {
@@ -107,8 +107,10 @@ export class UrlOfferSource implements OfferSource<LookupInput> {
     const now = this.d.now?.() ?? new Date();
 
     const cachedHit = await this.d.cache?.get(url.canonical);
-    // a result cached by an older parser may still carry an undecoded entity ("Techno &#x2B; Comfort"): look again
-    const hit = cachedHit && carriesEntity(cachedHit.offer.vehicle) ? undefined : cachedHit;
+    // a result cached by an older parser may still carry an undecoded entity ("Techno &#x2B; Comfort"), or a price
+    // looked up the old way (before PRICING_VERSION 2 a special offer came back POA or at its ordinary price): look again
+    const stale = cachedHit && (carriesEntity(cachedHit.offer.vehicle) || cachedHit.offer.source.pricingVersion !== PRICING_VERSION);
+    const hit = stale ? undefined : cachedHit;
     if (hit) {
       return { ...hit, offer: { ...hit.offer, createdBy: input.createdBy }, cached: true };
     }
@@ -117,7 +119,13 @@ export class UrlOfferSource implements OfferSource<LookupInput> {
     const page = await parseOfferPage(html, this.d.HTMLRewriter);
 
     const config = { ...page.defaults, ...url.config };
-    const pricing = await this.fetchPricing(pricingUrl(page.slugs, url.contractType, config, page.isVan, this.d.siteOrigin));
+    const pricing = await this.fetchPricing(
+      pricingUrl(page.slugs, url.contractType, config, {
+        isVan: page.isVan,
+        ...(page.offerId ? { offerId: page.offerId } : {}),
+        ...(this.d.siteOrigin ? { origin: this.d.siteOrigin } : {}),
+      }),
+    );
 
     const warnings: string[] = [];
     let image: OfferImage | undefined;
@@ -143,6 +151,18 @@ export class UrlOfferSource implements OfferSource<LookupInput> {
       id: this.d.newId?.() ?? crypto.randomUUID(),
       knownBadges: this.d.knownBadges,
     });
+
+    // The page publishes its own price for its default configuration (schema.org lowPrice). A different figure there means
+    // the price service answered us differently from what a customer sees: say so (6 Oct 2026, a special offer silently
+    // came back at its ordinary, higher price when the site began needing the special-offer id).
+    const atDefaults = (['initialRental', 'contractLength', 'annualMileage', 'includeMaintenance'] as const).every((k) => config[k] === page.defaults[k]);
+    const p = pricing.offer;
+    const ld = page.ldPrice;
+    // either figure may be the one the page publishes: the rental alone, or with maintenance when that is included
+    const agrees = (n: number) => ld !== undefined && Math.abs(n - ld) < 0.01;
+    if (atDefaults && ld !== undefined && p && !agrees(p.monthly) && !agrees(p.monthly + p.monthlyService)) {
+      warnings.push(`The offer page shows £${ld.toFixed(2)} a month, but the website's price service gave £${p.monthly.toFixed(2)}. Check the price on the offer page before you send.`);
+    }
 
     const result: LookupResult = { offer, options: pricing.options, message: pricing.message, cached: false, fetchedAt: now.toISOString(), warnings };
     assertNoCapId(result, 'lookup result');

@@ -33,7 +33,7 @@ describe('buildOffer', () => {
     ]);
     expect(offer.offerUrl).toBe('https://www.dreamlease.co.uk/offers/personal/byd-seal-390kw-excellence-83kwh-awd-102n/?offer=p-12-48-6000-n&initialRental=12&contractLength=48&annualMileage=6000&includeMaintenance=false');
     expect(offer.validUntil).toBe('2026-09-30');
-    expect(offer.source).toEqual({ kind: 'url', ref: personalUrl.canonical, fetchedAt: NOW.toISOString() });
+    expect(offer.source).toEqual({ kind: 'url', ref: personalUrl.canonical, fetchedAt: NOW.toISOString(), pricingVersion: 2 });
     expect(offer.createdBy).toBe(BY);
     expect(offer.image).toBeUndefined();
   });

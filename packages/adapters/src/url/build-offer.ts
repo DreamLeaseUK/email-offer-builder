@@ -8,6 +8,7 @@ import type { Offer as OfferT, OfferImage } from '@offer-mailer/schema';
 import { canonicalOfferUrl } from './normalise.js';
 import type { OfferUrl } from './normalise.js';
 import type { PageData, PageStat } from './parse-page.js';
+import { PRICING_VERSION } from './pricing.js';
 import type { PricingResult } from './pricing.js';
 
 export class OfferBuildError extends Error {
@@ -113,7 +114,7 @@ export function buildOffer(i: BuildOfferInput): OfferT {
   const nowIso = i.now.toISOString();
   const offer: OfferT = {
     id: i.id,
-    source: { kind: 'url', ref: i.url.canonical, fetchedAt: nowIso },
+    source: { kind: 'url', ref: i.url.canonical, fetchedAt: nowIso, pricingVersion: PRICING_VERSION },
     vehicle: {
       make: i.page.make,
       model: i.page.model,

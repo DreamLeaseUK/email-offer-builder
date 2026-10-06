@@ -28,6 +28,7 @@ function deps(over: Partial<PreSendDeps> = {}): PreSendDeps & { rechecked: strin
     approvers: new Set([EMMA]),
     maxEmailBytes: 90 * 1024,
     offerCheckedMs: 24 * 60 * 60 * 1000,
+    pricingVersion: 2,
     recheckOffer: async (o) => {
       rechecked.push(o.id);
       return { ok: true, monthly: o.pricing.monthly };
@@ -83,12 +84,27 @@ describe('runPreSendChecks', () => {
     await runPreSendChecks(input(), fresh);
     expect(fresh.rechecked).toEqual([]);
     const stale = deps();
-    await runPreSendChecks(input({}, {}, { source: { kind: 'url', fetchedAt: '2026-09-29T08:00:00Z' } }), stale);
+    await runPreSendChecks(input({}, {}, { source: { kind: 'url', fetchedAt: '2026-09-29T08:00:00Z', pricingVersion: 2 } }), stale);
     expect(stale.rechecked).toHaveLength(2);
   });
 
+  // 6 Oct 2026: before PRICING_VERSION 2 the website priced a special offer at its ordinary, higher price (or POA). A
+  // price looked up that way an hour ago is still looked up again, so the corrected price blocks the old one.
+  it('looks up again an offer priced the old way, however recent, and blocks the old price', async () => {
+    const recentOldWay = { source: { kind: 'url' as const, fetchedAt: '2026-10-01T08:00:00Z' } };
+    const looked: string[] = [];
+    const d = deps({ recheckOffer: async (o) => (looked.push(o.id), { ok: true, monthly: o.pricing.monthly - 100 }) });
+    const live = failed(await runPreSendChecks(input({}, {}, recentOldWay), d)).live;
+    expect(looked).toHaveLength(2);
+    expect(live?.[0]).toMatch(/now £289 a month, not £389/);
+    // a hand-entered offer has no website price to look up again
+    const manual = deps();
+    await runPreSendChecks(input({}, {}, { source: { kind: 'manual', fetchedAt: '2026-10-01T08:00:00Z' } }), manual);
+    expect(manual.rechecked).toEqual([]);
+  });
+
   it('blocks an offer that has ended on the website, could not be checked, or has changed price', async () => {
-    const old = { source: { kind: 'url' as const, fetchedAt: '2026-09-20T08:00:00Z' } };
+    const old = { source: { kind: 'url' as const, fetchedAt: '2026-09-20T08:00:00Z', pricingVersion: 2 } };
     expect(failed(await runPreSendChecks(input({}, {}, old), deps({ recheckOffer: async () => ({ ok: false, problem: 'the offer has ended on the website.' }) }))).live?.[0]).toMatch(/BYD Seal: the offer has ended/);
     const moved = failed(await runPreSendChecks(input({}, {}, old), deps({ recheckOffer: async (o) => ({ ok: true, monthly: o.pricing.monthly + 20 }) }))).live;
     expect(moved?.[0]).toMatch(/now £409 a month, not £389/);

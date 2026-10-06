@@ -35,7 +35,8 @@ hosted.get('/c/:slug', async (c) => {
   if (!obj) return c.html(page('Page not found', 'These offers aren\'t available at this address.'), 404);
   const expiresAt = obj.customMetadata?.expiresAt;
   if (expiresAt && new Date(expiresAt).getTime() < Date.now()) {
-    return c.html(page('These offers have expired', 'The prices in this email were valid until the date shown on each offer. Reply to the email that brought you here and we\'ll send current figures.'), 410);
+    // no date: emails stopped showing one on 30 Sept 2026 (Matt), so "the date shown on each offer" would point at nothing
+    return c.html(page('These offers have expired', 'The prices in this email are no longer available. Reply to the email that brought you here and we\'ll send current figures.'), 410);
   }
   const campaignId = obj.customMetadata?.campaignId;
   if (campaignId) await logHit(c.env, campaignId, 'view', 'view', c.req.header('user-agent') ?? '');

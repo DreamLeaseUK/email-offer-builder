@@ -143,6 +143,12 @@ export const OfferSource = z.object({
   kind: OfferSourceKind,
   ref: z.string().optional(),
   fetchedAt: isoDateTime.optional(),
+  /**
+   * How the `url` source priced it (PRICING_VERSION in packages/adapters). Raised when the website changes how it
+   * prices, so a price looked up the old way is looked up again before it is sent, however recent. Absent = 1, before
+   * 6 Oct 2026, when the site began pricing a special offer only with its offer id.
+   */
+  pricingVersion: z.number().int().positive().optional(),
 });
 
 export const Offer = z.object({
