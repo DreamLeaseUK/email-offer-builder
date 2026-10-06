@@ -29,7 +29,7 @@ const ROLE_NOTE: Partial<Record<Access, string>> = {
   compliance: 'compliance-approver',
   'admin-or-compliance': 'master-admin or compliance-approver',
 };
-type Returns = 'json' | 'json-created' | 'html' | 'csv' | 'image' | 'pdf' | 'redirect';
+type Returns = 'json' | 'json-created' | 'html' | 'csv' | 'text' | 'image' | 'pdf' | 'redirect';
 
 export interface Operation {
   method: Method;
@@ -94,7 +94,8 @@ export const OPERATIONS: Operation[] = [
   { method: 'get', path: '/b/{id}', tag: 'Public', summary: 'Brochure link used in emails: redirects to the stored PDF or the official page', access: 'public', returns: 'redirect' },
   { method: 'get', path: '/r/{slug}/{link}', tag: 'Public', summary: 'Tracked link used in emails: logs the click and redirects to the destination', access: 'public', returns: 'redirect' },
   { method: 'get', path: '/', tag: 'Public', summary: "Tool host: redirects to the web app (/app/). Any other host: redirects to dreamlease.co.uk", access: 'public', returns: 'redirect' },
-  { method: 'get', path: '/app/*', tag: 'Public', summary: "The tool's web app (built files). Served only on the tool host, which Cloudflare Access protects at the edge; 404 on every other host", access: 'public', returns: 'html' },
+  { method: 'get', path: '/app/*', tag: 'Public', summary: "The tool's web app (built files). Served only on the tool host, which Cloudflare Access protects at the edge; every other host redirects to dreamlease.co.uk", access: 'public', returns: 'html' },
+  { method: 'get', path: '/robots.txt', tag: 'Public', summary: 'Keeps search engines out: disallows everything, on every host', access: 'public', returns: 'text' },
 
   // ---------- tool API (Cloudflare Access) ----------
   { method: 'get', path: '/api/openapi.json', tag: 'Meta', summary: 'This document', access: 'signed-in', returns: 'json' },
@@ -156,6 +157,7 @@ const RESPONSES: Record<Returns, { code: string; description: string; content?: 
   'json-created': { code: '201', description: 'Created', content: { 'application/json': { schema: { type: 'object' } } } },
   html: { code: '200', description: 'An HTML page', content: { 'text/html': { schema: { type: 'string' } } } },
   csv: { code: '200', description: 'A CSV download', content: { 'text/csv': { schema: { type: 'string' } } } },
+  text: { code: '200', description: 'Plain text', content: { 'text/plain': { schema: { type: 'string' } } } },
   image: { code: '200', description: 'An image', content: { 'image/*': { schema: { type: 'string', format: 'binary' } } } },
   pdf: { code: '200', description: 'A PDF', content: { 'application/pdf': { schema: { type: 'string', format: 'binary' } } } },
   redirect: { code: '302', description: 'Redirect to the destination' },
