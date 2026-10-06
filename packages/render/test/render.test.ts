@@ -247,15 +247,36 @@ describe('render()', () => {
     expect(hero).toMatch(/<!--\[if mso\]><table[^>]*><tr><td valign="middle"><!\[endif\]-->/);
   });
 
-  it('builds buttons with td padding, a block anchor and mso-padding-alt, and no VML', () => {
+  // No mso-padding-alt:0 (deviation f, 6 Oct 2026): it made Word drop the padding, so Outlook classic showed a green strip.
+  it('builds buttons with td padding Word keeps (no mso-padding-alt), a block anchor, and no VML', () => {
     for (const layout of ['single', 'stack'] as const) {
       const html = r({ layout, offerCount: layout === 'single' ? 1 : 3 }).out.html;
       const buttons = html.match(/<td align="center" style="background-color:#31BD51;[^"]*">/g) ?? [];
       expect(buttons.length).toBe(layout === 'single' ? 1 : 3);
-      for (const b of buttons) expect(b).toMatch(/mso-padding-alt:0/);
+      for (const b of buttons) expect(b).not.toMatch(/mso-padding-alt/);
       expect(html.match(/<a href="[^"]+" style="display:block;[^"]*color:#FFFFFF; text-decoration:none;" class="lock-white">/g)?.length).toBe(buttons.length);
       expect(html).not.toMatch(/v:roundrect/);
     }
+  });
+
+  // Outlook classic ignores margins on tables, and drew zero-size spacer text as grey slivers and notches (deviation f,
+  // unspam.email renders of 6 Oct 2026): gaps are spacer cells whose line is their own height; spec-box gaps are empty.
+  it('spaces with cells Word honours: no table margins, no zero-size spacer text', () => {
+    for (const layout of ['single', 'stack'] as const) {
+      const html = r({ layout, offerCount: layout === 'single' ? 1 : 3, brochure: 'pdf' }).out.html;
+      expect(html).not.toMatch(/font-size:0; line-height:0;[^>]*>&nbsp;/);
+      expect(html).not.toMatch(/<table [^>]*style="[^"]*margin-(bottom|top):/);
+      expect(html).toMatch(/<td width="8" style="width:8px; min-width:8px;"><\/td>/);
+    }
+  });
+
+  // Word stacked the hero's pills into one orange block (6 Oct 2026): an Outlook-only ghost row puts each in its own cell.
+  it('puts the badge pills side by side in Outlook classic with a ghost row, invisible to other clients', () => {
+    const html = r({ layout: 'single', offerCount: 1 }).out.html;
+    const pills = html.match(/background-color:#FF8811;/g)?.length ?? 0;
+    expect(pills).toBeGreaterThan(1);
+    expect(html).toContain('<!--[if mso]><table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr><td valign="top"><![endif]-->');
+    expect(html.split('<!--[if mso]></td><td width="6" style="width:6px;"></td><td valign="top"><![endif]-->').length - 1).toBe(pills - 1);
   });
 
   it('fixes the image sizes and pill widths the reference specifies, inside a fluid wrapper that tops out at 600px', () => {
@@ -278,7 +299,7 @@ describe('render()', () => {
     expect(html).toMatch(/@media only screen and \(max-width: 480px\)/);
     expect(html).not.toMatch(/margin:\s*-/);
     // spacers are cells, never margins: the gap under the badge pills is a td
-    expect(r({ layout: 'single', offerCount: 1 }).out.html).toMatch(/<td height="8" style="font-size:0; line-height:0; height:8px;">&nbsp;<\/td>/);
+    expect(r({ layout: 'single', offerCount: 1 }).out.html).toMatch(/<td height="8" style="height:8px; font-size:8px; line-height:8px; mso-line-height-rule:exactly;">&nbsp;<\/td>/);
   });
 
   it('bumps MARKUP_VERSION to the v5 generation and refuses a template pinned to v1', () => {
@@ -301,8 +322,8 @@ describe('render()', () => {
 
   it("stacked card reads name, picture, price, button, small print, so a phone never shows the legal line before the car (Matt, 22 Sept 2026)", () => {
     const html = r({ layout: 'stack', offerCount: 2, brochure: 'pdf' }).out.html;
-    const cardStart = html.indexOf('border-radius:16px; margin-bottom:16px;');
-    const cardEnd = html.indexOf('border-radius:16px; margin-bottom:16px;', cardStart + 1);
+    const cardStart = html.indexOf('border:1px solid #E1E0E4; border-radius:16px;"');
+    const cardEnd = html.indexOf('border:1px solid #E1E0E4; border-radius:16px;"', cardStart + 1);
     expect(cardStart).toBeGreaterThan(-1);
     expect(cardEnd).toBeGreaterThan(cardStart);
     const card = html.slice(cardStart, cardEnd);
@@ -331,7 +352,7 @@ describe('render()', () => {
 
   it('hero card reads the same way: badge, name, picture, price, button, small print (Matt, 22 Sept 2026)', () => {
     const html = r({ layout: 'single', offerCount: 1, brochure: 'pdf' }).out.html;
-    const cardStart = html.indexOf('border-radius:16px; margin-bottom:20px;');
+    const cardStart = html.indexOf('border:1px solid #E1E0E4; border-radius:16px;"');
     expect(cardStart).toBeGreaterThan(-1);
     const card = html.slice(cardStart, html.indexOf('<!-- Signature -->', cardStart));
     const at = (s: string): number => {

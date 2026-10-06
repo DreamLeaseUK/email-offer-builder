@@ -4,12 +4,13 @@
  * client review disagreed, the reference wins (Matt, 14 Sept). Its non-negotiables:
  *  1. ghost tables ([if mso]) around every group of inline-block cards, one ghost <td> per card, and
  *     inside the stack card (image column / content column) and the hero CTA row
- *  2. buttons: padding on the <td>, display:block on the anchor, mso-padding-alt:0; no VML, square
- *     corners in Outlook classic are accepted
+ *  2. buttons: padding on the <td>, display:block on the anchor (the reference's mso-padding-alt:0 is gone:
+ *     deviation f); no VML, square corners in Outlook classic are accepted
  *  3. images: explicit width and height, display:block, border:0, real alt; sizes hero 550×413,
  *     stack 218×164 (the reference's grid2 262×197 and grid3 166×125 cards are no longer built)
  *  4. background colour, padding and radius on a <td>, never a <div>
- *  5. no negative margins; spacers are <td height> cells with font-size:0
+ *  5. no negative margins; spacers are <td height> cells (their line is their own height, not font-size:0:
+ *     deviation f)
  *  6. fixed-width pills: one-cell tables with the content width on the <td> (126 hero, 100 small)
  *  7. lock-* classes on every coloured cell for the forced-light overrides
  * Sizes come from layout.ts. Two sizes: hero (single) and row (stack). The reference's two-up and
@@ -31,9 +32,10 @@
  *
  * Knowing deviations of 21 and 22 Sept 2026 (Matt's tests: HTML pasted into New Outlook, read in Gmail and
  * Outlook mobile). The paste drops the <style> block and the conditional comments, so nothing may depend on either.
- * diff-reference reports 84 lines in all: 8 pre-date 21 Sept (2 the logo width, 6 the third hero pill), 10 are
- * a (6) and b (4), 64 are d (50 the row card, 14 the hero), and 2 are e (the plain recipient greeting, in
- * render.ts's intro); c sits outside the sections the script compares:
+ * diff-reference reports 172 lines in all: 8 pre-date 21 Sept (2 the logo width, 6 the third hero pill), 10 are
+ * a (6) and b (4), 64 are d (50 the row card, 14 the hero), 2 are e (the plain recipient greeting, in
+ * render.ts's intro), and 88 are f (8 the footer, the rest the two cards); c sits outside the sections the script
+ * compares:
  *  a. pills are inline-block tables, not align="left" floats: the clearing spacer did not survive, and the
  *     make name ran beside the pill and broke in Gmail ("VOLKSWA / GEN").
  *  b. the row card's image column is calc()-fluid (its desktop width beside the details, the full card width
@@ -50,6 +52,17 @@
  *     in the intro section (which diff-reference compares). Matt asked for it plain; it is email-only
  *     personalisation in render.ts, not card markup. (30 Sept) It is also the message's size and colour (16px Graphite,
  *     not 22px black): Matt, "too big".
+ *  f. (6 Oct 2026) Outlook classic, now that the tool sends the email intact (Phase 1): unspam.email renders of a real
+ *     send showed, in Outlook 2016 and 2019, the button shrunk to a green strip behind its words, no gap between the
+ *     spec boxes and the button, and grey notches on boxes 2 to 4. scripts/diag-outlook.ts put the candidates side by
+ *     side; the ones adopted (B1, G1) changed nothing in Gmail, Apple Mail, iPhone or Outlook.com. So: the button
+ *     cell has no mso-padding-alt:0 (it made Word drop the padding); every gap that was a margin on a table (Word
+ *     ignores those) is a spacer cell: under the spec boxes, between cards, above the brochure link and the footer's
+ *     opt-out line, under the salary-sacrifice nets; the spec-box gap cells are empty (with a min-width, so long values
+ *     cannot squeeze them to nothing on a phone); spacers no longer hold a font-size:0 line, which Word drew as a grey
+ *     sliver; and the badge pills sit in an Outlook-only ghost row, one cell each (Word had stacked the hero's three
+ *     into one orange block). The tool's preview and the other clients look the same, so
+ *     MARKUP_VERSION stays: Outlook classic now shows what Emma approved.
  * And the tool sends one offer per row (auto: 1 → single, 2+ → stack).
  */
 import { C, FF, LH, esc, mso, spacer, table } from './html.js';
@@ -79,7 +92,11 @@ const badgeList = (vm: CardVM, max: number): string[] => [vm.hot, ...vm.badges].
 function badgeRow(vm: CardVM, max: number, width: number, padV: number, padH: number, font: number, lh: number, mb: number): string {
   const all = badgeList(vm, max);
   if (all.length === 0) return '';
-  return `${all.map((b) => pill(b, width, padV, padH, font, lh, mb)).join('\n')}\n${spacer(8)}`;
+  // Word cannot sit inline-block tables side by side: Outlook classic stacked the hero's three pills into one orange
+  // block (unspam.email, 6 Oct 2026; deviation f). An Outlook-only ghost row gives each pill its own cell with an empty
+  // 6px gap cell between, the reference's own construction for groups of inline-blocks; every other client ignores it.
+  const pills = all.map((b) => pill(b, width, padV, padH, font, lh, mb)).join(`\n${mso('</td><td width="6" style="width:6px;"></td><td valign="top">')}\n`);
+  return `${mso('<table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr><td valign="top">')}\n${pills}\n${mso('</td></tr></table>')}\n${spacer(8)}`;
 }
 
 const eyebrow = (vm: CardVM, font: number, lh: number, mb: number) =>
@@ -105,7 +122,7 @@ const netPair = (vm: CardVM, big: number, mid: number, small: number, suffix: st
 const heroSalsac = (vm: CardVM) =>
   `${table(
     'width="100%"',
-    'margin-bottom:6px;',
+    '',
     `<tr>
 <td width="50%" style="padding:0 8px 0 0; vertical-align:top;">
 <p class="lock-red" style="margin:0; font-size:32px; line-height:36px; ${LH}; font-weight:bold; color:${C.red};">${esc(vm.net20 ?? '')}</p>
@@ -117,11 +134,15 @@ const heroSalsac = (vm: CardVM) =>
 </td>
 </tr>`,
   )}
+${spacer(6)}
 <p class="lock-body" style="margin:0 0 14px 0; font-size:12px; line-height:18px; ${LH}; color:${C.graphite};">${esc(vm.grossLine ?? '')} Net figures are illustrative and depend on your employer's scheme and your personal circumstances.</p>`;
 
 // ---------- stat tiles: background, padding and radius on the td; gaps are spacer cells ----------
 
-const gapTd = `<td width="8" style="font-size:0; line-height:0;">&nbsp;</td>`;
+// Empty (deviation f): with the reference's font-size:0 non-breaking space, Word drew a grey notch on the left edge of
+// the next tile (unspam.email, Outlook 2016 and 2019, 6 Oct 2026; option G1 of scripts/diag-outlook.ts). min-width keeps
+// the gap on a phone, where long values squeezed the gap cells to nothing (old and new alike); Word ignores it.
+const gapTd = `<td width="8" style="width:8px; min-width:8px;"></td>`;
 
 function tile(s: Stat, widthPct: number, pad: string, labelFont: number, labelLh: number, ls: number, valueFont: number, valueLh: number, valueMt: number): string {
   return `<td width="${widthPct}%" class="lock-tint" style="background-color:${C.panel}; border-radius:6px; padding:${pad}; vertical-align:top;">
@@ -135,7 +156,7 @@ function statsRow(stats: Stat[]): string {
   if (stats.length === 0) return '';
   const n = stats.length;
   const pct = n === 4 ? 24 : Math.floor((100 - 2 * (n - 1)) / n);
-  return table('width="100%"', 'margin-bottom:18px;', `<tr>\n${stats.map((s, i) => `${i > 0 ? `${gapTd}\n` : ''}${tile(s, pct, '10px', 10, 14, 0.6, 15, 20, 2)}`).join('\n')}\n</tr>`);
+  return `${table('width="100%"', '', `<tr>\n${stats.map((s, i) => `${i > 0 ? `${gapTd}\n` : ''}${tile(s, pct, '10px', 10, 14, 0.6, 15, 20, 2)}`).join('\n')}\n</tr>`)}\n${spacer(18)}`;
 }
 
 /** Two-by-two tiles (stack). */
@@ -145,21 +166,25 @@ function statsPairs(stats: Stat[], mb: number): string {
   for (let i = 0; i < stats.length; i += 2) {
     const a = stats[i]!;
     const b = stats[i + 1];
-    if (i > 0) rows.push(`<tr><td colspan="3" height="4" style="font-size:0; line-height:0; height:4px;">&nbsp;</td></tr>`);
+    if (i > 0) rows.push(`<tr><td colspan="3" height="4" style="height:4px; font-size:4px; line-height:4px; ${LH};">&nbsp;</td></tr>`);
     rows.push(`<tr>\n${tile(a, 48, '7px 8px', 9, 12, 0.5, 13, 18, 1)}\n${gapTd}\n${b ? tile(b, 48, '7px 8px', 9, 12, 0.5, 13, 18, 1) : '<td width="48%"></td>'}\n</tr>`);
   }
-  return table('width="100%"', `margin-bottom:${mb}px;`, rows.join('\n'));
+  return `${table('width="100%"', '', rows.join('\n'))}\n${spacer(mb)}`;
 }
 
 // ---------- button, links ----------
 
-/** Green pill: padding on the td, display:block anchor, mso-padding-alt:0 so Word keeps the height. */
+/**
+ * Green pill: padding on the td, display:block anchor. No mso-padding-alt:0 (deviation f): that told Word to drop the
+ * cell's padding, so in Outlook classic the button shrank to a green strip behind the words (unspam.email, Outlook
+ * 2016 and 2019, 6 Oct 2026; option B1 of scripts/diag-outlook.ts). Square corners in Outlook classic are accepted.
+ */
 function button(href: string, label: string, padV: number, padH: number, font: number, lh: number, opts: { full?: boolean; inline?: boolean } = {}): string {
   return table(
     `${opts.full ? 'width="100%" ' : ''}class="cta-btn"`,
     opts.inline ? 'display:inline-block; vertical-align:middle; max-width:100%;' : '',
     `<tr>
-<td align="center" style="background-color:${C.green}; border-radius:999px; padding:${padV}px ${padH}px; mso-padding-alt:0;">
+<td align="center" style="background-color:${C.green}; border-radius:999px; padding:${padV}px ${padH}px;">
 <a href="${esc(href)}" style="display:block; ${FF} font-size:${font}px; line-height:${lh}px; ${LH}; font-weight:bold; color:${C.white}; text-decoration:none;" class="lock-white">${esc(label)}</a>
 </td>
 </tr>`,
@@ -182,7 +207,7 @@ const brochureLinkTd = (b: Brochure, label: string, font: number, lh: number, pa
 /** Hero: sits beside the button inside the ghost row. */
 const brochureHero = (b: Brochure) => table('', 'display:inline-block; vertical-align:middle;', `<tr>\n${brochureIconTd(b, '10px 6px 10px 16px')}\n${brochureLinkTd(b, b.label, 13, 18, '10px 0')}\n</tr>`);
 /** Stack: under the button, left aligned. */
-const brochureStack = (b: Brochure) => table('', 'margin-top:8px;', `<tr>\n${brochureIconTd(b, '0 6px 0 0')}\n${brochureLinkTd(b, b.label, 13, 18, '')}\n</tr>`);
+const brochureStack = (b: Brochure) => `${spacer(8)}\n${table('', '', `<tr>\n${brochureIconTd(b, '0 6px 0 0')}\n${brochureLinkTd(b, b.label, 13, 18, '')}\n</tr>`)}`;
 
 const smallPrint = (text: string, margin: string, font: number, lh: number) =>
   `<p class="lock-body" style="margin:${margin}; font-size:${font}px; line-height:${lh}px; ${LH}; color:${C.graphite};">${esc(text)}</p>`;
@@ -205,9 +230,9 @@ ${mso('</td></tr></table>')}`
   // Reading order (Matt, 22 Sept 2026): the car's name before its picture, the same as the stacked card
   // (deviation d in the header). The reference put the image first with the card's rounded top corners on it;
   // the heading row now carries those corners and the image sits square between the heading and the price.
-  return table(
+  return `${table(
     'width="100%"',
-    `border:1px solid ${C.border}; border-radius:16px; margin-bottom:20px;`,
+    `border:1px solid ${C.border}; border-radius:16px;`,
     `<tr>
 <td class="lock-bg" style="padding:20px 20px 4px 20px; background-color:${C.white}; border-radius:16px 16px 0 0; ${FF}">
 ${badgeRow(vm, 3, PILL_HERO, 4, 12, 12, 16, 8)}
@@ -231,7 +256,7 @@ ${vm.viewHref ? viewLink(vm.viewHref, 14, 20, 12, false) : ''}
 ${smallPrint(vm.smallPrint, '14px 0 0 0', 12, 18)}
 </td>
 </tr>`,
-  );
+  )}\n${spacer(20)}`;
 }
 
 // ---------- B. Row (stack) — heading across the top, image left, small print along the bottom ----------
@@ -272,9 +297,9 @@ ${vm.brochure ? brochureStack(vm.brochure) : ''}
 </td>
 </tr>`,
   );
-  return table(
+  return `${table(
     'width="100%"',
-    `border:1px solid ${C.border}; border-radius:16px; margin-bottom:16px;`,
+    `border:1px solid ${C.border}; border-radius:16px;`,
     `<tr>
 <td style="padding:16px 18px 0 18px; font-size:14px; text-align:left; ${FF}">
 ${badgeRow(vm, 1, PILL_SMALL, 3, 10, 11, 14, 6)}
@@ -297,6 +322,6 @@ ${mso('</td></tr></table>')}
 ${smallPrint(vm.smallPrint, '12px 0 0 0', 11, 16)}
 </td>
 </tr>`,
-  );
+  )}\n${spacer(16)}`;
 }
 

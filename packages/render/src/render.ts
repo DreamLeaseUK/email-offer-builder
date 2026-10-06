@@ -8,7 +8,7 @@ import type { Brochure, Campaign, ComplianceBlock, Rendered, Template, TemplateL
 import { assertNoCapId, availableSecondaryContacts, SECONDARY_CONTACT_LABELS } from '@offer-mailer/schema';
 import type { ContactMethod } from '@offer-mailer/schema';
 import { heroCard, rowCard } from './cards.js';
-import { C, FF, FONT, LH, esc, mso, paragraphs, table } from './html.js';
+import { C, FF, FONT, LH, esc, mso, paragraphs, spacer, table } from './html.js';
 import { EMAIL_WIDTH, HEADSHOT, LOGO_H, LOGO_W, SIDE } from './layout.js';
 import { Links, campaignUtm, withUtm } from './links.js';
 import { RenderError, buildCards, type CardVM } from './viewmodel.js';
@@ -334,9 +334,10 @@ ${greeting}${paragraphs(campaign.intro, `margin:0 0 14px 0; font-size:16px; line
           <td class="lock-tint" style="background-color:${C.panel}; border-radius:12px; padding:20px; ${FF}">
             <p style="margin:0 0 10px 0; font-size:11px; line-height:14px; ${LH}; font-weight:bold; letter-spacing:1px; text-transform:uppercase; color:${C.ink};">${esc(compliance.title.toUpperCase())}</p>
             ${compliance.paragraphs.map((p) => bodyP(esc(p), 12, 18, '0 0 8px 0')).join('\n            ')}
+            ${spacer(12)}
             ${table(
               'width="100%"',
-              `margin-top:12px; border-top:1px solid ${C.border};`,
+              `border-top:1px solid ${C.border};`,
               `
               <tr><td style="padding-top:12px;">
                 ${bodyP(esc(template.footer.optOutLine), 12, 18, '0', FF + ' ')}
