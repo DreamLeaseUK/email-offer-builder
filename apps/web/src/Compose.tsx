@@ -844,9 +844,12 @@ export function Compose({ email, base, items, setItems, seed, onSeedApplied, onH
     setItems(offers);
     setRestoredAt(d.savedAt);
     lastSavedBody.current = JSON.stringify(draftBody({ ...d, ctaKind: ctaRestored, items: offers }));
-    // An offer looked up more than a day ago: refresh the prices live, keeping the salesperson's brochure choices.
+    // An offer looked up more than a day ago: refresh the prices live, keeping the salesperson's brochure choices. So
+    // too an offer priced before the website began needing the special-offer id (6 Oct 2026: no source.pricingVersion),
+    // whose price may be the ordinary one, however recent.
     const oldest = Math.min(...offers.map((x) => Date.parse(x.offer.source.fetchedAt ?? '') || 0));
-    if (offers.length && Date.now() - oldest > DRAFT_STALE_MS) void repriceCopied(offers.map((x) => x.offer), { keepBrochureChoice: true });
+    const pricedOldWay = offers.some((x) => x.offer.source.kind === 'url' && !x.offer.source.pricingVersion);
+    if (offers.length && (pricedOldWay || Date.now() - oldest > DRAFT_STALE_MS)) void repriceCopied(offers.map((x) => x.offer), { keepBrochureChoice: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [email]);
 

@@ -152,6 +152,18 @@ export class UrlOfferSource implements OfferSource<LookupInput> {
       knownBadges: this.d.knownBadges,
     });
 
+    // The page publishes its own price for its default configuration (schema.org lowPrice). A different figure there means
+    // the price service answered us differently from what a customer sees: say so (6 Oct 2026, a special offer silently
+    // came back at its ordinary, higher price when the site began needing the special-offer id).
+    const atDefaults = (['initialRental', 'contractLength', 'annualMileage', 'includeMaintenance'] as const).every((k) => config[k] === page.defaults[k]);
+    const p = pricing.offer;
+    const ld = page.ldPrice;
+    // either figure may be the one the page publishes: the rental alone, or with maintenance when that is included
+    const agrees = (n: number) => ld !== undefined && Math.abs(n - ld) < 0.01;
+    if (atDefaults && ld !== undefined && p && !agrees(p.monthly) && !agrees(p.monthly + p.monthlyService)) {
+      warnings.push(`The offer page shows £${ld.toFixed(2)} a month, but the website's price service gave £${p.monthly.toFixed(2)}. Check the price on the offer page before you send.`);
+    }
+
     const result: LookupResult = { offer, options: pricing.options, message: pricing.message, cached: false, fetchedAt: now.toISOString(), warnings };
     assertNoCapId(result, 'lookup result');
     await this.d.cache?.set(url.canonical, result);

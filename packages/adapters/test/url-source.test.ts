@@ -71,6 +71,19 @@ describe('UrlOfferSource', () => {
     expect(again.offer.source.pricingVersion).toBe(PRICING_VERSION);
   });
 
+  it("warns when the price service disagrees with the price the offer page publishes (the page's lowPrice)", async () => {
+    // the fixtures agree (347.80 both): no warning, as the first test shows; a page now publishing 299.00 does not
+    const base = fakeFetch();
+    const fetch = vi.fn(async (input: string | URL | Request) => {
+      const res = await base(input);
+      if (!String(input).startsWith('https://www.dreamlease.co.uk/offers/')) return res;
+      return new Response((await res.text()).replace('"lowPrice": "347.80"', '"lowPrice": "299.00"'), { status: 200, headers: { 'content-type': 'text/html' } });
+    }) as unknown as typeof globalThis.fetch;
+    const r = await source({ fetch }).lookupFull({ url: PAGE, createdBy: BY });
+    expect(r.offer.pricing.monthly).toBe(347.8);
+    expect(r.warnings).toEqual(['The offer page shows £299.00 a month, but the website\'s price service gave £347.80. Check the price on the offer page before you send.']);
+  });
+
   it('never lets the site image URL or a CAP ID into the result', async () => {
     const r = await source({ images: { store: async () => image } }).lookupFull({ url: PAGE, createdBy: BY });
     expect(findCapIdLeak(r)).toBeNull();

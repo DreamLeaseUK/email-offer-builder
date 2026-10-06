@@ -84,7 +84,7 @@ describe('runPreSendChecks', () => {
     await runPreSendChecks(input(), fresh);
     expect(fresh.rechecked).toEqual([]);
     const stale = deps();
-    await runPreSendChecks(input({}, {}, { source: { kind: 'url', fetchedAt: '2026-09-29T08:00:00Z' } }), stale);
+    await runPreSendChecks(input({}, {}, { source: { kind: 'url', fetchedAt: '2026-09-29T08:00:00Z', pricingVersion: 2 } }), stale);
     expect(stale.rechecked).toHaveLength(2);
   });
 
@@ -104,7 +104,7 @@ describe('runPreSendChecks', () => {
   });
 
   it('blocks an offer that has ended on the website, could not be checked, or has changed price', async () => {
-    const old = { source: { kind: 'url' as const, fetchedAt: '2026-09-20T08:00:00Z' } };
+    const old = { source: { kind: 'url' as const, fetchedAt: '2026-09-20T08:00:00Z', pricingVersion: 2 } };
     expect(failed(await runPreSendChecks(input({}, {}, old), deps({ recheckOffer: async () => ({ ok: false, problem: 'the offer has ended on the website.' }) }))).live?.[0]).toMatch(/BYD Seal: the offer has ended/);
     const moved = failed(await runPreSendChecks(input({}, {}, old), deps({ recheckOffer: async (o) => ({ ok: true, monthly: o.pricing.monthly + 20 }) }))).live;
     expect(moved?.[0]).toMatch(/now £409 a month, not £389/);

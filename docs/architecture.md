@@ -34,7 +34,12 @@ Three audiences / lease products, each with its own compliance wording and terms
    even inside its script block ("Techno &#x2B; Comfort Range"), so names, stats and spec lines are entity-decoded;
    a cached result that still carries an entity is treated as stale. The same decoding runs again where an offer
    re-enters the server (library save and list, campaign preview and create), because a saved or open offer is a
-   snapshot from before the fix (`packages/schema/src/text.ts`). The **configured terms
+   snapshot from before the fix (`packages/schema/src/text.ts`). **Special offers:** the pricing call sends the
+   page's special-offer id as `offerId` (the price component's `offer-id`), as the page itself does; since early
+   October 2026 the site answers POA or the ordinary, higher price without it (seen 6 Oct). Every looked-up offer is
+   stamped `source.pricingVersion` (`PRICING_VERSION`, 2); a cached result from another version is stale, a draft
+   restored with an offer priced the old way is re-priced, and the lookup warns when its price differs from the
+   page's own published price (schema.org `lowPrice`) at the page's default terms. The **configured terms
    are encoded into the offer URL**, so "View offer" opens the site pre-set to exactly what was quoted.
 2. **Configure & assemble.** Salesperson picks the audience and up to six offers, writes the intro/subject, picks
    the green-button CTA + optional secondary contact links, optionally attaches a brochure, previews live.
@@ -731,7 +736,7 @@ The plan and the decisions are `evolution.md` §6; IT's side is `it-runbook-sign
 - **The pre-send checks** (`apps/api/src/presend.ts`, pure; `test/presend.test.ts` rule by rule): wording approved by
   a compliance approver (the placeholder has none) and still approved; every offer priced (both nets for salary
   sacrifice); in date (UK date); still on the website (looked up within 24 hours, else looked up again, and the
-  price unchanged); pictures, photo and PDF brochures present in R2, other brochure pages not 404/410; every tracked
+  price unchanged; a url offer priced by an older `PRICING_VERSION` is looked up again however recent); pictures, photo and PDF brochures present in R2, other brochure pages not 404/410; every tracked
   link in the stored link map; subject and message; the HTML under `maxEmailKb` (90 KB: Gmail clips at about 102 KB,
   which would hide the compliance wording); no CAP ID; the customer's address valid and not suppressed (Send only).
   `POST /api/campaigns/{id}/checks` runs them without the address: Copy for Outlook calls it before copying.
