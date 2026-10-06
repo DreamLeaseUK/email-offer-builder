@@ -20,6 +20,30 @@ describe('layout resolution', () => {
   });
 });
 
+// 6 Oct 2026: emails moved from workers.dev to offers.dreamlease.co.uk. Car pictures and headshots stored before the
+// move carry the old address; the email must show the current one (the same file is on both).
+describe('stored files follow the public address', () => {
+  const OLD = 'https://offer-mailer.matt-wilson-9b8.workers.dev';
+  it('rewrites our car pictures and headshots to the current address, and leaves everything else alone', () => {
+    const { campaign, brochures } = fixtureCampaign({ offerCount: 2 });
+    const key = `vehicles/${'a'.repeat(64)}.jpg`;
+    campaign.offers[0]!.image = { key, url: `${OLD}/f/${key}`, alt: 'BYD Seal', width: 750, height: 500 };
+    campaign.sender = { ...campaign.sender, headshotUrl: `${OLD}/f/headshots/${'b'.repeat(64)}.jpg` };
+    const html = render(campaign, fixtureTemplate, { publicBaseUrl: BASE, brochures }).html;
+    expect(html).toContain(`src="${BASE}/f/${key}"`);
+    expect(html).toContain(`src="${BASE}/f/headshots/${'b'.repeat(64)}.jpg"`);
+    expect(html).not.toContain(`${OLD}/f/`);
+  });
+
+  it('only touches /f/vehicles and /f/headshots', async () => {
+    const { ownFileUrl } = await import('../src/links.js');
+    expect(ownFileUrl(`https://elsewhere.example/f/vehicles/x.jpg`, BASE)).toBe(`${BASE}/f/vehicles/x.jpg`);
+    expect(ownFileUrl('https://cdn.example.com/photo.jpg', BASE)).toBe('https://cdn.example.com/photo.jpg');
+    expect(ownFileUrl('https://offer-mailer.matt-wilson-9b8.workers.dev/a/headshot-placeholder.png', BASE)).toBe('https://offer-mailer.matt-wilson-9b8.workers.dev/a/headshot-placeholder.png');
+    expect(ownFileUrl('not a url', BASE)).toBe('not a url');
+  });
+});
+
 describe('render()', () => {
   it('returns a valid Rendered object', () => {
     const { out } = r();

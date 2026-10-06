@@ -5,7 +5,7 @@
 import { CTA_DEFAULT_LABELS, availableCtaKinds } from '@offer-mailer/schema';
 import type { Brochure, Campaign, Offer, Sender } from '@offer-mailer/schema';
 import { gbp, gbpPence, number } from './format.js';
-import { Links, campaignUtm, withUtm } from './links.js';
+import { Links, campaignUtm, ownFileUrl, withUtm } from './links.js';
 
 export class RenderError extends Error {
   constructor(message: string) {
@@ -168,7 +168,7 @@ export function buildCards(campaign: Campaign, opts: VmOptions): CardVM[] {
       vatLabel: p.vat === 'ex' ? 'per month ex VAT' : 'per month inc VAT',
       specLine: spec.join(' · '),
       stats: (offer.vehicle.stats ?? []).slice(0, statCount),
-      imageUrl: offer.image?.url ?? `${publicBaseUrl}/a/vehicle-placeholder.png`,
+      imageUrl: offer.image ? ownFileUrl(offer.image.url, publicBaseUrl) : `${publicBaseUrl}/a/vehicle-placeholder.png`,
       cta,
       smallPrint: smallPrintParts.join(' · '),
       validUntil: offer.validUntil,

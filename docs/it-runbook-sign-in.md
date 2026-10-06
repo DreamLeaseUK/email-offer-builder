@@ -193,6 +193,12 @@ certificate. Test: `https://offers.dreamlease.co.uk/health` answers with no logi
 `PUBLIC_BASE_URL` to `https://offers.dreamlease.co.uk` and Matt deploys, so new emails link there. Links in emails
 already sent keep working on the `workers.dev` address, which stays on.
 
+**Done 6 Oct 2026 (0.7.2).** The CNAME arrived after Cloudflare's 7-day validation window, so the hostname showed
+**Moved** and its certificate **Pending Validation (TXT)**. The fix, both in the custom hostname's row (▶): **Edit** →
+certificate validation method **HTTP Validation** → Save, then **Refresh**. Both statuses went **Active** within
+minutes, and `offers.dreamlease.co.uk/health` answered. If it ever lapses again, do the same; HTTP validation needs
+no DNS record beyond the CNAME.
+
 **Living alongside MotorComplete (checked 28 Sept 2026).** The website `www` is a custom hostname on MotorComplete's
 own Cloudflare account, exactly as `offers` is on ours. Each name is routed on its own, by where its DNS record
 points, and an exact name like `offers` outranks any wildcard another account could add. On 28 Sept MotorComplete's

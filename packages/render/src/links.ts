@@ -38,3 +38,18 @@ export function withUtm(url: string, utm: Record<string, string>): string {
 export function campaignUtm(campaignCode: string, extra: Record<string, string> = {}): Record<string, string> {
   return { utm_source: 'offer_mailer', utm_medium: 'email', utm_campaign: campaignCode, ...extra };
 }
+
+/**
+ * A file the tool stored itself (a car picture under /f/vehicles/, a salesperson's photo under /f/headshots/) is
+ * served by every address of the Worker, so point it at today's public address. An offer or photo saved before the
+ * address changed (6 Oct 2026: workers.dev to offers.dreamlease.co.uk) then follows the change instead of showing the
+ * old address in a new email. Anything else is left exactly as it is.
+ */
+export function ownFileUrl(url: string, publicBaseUrl: string): string {
+  try {
+    const { pathname } = new URL(url);
+    return /^\/f\/(vehicles|headshots)\//.test(pathname) ? `${publicBaseUrl.replace(/\/$/, '')}${pathname}` : url;
+  } catch {
+    return url;
+  }
+}

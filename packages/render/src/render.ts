@@ -10,7 +10,7 @@ import type { ContactMethod } from '@offer-mailer/schema';
 import { heroCard, rowCard } from './cards.js';
 import { C, FF, FONT, LH, esc, mso, paragraphs, spacer, table } from './html.js';
 import { EMAIL_WIDTH, HEADSHOT, LOGO_H, LOGO_W, SIDE } from './layout.js';
-import { Links, campaignUtm, withUtm } from './links.js';
+import { Links, campaignUtm, ownFileUrl, withUtm } from './links.js';
 import { RenderError, buildCards, type CardVM } from './viewmodel.js';
 
 export { RenderError };
@@ -267,7 +267,7 @@ ${greeting}${paragraphs(campaign.intro, `margin:0 0 14px 0; font-size:16px; line
   const sigEmail = ctx.links.track('sig-email', `mailto:${s.email}`);
   const headshot = s.headshotUrl
     ? `<td width="72" style="padding:22px 16px 0 0; vertical-align:top;">
-            <img src="${esc(s.headshotUrl)}" width="${HEADSHOT}" height="${HEADSHOT}" alt="${esc(s.displayName)}" style="display:block; border:0; width:${HEADSHOT}px; height:${HEADSHOT}px; border-radius:50%;" />
+            <img src="${esc(ownFileUrl(s.headshotUrl, ctx.base))}" width="${HEADSHOT}" height="${HEADSHOT}" alt="${esc(s.displayName)}" style="display:block; border:0; width:${HEADSHOT}px; height:${HEADSHOT}px; border-radius:50%;" />
           </td>
           `
     : '';
