@@ -43,8 +43,13 @@ export const C = {
 export const table = (attrs: string, style: string, rows: string): string =>
   `<table role="presentation" cellpadding="0" cellspacing="0" border="0"${attrs ? ' ' + attrs : ''}${style ? ` style="${style}"` : ''}>${rows}</table>`;
 
-/** Vertical spacer: a cell with a height, never a margin (Word ignores margins on tables). */
-export const spacer = (h: number): string => table('width="100%"', '', `<tr><td height="${h}" style="font-size:0; line-height:0; height:${h}px;">&nbsp;</td></tr>`);
+/**
+ * Vertical spacer: a cell with a height, never a margin (Word ignores margins on tables). Its line is the cell's own
+ * height, not 0: Word (Outlook classic) drew a font-size:0 line as a grey sliver and shrank the cell to it (unspam.email
+ * renders of 6 Oct 2026, scripts/diag-outlook.ts).
+ */
+export const spacer = (h: number): string =>
+  table('width="100%"', '', `<tr><td height="${h}" style="height:${h}px; font-size:${h}px; line-height:${h}px; ${LH};">&nbsp;</td></tr>`);
 
 /** Outlook conditional comment. */
 export const mso = (html: string): string => `<!--[if mso]>${html}<![endif]-->`;
