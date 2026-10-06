@@ -26,12 +26,12 @@
     // Cloudflare Access team domain. The application's AUD tag is NOT a var: it is a production-only secret
     // (wrangler secret put ACCESS_AUD), so wrangler dev and the tests keep the DEV_USER_EMAIL bypass (src/env.ts).
     "ACCESS_TEAM_DOMAIN": "dreamlease.cloudflareaccess.com",
-    // Origin that serves /r, /c, /b, /f and /a in emails. Stays workers.dev until offers.dreamlease.co.uk is
-    // verified live, then becomes https://offers.dreamlease.co.uk (a new email must never link to a dead host).
-    "PUBLIC_BASE_URL": "https://offer-mailer.matt-wilson-9b8.workers.dev",
+    // Origin that serves /r, /c, /b, /f and /a in emails: the DreamLease address since 6 Oct 2026 (verified live that
+    // day: Cloudflare for SaaS hostname and certificate Active). workers.dev stays on, so emails sent before keep working.
+    "PUBLIC_BASE_URL": "https://offers.dreamlease.co.uk",
     // The tool's own origin: the only host that serves the web app.
     "TOOL_BASE_URL": "https://marketingtools.dreamelectric.uk",
-    "APP_VERSION": "0.7.1",
+    "APP_VERSION": "0.7.2",
     // Sending from the salesperson's own mailbox (Phase 1): the Send app of docs/it-runbook-sign-in.md Part D. The two
     // IDs are not secret; IT emails them (D9). Empty = not set up: the tool offers Copy for Outlook only. The client
     // secret and the token-encryption key are secrets (MAIL_CLIENT_SECRET, MAIL_TOKEN_KEY). The return address must
