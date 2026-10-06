@@ -37,17 +37,18 @@ interface Seed {
   initial: number;
   hot?: string;
   badges: string[];
+  /** Far in the future (2099) so a hosted page made from a fixture never expires during tests: the 2026 dates expired on 1 Oct 2026. */
   valid: string;
   stats: [string, string][];
 }
 
 const seeds: Seed[] = [
-  { id: 'a1b2c3d4-0001-4000-8000-000000000001', slug: 'byd-seal', make: 'BYD', model: 'Seal', derivative: 'Design 82.5kWh Excellence AWD 4dr Auto', monthly: 389, initial: 3501, hot: 'DreamLease exclusive!', badges: ['In stock', 'Special offer'], valid: '2026-09-30', stats: [['Range', '323 mi'], ['0–62', '3.8s'], ['Battery', '82.5 kWh'], ['Warranty', '6 yrs']] },
-  { id: 'a1b2c3d4-0002-4000-8000-000000000002', slug: 'mg4-ev', make: 'MG', model: 'MG4 EV', derivative: 'Trophy Long Range 64kWh 5dr Auto', monthly: 249, initial: 2241, hot: 'Special offer', badges: ['In stock'], valid: '2026-09-30', stats: [['Range', '281 mi'], ['0–62', '7.9s'], ['Battery', '64 kWh'], ['Warranty', '7 yrs']] },
-  { id: 'a1b2c3d4-0003-4000-8000-000000000003', slug: 'kia-ev3', make: 'Kia', model: 'EV3', derivative: 'GT-Line 81.4kWh 5dr Auto', monthly: 329, initial: 2961, badges: ['Factory order'], valid: '2026-10-15', stats: [['Range', '375 mi'], ['0–62', '7.9s'], ['Battery', '81.4 kWh'], ['Warranty', '7 yrs']] },
-  { id: 'a1b2c3d4-0004-4000-8000-000000000004', slug: 'cupra-born', make: 'Cupra', model: 'Born', derivative: 'V2 59kWh 204PS 5dr Auto', monthly: 299, initial: 2691, hot: 'Hot offer', badges: ['In stock', 'Limited numbers'], valid: '2026-09-30', stats: [['Range', '264 mi'], ['0–62', '7.0s'], ['Battery', '59 kWh'], ['Warranty', '3 yrs']] },
-  { id: 'a1b2c3d4-0005-4000-8000-000000000005', slug: 'hyundai-kona-electric', make: 'Hyundai', model: 'Kona Electric', derivative: 'Advance 65kWh 218PS 5dr Auto', monthly: 279, initial: 2511, badges: ['In stock'], valid: '2026-10-07', stats: [['Range', '319 mi'], ['0–62', '7.8s'], ['Battery', '65 kWh'], ['Warranty', '5 yrs']] },
-  { id: 'a1b2c3d4-0006-4000-8000-000000000006', slug: 'skoda-elroq', make: 'Skoda', model: 'Elroq', derivative: 'SE L 82kWh 85 5dr Auto', monthly: 339, initial: 3051, hot: 'Special offer', badges: ['Factory order'], valid: '2026-09-30', stats: [['Range', '360 mi'], ['0–62', '6.6s'], ['Battery', '82 kWh'], ['Warranty', '3 yrs']] },
+  { id: 'a1b2c3d4-0001-4000-8000-000000000001', slug: 'byd-seal', make: 'BYD', model: 'Seal', derivative: 'Design 82.5kWh Excellence AWD 4dr Auto', monthly: 389, initial: 3501, hot: 'DreamLease exclusive!', badges: ['In stock', 'Special offer'], valid: '2099-09-30', stats: [['Range', '323 mi'], ['0–62', '3.8s'], ['Battery', '82.5 kWh'], ['Warranty', '6 yrs']] },
+  { id: 'a1b2c3d4-0002-4000-8000-000000000002', slug: 'mg4-ev', make: 'MG', model: 'MG4 EV', derivative: 'Trophy Long Range 64kWh 5dr Auto', monthly: 249, initial: 2241, hot: 'Special offer', badges: ['In stock'], valid: '2099-09-30', stats: [['Range', '281 mi'], ['0–62', '7.9s'], ['Battery', '64 kWh'], ['Warranty', '7 yrs']] },
+  { id: 'a1b2c3d4-0003-4000-8000-000000000003', slug: 'kia-ev3', make: 'Kia', model: 'EV3', derivative: 'GT-Line 81.4kWh 5dr Auto', monthly: 329, initial: 2961, badges: ['Factory order'], valid: '2099-10-15', stats: [['Range', '375 mi'], ['0–62', '7.9s'], ['Battery', '81.4 kWh'], ['Warranty', '7 yrs']] },
+  { id: 'a1b2c3d4-0004-4000-8000-000000000004', slug: 'cupra-born', make: 'Cupra', model: 'Born', derivative: 'V2 59kWh 204PS 5dr Auto', monthly: 299, initial: 2691, hot: 'Hot offer', badges: ['In stock', 'Limited numbers'], valid: '2099-09-30', stats: [['Range', '264 mi'], ['0–62', '7.0s'], ['Battery', '59 kWh'], ['Warranty', '3 yrs']] },
+  { id: 'a1b2c3d4-0005-4000-8000-000000000005', slug: 'hyundai-kona-electric', make: 'Hyundai', model: 'Kona Electric', derivative: 'Advance 65kWh 218PS 5dr Auto', monthly: 279, initial: 2511, badges: ['In stock'], valid: '2099-10-07', stats: [['Range', '319 mi'], ['0–62', '7.8s'], ['Battery', '65 kWh'], ['Warranty', '5 yrs']] },
+  { id: 'a1b2c3d4-0006-4000-8000-000000000006', slug: 'skoda-elroq', make: 'Skoda', model: 'Elroq', derivative: 'SE L 82kWh 85 5dr Auto', monthly: 339, initial: 3051, hot: 'Special offer', badges: ['Factory order'], valid: '2099-09-30', stats: [['Range', '360 mi'], ['0–62', '6.6s'], ['Battery', '82 kWh'], ['Warranty', '3 yrs']] },
 ];
 
 export function fixtureOffer(seed: Seed, contractType: ContractType): Offer {
@@ -56,7 +57,7 @@ export function fixtureOffer(seed: Seed, contractType: ContractType): Offer {
   const path = business ? 'business' : 'personal';
   const offer: Offer = {
     id: seed.id,
-    source: { kind: 'url', ref: `https://www.dreamlease.co.uk/offers/${path}/${seed.slug}/`, fetchedAt: NOW },
+    source: { kind: 'url', ref: `https://www.dreamlease.co.uk/offers/${path}/${seed.slug}/`, fetchedAt: NOW, pricingVersion: 2 },
     vehicle: { make: seed.make, model: seed.model, derivative: seed.derivative, stats: seed.stats.map(([label, value]) => ({ label, value })) },
     contractType,
     pricing: {

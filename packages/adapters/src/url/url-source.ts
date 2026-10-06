@@ -15,7 +15,7 @@ import { buildOffer } from './build-offer.js';
 import { parseOfferUrl } from './normalise.js';
 import { parseOfferPage } from './parse-page.js';
 import type { HtmlRewriterCtor } from './parse-page.js';
-import { parsePricingResponse, pricingUrl } from './pricing.js';
+import { PRICING_VERSION, parsePricingResponse, pricingUrl } from './pricing.js';
 import type { PricingOptions } from './pricing.js';
 
 export interface LookupInput {
@@ -107,8 +107,10 @@ export class UrlOfferSource implements OfferSource<LookupInput> {
     const now = this.d.now?.() ?? new Date();
 
     const cachedHit = await this.d.cache?.get(url.canonical);
-    // a result cached by an older parser may still carry an undecoded entity ("Techno &#x2B; Comfort"): look again
-    const hit = cachedHit && carriesEntity(cachedHit.offer.vehicle) ? undefined : cachedHit;
+    // a result cached by an older parser may still carry an undecoded entity ("Techno &#x2B; Comfort"), or a price
+    // looked up the old way (before PRICING_VERSION 2 a special offer came back POA or at its ordinary price): look again
+    const stale = cachedHit && (carriesEntity(cachedHit.offer.vehicle) || cachedHit.offer.source.pricingVersion !== PRICING_VERSION);
+    const hit = stale ? undefined : cachedHit;
     if (hit) {
       return { ...hit, offer: { ...hit.offer, createdBy: input.createdBy }, cached: true };
     }
@@ -117,7 +119,13 @@ export class UrlOfferSource implements OfferSource<LookupInput> {
     const page = await parseOfferPage(html, this.d.HTMLRewriter);
 
     const config = { ...page.defaults, ...url.config };
-    const pricing = await this.fetchPricing(pricingUrl(page.slugs, url.contractType, config, page.isVan, this.d.siteOrigin));
+    const pricing = await this.fetchPricing(
+      pricingUrl(page.slugs, url.contractType, config, {
+        isVan: page.isVan,
+        ...(page.offerId ? { offerId: page.offerId } : {}),
+        ...(this.d.siteOrigin ? { origin: this.d.siteOrigin } : {}),
+      }),
+    );
 
     const warnings: string[] = [];
     let image: OfferImage | undefined;

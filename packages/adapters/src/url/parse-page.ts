@@ -36,6 +36,13 @@ export interface PageData {
   tags: string[];
   /** The configuration the page would show by default (offerToDisplay_*). */
   defaults: LeaseConfig & { financeType?: string };
+  /**
+   * The site's id for the special offer this page shows (the price component's `offer-id`, also
+   * window.motorleaseInit.hotOfferId). The page's own component sends it to the pricing API as `offerId`, and since
+   * early October 2026 the API answers "POA" for a special offer without it (seen 6 Oct 2026). Sent with the pricing
+   * request only; never stored. A page that is not a special offer has none.
+   */
+  offerId?: string;
   processingFee: { personal?: number; business?: number };
   stats: PageStat[];
   /** Site image URL for viewPoint 1. Fetch it, transform it, forget it. */
@@ -100,6 +107,7 @@ export async function parseOfferPage(html: string, HTMLRewriter: HtmlRewriterCto
   let quickItem = '';
   let personalFee: number | undefined;
   let businessFee: number | undefined;
+  let formOfferId: string | undefined;
   let imageSourceUrl: string | undefined;
 
   const rewriter = new HTMLRewriter()
@@ -119,6 +127,8 @@ export async function parseOfferPage(html: string, HTMLRewriter: HtmlRewriterCto
         const b = Number(el.getAttribute('business-processing-fee'));
         if (Number.isFinite(p) && p > 0) personalFee = p;
         if (Number.isFinite(b) && b > 0) businessFee = b;
+        const id = el.getAttribute('offer-id')?.trim();
+        if (id && /^\d+$/.test(id)) formOfferId = id;
       },
     })
     .on('.key-vehicle-details__item', {
@@ -237,5 +247,9 @@ export async function parseOfferPage(html: string, HTMLRewriter: HtmlRewriterCto
   if (businessFee !== undefined) page.processingFee.business = businessFee;
   if (imageSourceUrl) page.imageSourceUrl = imageSourceUrl;
   if (ldPrice !== undefined) page.ldPrice = ldPrice;
+  // the component's own attribute first (it is exactly what the page sends), the init block's hotOfferId otherwise
+  const hotOfferId = num('hotOfferId');
+  const offerId = formOfferId ?? (hotOfferId !== undefined && Number.isInteger(hotOfferId) && hotOfferId > 0 ? String(hotOfferId) : undefined);
+  if (offerId) page.offerId = offerId;
   return page;
 }

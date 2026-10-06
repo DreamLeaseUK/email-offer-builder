@@ -53,6 +53,16 @@ describe('parseOfferPage', () => {
     expect(page.stats[0]).toEqual({ value: '131', unit: 'g/km', label: 'CO2 emissions' });
   });
 
+  // The pricing API prices a special offer only with this id (seen 6 Oct 2026); see PageData.offerId.
+  it("reads the special offer's id from the price component, or from hotOfferId when the attribute is missing", async () => {
+    expect((await parseOfferPage(fixture('offer-page-personal.html'), Rewriter)).offerId).toBe('564851');
+    expect((await parseOfferPage(fixture('offer-page-suv-petrol.html'), Rewriter)).offerId).toBe('572341');
+    const noAttr = fixture('offer-page-personal.html').replace('offer-id="564851"', '');
+    expect((await parseOfferPage(noAttr, Rewriter)).offerId).toBe('564851');
+    const none = noAttr.replace('window.motorleaseInit.hotOfferId = 564851;', '');
+    expect((await parseOfferPage(none, Rewriter)).offerId).toBeUndefined();
+  });
+
   it('refuses a page without the vehicle data block', async () => {
     await expect(parseOfferPage('<html><body><h1>Not an offer</h1></body></html>', Rewriter)).rejects.toThrow(OfferPageError);
   });

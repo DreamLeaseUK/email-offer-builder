@@ -10,7 +10,7 @@
  * rebuilt on the server (renderForSend), never taken from the browser. The customer's address is used for the one
  * send and never stored or logged (the register records who sent it and when).
  */
-import { LookupError } from '@offer-mailer/adapters';
+import { LookupError, PRICING_VERSION } from '@offer-mailer/adapters';
 import type { Campaign, Offer, Rendered } from '@offer-mailer/schema';
 import type { Context } from 'hono';
 import { Hono } from 'hono';
@@ -47,6 +47,7 @@ export function preSendDeps(env: Env, now = new Date()): PreSendDeps {
     approvers: complianceApprovers(env),
     maxEmailBytes: MAIL_RULES.maxEmailBytes,
     offerCheckedMs: MAIL_RULES.offerCheckedMs,
+    pricingVersion: PRICING_VERSION,
     async recheckOffer(o: Offer): Promise<OfferRecheck> {
       try {
         const r = await urlSource(env).lookupFull({ url: o.offerUrl, createdBy: o.createdBy });

@@ -46,6 +46,8 @@ export interface PreSendDeps {
   maxEmailBytes: number;
   /** An offer looked up within this long counts as checked on the website (config/mail.json). */
   offerCheckedMs: number;
+  /** The url source's current PRICING_VERSION: a url offer priced by an older one is looked up again, however recent. */
+  pricingVersion: number;
   /** Look the offer up on the website again: gone, unreadable, or its current monthly price. */
   recheckOffer(offer: Offer): Promise<OfferRecheck>;
   /** Is one of our stored files there (vehicles/…, headshots/…, brochures/…)? */
@@ -122,7 +124,9 @@ export async function runPreSendChecks(input: PreSendInput, deps: PreSendDeps): 
     const results = await Promise.all(
       campaign.offers.map(async (o): Promise<string | undefined> => {
         const fetched = o.source.fetchedAt ? Date.parse(o.source.fetchedAt) : NaN;
-        if (Number.isFinite(fetched) && deps.now.getTime() - fetched <= deps.offerCheckedMs) return undefined;
+        // priced the old way (6 Oct 2026: a special offer came back at its ordinary, higher price): never trusted as recent
+        const pricedOldWay = o.source.kind === 'url' && (o.source.pricingVersion ?? 1) < deps.pricingVersion;
+        if (!pricedOldWay && Number.isFinite(fetched) && deps.now.getTime() - fetched <= deps.offerCheckedMs) return undefined;
         const r = await deps.recheckOffer(o);
         if (!r.ok) return `${carName(o)}: ${r.problem}`;
         if (o.contractType !== 'salary_sacrifice' && r.monthly !== undefined && Math.round(r.monthly) !== Math.round(o.pricing.monthly)) {

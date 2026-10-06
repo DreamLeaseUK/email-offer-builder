@@ -98,7 +98,7 @@ describe('hosted pages', () => {
 
   it('expires at the end of the earliest validUntil', () => {
     const { campaign } = fixtureCampaign({ offerCount: 3 });
-    expect(hostedExpiresAt(campaign)).toBe('2026-09-30T23:59:59.999Z');
+    expect(hostedExpiresAt(campaign)).toBe('2099-09-30T23:59:59.999Z');
   });
 });
 

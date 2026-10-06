@@ -5,8 +5,8 @@ export { parseOfferUrl, canonicalOfferUrl, OfferUrlError, SITE_ORIGIN } from './
 export type { OfferUrl, LeaseConfig, LookupContractType } from './url/normalise.js';
 export { parseOfferPage, OfferPageError } from './url/parse-page.js';
 export type { PageData, PageStat, HtmlRewriterCtor, HtmlRewriterLike } from './url/parse-page.js';
-export { pricingUrl, parsePricingResponse, PricingError, FINANCE_TYPE } from './url/pricing.js';
-export type { PricingResult, PricingOptions, PricedOffer, LeaseOption } from './url/pricing.js';
+export { pricingUrl, parsePricingResponse, PricingError, FINANCE_TYPE, PRICING_VERSION } from './url/pricing.js';
+export type { PricingResult, PricingOptions, PricedOffer, LeaseOption, PricingUrlOptions } from './url/pricing.js';
 export { buildOffer, endOfMonth, mapStats, resolveBadge, OfferBuildError } from './url/build-offer.js';
 export type { BuildOfferInput } from './url/build-offer.js';
 export { UrlOfferSource, LookupError, LOOKUP_CACHE_TTL_MS } from './url/url-source.js';

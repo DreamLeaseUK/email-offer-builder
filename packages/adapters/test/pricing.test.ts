@@ -16,10 +16,19 @@ describe('pricingUrl', () => {
   });
 
   it('uses the van endpoint for vans and empty strings for missing configuration', () => {
-    const u = new URL(pricingUrl(slugs, 'personal', {}, true));
+    const u = new URL(pricingUrl(slugs, 'personal', {}, { isVan: true }));
     expect(u.pathname).toBe('/api/vanresults/GetOfferDropdownsForCar');
     expect(u.searchParams.get('initialRental')).toBe('');
     expect(u.searchParams.get('includeMaintenance')).toBe('false');
+    expect(u.searchParams.get('offerId')).toBe('');
+  });
+
+  // Since early October 2026 the site prices a special offer as POA unless its id is sent, as the page's own
+  // component does (Matt, 6 Oct 2026: a live Passat eHybrid special offer was refused as "price on application").
+  it("sends the page's special-offer id as offerId", () => {
+    const u = new URL(pricingUrl(slugs, 'personal', { initialRental: 12 }, { offerId: '596357' }));
+    expect(u.searchParams.get('offerId')).toBe('596357');
+    expect(u.pathname).toBe('/api/carresults/GetOfferDropdownsForCar');
   });
 });
 

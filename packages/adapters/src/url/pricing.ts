@@ -98,7 +98,22 @@ export const FINANCE_TYPE: Record<LookupContractType, string> = {
   business: 'Business Contract Hire',
 };
 
-export function pricingUrl(slugs: { manufacturer: string; model: string; bodyStyle: string; derivative: string }, contractType: LookupContractType, config: LeaseConfig, isVan = false, origin = SITE_ORIGIN): string {
+/**
+ * Stamped on every looked-up offer (Offer.source.pricingVersion). Raise it whenever the way we price changes, so
+ * cached look-ups and offers priced the old way are looked up again before they are sent. 2 (6 Oct 2026): the
+ * special-offer id is sent; without it the site priced a special offer as POA or at its ordinary, higher price.
+ */
+export const PRICING_VERSION = 2;
+
+export interface PricingUrlOptions {
+  isVan?: boolean;
+  /** The page's special-offer id (PageData.offerId). Without it the site prices a special offer as POA. */
+  offerId?: string;
+  origin?: string;
+}
+
+export function pricingUrl(slugs: { manufacturer: string; model: string; bodyStyle: string; derivative: string }, contractType: LookupContractType, config: LeaseConfig, opts: PricingUrlOptions = {}): string {
+  const { isVan = false, offerId, origin = SITE_ORIGIN } = opts;
   const u = new URL(`${origin}/api/${isVan ? 'vanresults' : 'carresults'}/GetOfferDropdownsForCar`);
   u.searchParams.set('manufacturerSlug', slugs.manufacturer);
   u.searchParams.set('modelSlug', slugs.model);
@@ -110,6 +125,8 @@ export function pricingUrl(slugs: { manufacturer: string; model: string; bodySty
   u.searchParams.set('financeType', FINANCE_TYPE[contractType]);
   u.searchParams.set('isBusiness', String(contractType === 'business'));
   u.searchParams.set('includeMaintenance', String(config.includeMaintenance ?? false));
+  // as the page's own component sends it: the special offer's id, or empty for a page that has none
+  u.searchParams.set('offerId', offerId ?? '');
   return u.toString();
 }
 
