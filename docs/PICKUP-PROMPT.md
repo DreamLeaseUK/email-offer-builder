@@ -1,149 +1,204 @@
 # Pickup prompt — DreamLease Offer Mailer
 
 Paste everything below the line into a new Claude Code session opened in `C:\Users\MatthewWilson\email-offer-builder`.
-**Updated 29 September 2026 (end of session 10): Phase 1 of `docs/evolution.md` ("Send properly") is BUILT on branch
-`feat/phase1-send-m365`, PR #14, not merged, not deployed. It is waiting on IT, Emma and Matt.** It supersedes all
-earlier pickup prompts. Every state claim is marked **[verified 29 Sept]** (checked against the repo or the live system
-that day) or **[asserted]** (recorded, not re-checked). Verify before you act: run the pickup-verify skill.
+**Updated 6 October 2026 (end of session 11). Production is v0.7.3. Phase 1 (send from the salesperson's own mailbox)
+is live. Nothing is in flight: no open PRs, no unmerged branch with work on it.** This prompt supersedes all earlier
+ones.
+
+Every state claim is marked:
+- **[verified 6 Oct]**: checked that day against the repo or the live system;
+- **[asserted]**: recorded, not re-checked.
+
+Verify before you act: run the pickup-verify skill.
 
 ---
 
-You are resuming the **DreamLease Offer Mailer**: an internal tool where a salesperson builds a branded HTML email of
-one to six lease offers from dreamlease.co.uk offer links, with a hosted web page and tracked links. It is an
-FCA-regulated financial-promotions tool (compliance matters). It is **live** at https://marketingtools.dreamelectric.uk
-behind Microsoft sign-in (v0.6.1). After the failed demo of 29 Sept (pasting into Outlook classic corrupts the email),
-Matt chose to have the tool **send the email itself, from the salesperson's own mailbox, via Microsoft 365**. That is
-Phase 1, and it is built; your job is to **see it through to live**: IT's app, the local test send, Matt's deploy,
-the certification morning, and any fixes those find.
+You are resuming the **DreamLease Offer Mailer**, an internal tool. A salesperson builds a branded email of one to six
+lease offers from dreamlease.co.uk offer links, then **sends it from their own mailbox via Microsoft 365** after
+automatic checks. Each email has a hosted web page and tracked links. It is an FCA-regulated financial-promotions tool,
+so compliance matters.
+
+It is **live** at https://marketingtools.dreamelectric.uk, behind Microsoft sign-in. Customer links are on
+https://offers.dreamlease.co.uk.
+
+**The build plan of `docs/evolution.md` Phase 1 is done.** The job now is whatever Matt asks next. The open items are
+ranked in §4; do not start any of them without his go.
 
 ## 0. How to behave with Matt (read this first)
 
-- Matt is Head of Marketing and the only stakeholder. He is **blunt, direct, and has zero patience for waffle,
-  hedging, or process-for-its-own-sake.** Give him substance, evidence and decisions, not essays. Plain English; when he
-  has things to do, give ONE ranked list, one action per step, bundled into one command where possible.
-- **Do not start a build step, review, diagnostic, or any new work without an explicit instruction.** "Continue" is
-  not one. Before a new step, say in one or two lines what it is / changes / costs, then **wait**. Exception: a quick
-  change he has just asked for (usually from a screenshot): state it, do it, prove it, report.
-- **Reliability is the requirement.** Salespeople never test emails: the design is certified once per release, and the
-  tool checks every email automatically and refuses to send a faulty one. He rejected a "Send me a test" button.
-- **Estimates:** he pushes back hard on inflated ones. Scope the thinnest proper version; say what it costs honestly.
-- **Simplicity:** fewer screens, fewer buttons, plain words.
-- **Prove it** before claiming it works (a test run, a live call, a real browser). When he reports a fault, **read the
-  evidence before theorising**, and **never assume an identity or a cause** (29 Sept: `emma.airey@` and "another
-  company's Cloudflare" were both wrong). Addresses come from Zero Trust → Team & Resources → Users.
-- **He is not the Entra/IT administrator.** IT gets click-by-click steps checked against Microsoft's current docs
-  (`docs/it-runbook-sign-in.md` Part D is written; Emma is the Entra administrator, and her Word copy is
-  `Downloads/DreamLease Offer Mailer - Entra send setup (for Emma).docx` on Matt's PC, sent 29 Sept).
-- **Windows, PowerShell.** `pnpm` lives in the Claude app's private storage: prefix every pnpm command you give him with
-  `$env:Path = "$env:LOCALAPPDATA\Packages\Claude_pzs8sxrjxfjjc\LocalCache\Roaming\npm;$env:Path"; Set-Location "$HOME\email-offer-builder";`
-  [verified 29 Sept]. In Claude's own Git Bash the path is
-  `/c/Users/MatthewWilson/AppData/Local/Packages/Claude_pzs8sxrjxfjjc/LocalCache/Roaming/npm`.
-- **Multi-agent / workflow runs only when he asks** (`CLAUDE.md`). A session with "ultracode" on counts as asking.
-- Work on a branch with a pull request (CI: `ci.yml` (skips docs-only changes), `security.yml` gitleaks); **nothing
-  merges to `main` until he says "ship it"**; production deploys are his own click. Bump `APP_VERSION`
-  (`apps/api/wrangler.jsonc` vars, not package.json) in every PR that ships; report the live state after a deploy.
-- **The block list** (`~/.claude/settings.json`) refuses: deploys, rollback, delete, `wrangler versions deploy`, remote
-  `db:migrate`, any bare `wrangler d1 migrations apply` or `d1 execute` (even `--local`), `wrangler secret
-  put/delete/bulk`, the Cloudflare connector's D1 query and writes, history-destroying git (including `stash`), edits
-  to `.claude/launch.json` and the settings files, and reading secret files (`.dev.vars`, `.env`, logins). **Allowed:**
-  `pnpm db:migrate:local`. Any Bash text that merely *contains* `dev:live`, `run deploy`, `db:migrate `, `wrangler
-  secret put` or `d1 execute` is refused too: put commit messages, PR bodies and patch scripts in files. Matt runs
-  blocked commands in PowerShell.
+- **Who he is.** Matt is Head of Marketing and the only stakeholder. He is **blunt, direct, and has zero patience for
+  waffle, hedging, or process for its own sake.**
+  - Give him substance, evidence and decisions, not essays, in plain English.
+  - When he has things to do, give ONE ranked list, one action per step, bundled into one command where possible.
+- **No new work without his instruction.** "Continue" is not one.
+  - Do not start a build step, review, diagnostic, or any new work until he asks.
+  - Before a new step, say in one or two lines what it is, what it changes and what it costs, then **wait**.
+  - Exception: a quick change he has just asked for (usually from a screenshot). State it, do it, prove it, report.
+- **Reliability is the requirement.**
+  - Salespeople never test emails: the design is certified once per release.
+  - The tool checks every email automatically and refuses to send a faulty one.
+  - He rejected a "Send me a test" button.
+- **Estimates and simplicity.**
+  - He pushes back hard on inflated estimates. Scope the thinnest proper version, and say honestly what it costs.
+  - Fewer screens, fewer buttons, plain words.
+- **Prove it before claiming it works:** a test run, a live call, a real browser.
+  - When he reports a fault, **read the evidence before theorising**.
+  - **Never assume an identity or a cause.** On 29 Sept, `emma.airey@` and "another company's Cloudflare" were both
+    wrong. Sign-in addresses come from Zero Trust → Team & Resources → Users.
+- **Render tests use his REAL campaign and Emma's live template, never the render fixtures** (memory
+  `render-tests-use-real-campaign`).
+  - On 6 Oct the fixture samples made him think an old template was in use, and he was angry.
+  - With his OK, read `/api/campaigns`, `/api/templates` and `/api/brochures/current` read-only in his signed-in Chrome.
+  - Render them with a temporary script, then delete it.
+  - He checks the result on unspam.email.
+- **He is not the Entra/IT administrator; Emma is.**
+  - IT gets click-by-click steps checked against Microsoft's current docs (`docs/it-runbook-sign-in.md`).
+  - DNS is at **123-Reg**. Never call it GoDaddy to Matt or IT, even though its name servers are GoDaddy's.
+- **Windows, PowerShell.** `pnpm` lives in the Claude app's private storage.
+  - Prefix every pnpm command you give him with
+    `$env:Path = "$env:LOCALAPPDATA\Packages\Claude_pzs8sxrjxfjjc\LocalCache\Roaming\npm;$env:Path"; Set-Location "$HOME\email-offer-builder";`
+  - In Claude's own Git Bash, the path is
+    `/c/Users/MatthewWilson/AppData/Local/Packages/Claude_pzs8sxrjxfjjc/LocalCache/Roaming/npm`.
+- **Multi-agent or workflow runs only when he asks** (`CLAUDE.md`). A session with "ultracode" on counts as asking.
+- **Branches, merges and deploys.**
+  - Work on a branch with a pull request. CI is `ci.yml` (it skips docs-only changes) and `security.yml` (gitleaks).
+  - **Nothing merges to `main` until he says "ship it".** Then merge with `gh pr merge --squash --delete-branch`.
+  - **Production deploys are his own click.**
+  - Bump `APP_VERSION` (in `apps/api/wrangler.jsonc` vars, not package.json) in every PR that changes what the Worker
+    serves. After he deploys, report the live state (`/health`).
+- **The block list** (`~/.claude/settings.json`) refuses:
+  - deploys, rollback, delete and `wrangler versions deploy`;
+  - remote `db:migrate`, and any bare `wrangler d1 migrations apply` or `d1 execute` (even `--local`);
+  - `wrangler secret put/delete/bulk`;
+  - the Cloudflare connector's D1 query and writes;
+  - history-destroying git, `stash` included;
+  - edits to `.claude/launch.json` and the settings files;
+  - reading secret files (`.dev.vars`, `.env`, logins).
+
+  **Allowed:** `pnpm db:migrate:local`. Bash text that merely *contains* `dev:live`, `run deploy`, `db:migrate `,
+  `wrangler secret put` or `d1 execute` is refused too, so put commit messages, PR bodies and patch scripts in files.
+  Matt runs blocked commands in PowerShell. For a production D1 read, give him the exact SELECT and ask for the output.
 - **Never type or read secrets for him.** He pastes them.
-- **Claude in Chrome** (his real Chrome, signed in to Cloudflare) is how to act in his Cloudflare dashboard when he
-  asks. The app's built-in browser cannot sign in to Cloudflare.
+- **Claude in Chrome** (his real Chrome, signed in to Cloudflare and to the tool) is used only with his OK. It is how
+  to act in his Cloudflare dashboard, or read the live API as him. The app's built-in browser cannot sign in to
+  either.
 
 ## 1. Read these, in order
 
-1. `CLAUDE.md`: the four rules (**rule 4 now describes the Microsoft 365 send as built**), the rendering scope, the
-   working agreement, commands.
+1. `CLAUDE.md`: the four rules, the rendering scope and method, the working agreement, commands.
 2. **This file.**
-3. `docs/evolution.md` §6: Phase 1, the six decisions taken on 29 Sept, the **dependencies** (Emma first; the
-   migration before any send), what was built, IT's part, Matt's part, proof, risk.
-4. `docs/architecture.md` **B13** (the send as built), B4 (`mail_connections`), B5, B12.
-5. `docs/it-runbook-sign-in.md` **Part D** (IT's Send app, D1–D9) and Ongoing (secret renewal).
-6. `docs/phase1-review-pack.md`: the security properties and the tests that prove them (for the part-time developer).
-7. `docs/status-2026-09-29.md` §8: session 10 in brief.
-8. `docs/offer-mailer-implementation-notes.md` and the header of `packages/render/src/cards.ts`: the v5 design and the
-   paste-route deviations a–c that the certification morning re-tests.
+3. `docs/status-2026-10-06.md`: what happened from 30 Sept to 6 Oct, the decisions, the new gotchas, the open list.
+4. `docs/architecture.md`, the solution design (current-state, updated 6 Oct). Read these sections:
+   - A2, special-offer pricing and `PRICING_VERSION`;
+   - A5, the clients and how rendering is assured;
+   - B1, the two hosts;
+   - B7, the deviations a–f and `ownFileUrl`;
+   - B9, the status and the owed list;
+   - B12, how to extend;
+   - B13, the send.
+5. `docs/evolution.md` §5–§7: the phases, Phase 1 as it went, the open questions for Phase 2 (monday.com) and
+   Phase 4 (Mautic).
+6. When relevant:
+   - `docs/it-runbook-sign-in.md` (Parts B–D, Ongoing: secret renewal);
+   - `docs/phase1-review-pack.md` (the send's security properties);
+   - the header of `packages/render/src/cards.ts`.
+7. Memory, `~/.claude/projects/C--Users-MatthewWilson-email-offer-builder/memory/` (index `MEMORY.md`). It holds the
+   addresses, the delivery direction, SalSac later, Templates UX parked, render tests with the real campaign, and the
+   DKIM/DMARC rollout.
 
-## 2. Repo & live state
+## 2. Repo and live state
 
-- **Git [verified 29 Sept]:** `main` at `703b2ab` (PR #13 merged). Branch `feat/phase1-send-m365`, **PR #14 open**
-  (Phase 1, v0.7.0). Check `gh pr view 14` and its CI before anything else.
-- **Tests on the branch [verified 29 Sept]:** `pnpm test` → **307 pass** (schema 23, render 35, adapters 117, api 132);
-  `pnpm typecheck` clean; `diff-reference` **84** (the recorded deviations; more is a regression). Run it from Git
-  Bash: under PowerShell the script's `diff` is missing and it falsely reports "all sections match".
-- **Production [verified 29 Sept]:** v0.6.1 at https://marketingtools.dreamelectric.uk (Access app `marketingtools`,
-  shared **Staff** policy: dreamlease.co.uk and salsac.co.uk). `/health` on workers.dev → 0.6.1, `firecrawl:true`.
-  Secrets: `ACCESS_AUD`, `FIRECRAWL_API_KEY`. **Migration `0004_mail_connections` IS applied to production** (Matt, 29 Sept, about 17:00; his terminal showed it applied). Only
-  the placeholder compliance template exists [asserted: status 29 Sept §2; Claude cannot read production D1].
-  **Keep the four MotorComplete Snippets on the `dreamelectric.uk` zone disabled.**
-- **Customer links:** still workers.dev; `offers.dreamlease.co.uk` has no DNS record yet [verified 29 Sept]; IT's
-  123-Reg CNAME `offers` → `saas.dreamelectric.uk` is outstanding. Then a one-line PR switches `PUBLIC_BASE_URL`.
-- **People [verified 29 Sept]:** `matt.wilson@dreamlease.co.uk` master admin; **`emma@dreamlease.co.uk`** the only
-  compliance approver (`config/compliance.json`; `COMPLIANCE_EMAILS` can add a deputy at runtime). Richard Quilter
-  and `adam@salsac.co.uk` appear in Zero Trust Users [asserted].
-- **Local tool:** `.claude/launch.json` `api-live` (:8787, production data; `dev:live` passes `--var ACCESS_AUD:` and the
-  localhost `MAIL_REDIRECT_URI`), `web` (:5173), `api-local` (:8788, local storage; serves `/app/` after
-  `pnpm build:web`). Local D1 has migration 0004.
-- **Parked:** Templates screen items 1–4 (memory `templates-ux-parked`); SalSac sending (memory `salsac-send-later`).
+| Item | State |
+|---|---|
+| Git | `main` at `83e502c` (PR #20); no open PRs; untracked scratch files `body.txt`, `m.txt`, `u.txt`, `u2.txt` in the repo root: saved web responses from the 5 Oct check of `mailer.` (the old Mautic's "does not support PHP 8.4" page and an access form), not project files; ask Matt before deleting them [verified 6 Oct]. This hand-over is on branch `docs/session-11-handover`: check `gh pr list` for whether it merged. |
+| Tests | `pnpm test` **319 pass** (schema 23, render 39, adapters 122, api 135); `pnpm typecheck` clean; `diff-reference` **172** (more is a regression). Run `diff-reference` from **Git Bash**: under PowerShell its `diff` is missing and it falsely reports "all sections match" [verified 6 Oct]. |
+| Production | **v0.7.3**. `/health` on workers.dev and on offers.dreamlease.co.uk: 0.7.3, db ok, images true, firecrawl true. marketingtools.dreamelectric.uk redirects to the Access sign-in [verified 6 Oct]. |
+| Releases since 29 Sept | 0.6.2 and 0.7.0 (Phase 1) on 30 Sept. On 6 Oct: 0.7.1 (special offers), the Outlook classic fixes and salary sacrifice parked (no bump), 0.7.2 (customer address), 0.7.3 (unknown addresses to the website, robots.txt). Each was merged on "ship it" and deployed by Matt [verified 6 Oct: git log; 0.7.3 on /health]. |
+| Sign-in | Access app `marketingtools`, shared **Staff** policy (dreamlease.co.uk and salsac.co.uk), Entra as the identity provider. `ACCESS_AUD` is set: `/api` on a customer host answers 401 [verified 6 Oct]. |
+| Send (Phase 1) | Vars `MAIL_TENANT_ID`, `MAIL_CLIENT_ID`, `MAIL_REDIRECT_URI` are in `wrangler.jsonc` [verified 6 Oct]. Secrets `MAIL_CLIENT_SECRET` (expires 30 Sept 2027) and `MAIL_TOKEN_KEY` were set by Matt [asserted]. Real sends exist, e.g. BYD Seal 6 + Alfa Romeo Junior, 30 Sept, `sentVia: m365` [verified 6 Oct via `/api/campaigns`]. Only dreamlease.co.uk addresses may send (`config/mail.json`). |
+| Compliance wording | Emma's "Approved Wording - 29/09/2026", version 4, `markupVersion` 2, approved by `emma@dreamlease.co.uk` on 29 Sept 12:42 UTC; blocks for personal, business and salary sacrifice [verified 6 Oct via `/api/templates`]. `MARKUP_VERSION` is 2 [verified 6 Oct]. |
+| Customer address | CNAME `offers` → `saas.dreamelectric.uk` at 123-Reg. The Cloudflare for SaaS hostname and certificate are Active (HTTP validation, expires 4 Jan 2027). `PUBLIC_BASE_URL` = `https://offers.dreamlease.co.uk` [verified 6 Oct]. workers.dev stays on for links sent earlier. |
+| Data | 36 campaigns in production, most of them tests [verified 6 Oct via `/api/campaigns`]. `RETENTION_CAMPAIGN_DAYS` is unset. Migrations 0000–0004 are applied in production [asserted; 0004 by Matt, 29 Sept]. |
+| People | `matt.wilson@dreamlease.co.uk` is the master admin (`config/admins.json`). **`emma@dreamlease.co.uk`** is the only compliance approver (`config/compliance.json`; `COMPLIANCE_EMAILS` can add a deputy) [verified 6 Oct]. |
+| Email authentication | SPF `v=spf1 include:spf.protection.outlook.com -all`. **No DKIM** (`selector1` / `selector2`) and **no `_dmarc`** on dreamlease.co.uk or salsac.co.uk [verified 6 Oct, dns.google]. |
+| Local tool | `.claude/launch.json` defines three servers [verified 6 Oct]: `api-live` (:8787, production data through `dev:live`), `web` (:5173), and `api-local` (:8788, local storage; serves `/app/` after `pnpm build:web`). |
+| Must stay as is | The four MotorComplete Snippets on the `dreamelectric.uk` zone stay **disabled**. There are no `routes` in `apps/api/wrangler.jsonc`. |
 
-## 3. What Phase 1 is (as built)
+## 3. How each part works (source → code → constraint → current value)
 
-| Piece | Where | Key facts |
-|---|---|---|
-| Microsoft client + `m365` output | `packages/adapters/src/m365/` | code + PKCE on the tenant's endpoints; refresh token rotates (always store the new one); `/me` check; `/me/sendMail` never sets `from`; outcomes reconnect / app_credential / throttled / rejected / unavailable / **uncertain** (no clear answer to the send itself) |
-| Connect Outlook | `apps/api/src/mail.ts` | `/api/mail/connect` (refuses a cross-site start), `/callback` (state + cookie + Access user must match; `/me` must be the Access user), `/status` (D1 only), `/disconnect`; return address = `MAIL_REDIRECT_URI` config, never the request; daily Cron deletes connections unused 90 days |
-| Stored permission | `apps/api/src/mail-crypto.ts`, table `mail_connections` (migration 0004) | AES-GCM with `MAIL_TOKEN_KEY`, bound to the owner's email; unreadable (key changed) → deleted, "connect again" |
-| Pre-send checks | `apps/api/src/presend.ts` (pure) | approved by a compliance approver (the placeholder never passes); priced; in date (UK); still on the site (looked up < 24 h, else again, price unchanged); assets in R2 / pages not 404/410; links in the stored map; subject + message; ≤ 90 KB; no CAP ID; recipient valid, not suppressed (Send only). Rules in `config/mail.json` |
-| Send | `apps/api/src/send.ts` | creator only, own signature; re-render on the server (`renderForSend`); **reserve** (`claimSend`); a reservation is released only when Microsoft certainly did not get it; `uncertain` stays reserved for good (check Sent Items); `markSent` tried twice, never undoes a send; on the local bypass only a localhost page may send |
-| Web | `apps/web/src/Compose.tsx` | step 3 Connect (own window, so the draft survives) / Disconnect; step 6 "Send": customer's email (empty per campaign), Send, plain-words failures; Copy for Outlook below, behind the same checks; editing after Create drops the campaign ("create it again") |
-| Settings | `wrangler.jsonc` vars `MAIL_TENANT_ID`, `MAIL_CLIENT_ID` (empty until IT's email), `MAIL_REDIRECT_URI`; secrets `MAIL_CLIENT_SECRET`, `MAIL_TOKEN_KEY` | any missing = the tool offers Copy for Outlook only |
+| Part | Source of truth | Code | Constraint | Now |
+|---|---|---|---|---|
+| Offer price | dreamlease.co.uk's `GET /api/carresults/GetOfferDropdownsForCar` | `packages/adapters/src/url/` (`parse-page.ts`, `pricing.ts`, `url-source.ts`, `build-offer.ts`) | A special offer is priced only when the page's `offer-id` is sent as `offerId`. Every offer is stamped `source.pricingVersion`; an older version is re-looked-up (cache, restored draft, Send). The lookup warns when the price ≠ the page's schema.org `lowPrice`. | `PRICING_VERSION` 2. A live sweep of 10 specials matched to the penny on 6 Oct. |
+| Email markup | `design/dreamlease-offer-mailer-v5.html` | `packages/render` (`cards.ts`, `render.ts`, `html.ts`, `links.ts`) | `render()` is the only HTML producer. Deviations a–f are recorded in the `cards.ts` header. `diff-reference` = 172. A visible change bumps `MARKUP_VERSION`, and then Emma must re-approve. | `MARKUP_VERSION` 2. Outlook 2016/2019, Gmail, Apple Mail, iPhone and Outlook.com render correctly (unspam.email, 6 Oct). Dark Outlook.com/365/Mac is dark but readable (accept). |
+| Compliance | Emma's published template | `apps/api/src/templates.ts`, `config/compliance.json` | Only a compliance approver writes or publishes. The placeholder never sends. | Version 4, approved 29 Sept. Its salary sacrifice block still says "the date shown on each offer". |
+| Send | Salesperson's own Microsoft 365 mailbox | `packages/adapters/src/m365/`, `apps/api/src/mail.ts`, `send.ts`, `presend.ts`, `mail-crypto.ts` | Rule 4: the signed-in creator only, after the checks, one customer, once. The address is never stored. | Live since 0.7.0. Copy for Outlook is the backup, behind the same checks. |
+| Audiences | — | `apps/web/src/Compose.tsx` | `SALSAC_LIVE = false`, `WHATSAPP_LIVE = false`. | PCH and BCH only. Salary sacrifice and WhatsApp show "coming soon". |
+| Customer host | `offers.dreamlease.co.uk` (Cloudflare for SaaS) | `apps/api/src/index.ts` (notFound), `ui.ts` | Customers only ever see the DreamLease domain. An unknown GET goes 302 to www. `robots.txt` is Disallow: /. | Live (0.7.2 / 0.7.3). |
+| Images on old address | R2 `offer-mailer-images` | `ownFileUrl` in `links.ts` | Rule 2: content-addressed `vehicles/<sha256>.jpg`, never a CAP ID. | Old workers.dev `/f/vehicles` and `/f/headshots` URLs are re-pointed at render. |
+| Brochures | Manufacturer sites via Firecrawl | `packages/adapters/src/brochure/` | `finder-1.4`, cap 25 credits per search. Prove any change with `finder-sweep.mts`. | Unchanged since 21 Sept. Firecrawl account balance unknown. |
 
-## 4. The job now, in order
+## 4. Open items, ranked (start none without Matt's go)
 
-1. ~~Wait for IT (runbook Part D)~~ **Done 30 Sept** (Emma): both IDs are in `wrangler.jsonc`; the secret is with Matt
-   (expires 30/09/2027); D7 left at No; D8 Conditional Access not found (treated as none).
-2. **Emma publishes the approved wording** (all three contract types). **Deploy only after she has**: Send and Copy for
-   Outlook both refuse the placeholder. Chase through Matt.
-3. ~~Matt applies migration 0004 to production~~ **Done 29 Sept** (the table exists; the live 0.6.1 code ignores it).
-4. **Local test send** (Connect Outlook already proven on 30 Sept; the client secret and a test `MAIL_TOKEN_KEY` are in
-   Matt's `.dev.vars`, and his connection row is in production, encrypted with that test key). Matt adds `MAIL_TENANT_ID`, `MAIL_CLIENT_ID`, `MAIL_CLIENT_SECRET` and a test `MAIL_TOKEN_KEY` to
-   `apps/api/.dev.vars` himself (see `.dev.vars.example`), starts `api-live` + `web`, connects his Outlook at
-   localhost:5173, sends a real campaign (approved wording) to his own test address, checks it arrived and is in his
-   Sent Items, then **Disconnects** (so no permission encrypted with the local key stays in production).
-5. **Matt sets the production secrets:** the client secret (pasted) and a key generated and piped without showing it,
-   e.g. `$b = New-Object byte[] 32; [Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($b); [Convert]::ToBase64String($b) | pnpm --filter @offer-mailer/api exec wrangler secret put MAIL_TOKEN_KEY`
-   (prefix with the PATH line). Verify the piping works on his PowerShell before relying on it.
-6. **The part-time developer's review** (`docs/phase1-review-pack.md`, decision 5), then Matt says "ship it", merges and
-   deploys (`pnpm run deploy`). Report `/health` (expect 0.7.0).
-7. **Certification morning:** the fixed set (one offer; three offers; PCH, BCH, salary sacrifice; with a brochure) sent
-   to test mailboxes and opened in Outlook classic, new Outlook / web, Gmail (web and app) and iPhone Mail, with
-   screenshots. The main risk: the paste-route deviations meet classic Outlook's Word engine with the `[if mso]` parts
-   intact for the first time; also confirm the `<style>` block and `[if mso]` arrive (asserted, not yet seen). Fix in
-   the design with the diagnostic `.eml` method, never from one screenshot. A visible design change bumps
-   `MARKUP_VERSION`, which makes Emma re-approve the template.
-8. Before the first real customer email: wipe the test campaigns from the promotions register (Matt runs the
-   statement), Emma sets the retention period, and ideally IT's `offers` CNAME is live (workers.dev links may be
-   caught by spam filters).
+1. **DKIM and DMARC for dreamlease.co.uk.**
+   - The instructions are the Claude Doc "DreamLease email: DKIM and DMARC setup",
+     https://claude.ai/code/artifact/aad9ff05-374f-4394-8ccb-804e3ff865b4 (private until Matt shares it).
+   - Matt sends it to the Microsoft 365 admin and to the 123-Reg login holder.
+   - When they say it is done, check the records (`selector1` / `selector2` CNAMEs, `_dmarc` TXT `v=DMARC1; p=none;
+     rua=mailto:dmarc_agg@vali.email`) and have Matt send a test to Gmail ("Show original": DKIM and DMARC PASS).
+   - Stay at `p=none` for 6–8 weeks. Tighten only when Matt says, and only after the owners of the Mailjet key and
+     the old Mautic/SendGrid on `mailer.` are known.
+2. **One real end-to-end send from the live tool to unspam.email's test address.** This is the final certification of
+   the real route; the renders that proved the 6 Oct fixes were of HTML pasted into unspam, not a send from the live tool. Matt sends; read the renders with him.
+3. **Before the first real customer email:**
+   - wipe the test campaigns from the promotions register (Matt runs the statement you give him);
+   - Emma sets the retention period (`RETENTION_CAMPAIGN_DAYS`).
+4. **Roll-out to salespeople:** each one presses Connect Outlook once. Offer a one-page "how to send" if he wants it.
+5. **Check the Offer Mailer's Firecrawl balance** in the Firecrawl dashboard. Claude's own connector accounts were
+   out of credits on 5 Oct, which says nothing about the tool's key.
+6. **Emma:** the salary sacrifice wording mentions "the date shown on each offer". No rush while salary sacrifice is
+   parked.
+7. **Optional:** the part-time developer's review of Phase 1 (`docs/phase1-review-pack.md`); it was skipped at ship
+   [asserted]. Matt to confirm the Workers Paid plan.
+
+**Parked** (only when Matt says):
+- Templates screen items 1–4 (memory `templates-ux-parked`);
+- SalSac sending and the salary sacrifice audience (memory `salsac-send-later`);
+- Phase 2, monday.com (`evolution.md` §5, §7);
+- the badge-control decision and the BCH/salsac processing fee (`architecture.md` B9).
+
+**Left as is by Matt (6 Oct):**
+- the matched-set rule (multi-offer cards show the same even number of spec boxes);
+- the "Ns" placeholder in the 0–62 box.
 
 ## 5. Gotchas
 
-- Never put `routes` in `apps/api/wrangler.jsonc` (it breaks `dev:live`).
-- `hono/csrf` refuses a non-JSON write without `Sec-Fetch-Site: same-origin`; tests of Send must send an `origin` of
-  `http://localhost:5173` (the local bypass guard).
-- `.dev.vars` values vs deployed secrets under `wrangler dev --remote`: which wins is unverified. A permission stored
-  with one key and read with another is simply "connect again".
-- The live tool shows admin/compliance screens only for the exact addresses in `config/admins.json` /
+- **Never put `routes` in `apps/api/wrangler.jsonc`.** It breaks `dev:live`. The Custom Domain and the `offers.` route
+  live in the dashboard.
+- **Cloudflare for SaaS waits only 7 days for the DNS.** After that the hostname shows "Moved". To fix it: Custom
+  Hostnames, then the row's ▶ → Edit → HTTP Validation → Save → Refresh (runbook C8).
+- **dreamlease.co.uk refuses Node's fetch from Matt's PC (403).** Live scripts call `curl` through `execFileSync`.
+  Run scripts with `packages/render/node_modules/.bin/tsx`: `pnpm --filter … exec tsx` fails.
+- **The Chrome extension blocks output that contains query strings.** Strip `?…`, and read in slices of about
+  900 characters.
+- **The built-in browser cannot screenshot very tall pages:** the image comes back blank. Use unspam's lightbox, or a
+  fixed overlay.
+- **`hono/csrf` refuses a non-JSON write without `Sec-Fetch-Site: same-origin`.** A test of Send must send an `origin`
+  of `http://localhost:5173` (the local bypass guard).
+- **The admin and compliance screens** appear only for the exact addresses in `config/admins.json` and
   `config/compliance.json`.
-- Firecrawl credits: an offer older than 24 hours is looked up again at Send (up to 1 credit when the direct fetch is
-  refused, which it is from Matt's PC). Check the balance before any finder sweep (the period ends 9 Oct).
-- The four rules (`CLAUDE.md`) are load-bearing: CAP IDs never stored; `render()` the only HTML producer; compliance
-  locked; a human presses Send.
+- **Firecrawl:** an offer older than 24 hours is looked up again at Send, which costs up to 1 credit when the direct
+  fetch is refused.
+- **The four rules in `CLAUDE.md` are load-bearing:**
+  1. CAP IDs are never stored;
+  2. `render()` is the only HTML producer;
+  3. compliance is locked;
+  4. a human presses Send.
 
 ## 6. Start
 
-Run pickup-verify. Confirm in a few lines what you read; state git (`git status`, `gh pr view 14`, its CI), tests and
-live state (`/health`). Ask Matt where IT, Emma and the review stand, then do the next step in §4 that is unblocked,
-after saying what it is and getting his go.
+1. Run pickup-verify.
+2. Confirm in a few lines what you read.
+3. State git (`git status`, `gh pr list`), tests and the live state (`/health` on workers.dev and on
+   offers.dreamlease.co.uk).
+4. Ask Matt what he wants next, offering the top of §4 as your recommendation. Do it only after saying what it is and
+   getting his go.
