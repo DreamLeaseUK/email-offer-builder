@@ -18,7 +18,7 @@ import { safeErrorLine } from './safe-log.js';
 import { sendApi } from './send.js';
 import { suppressionsApi } from './suppressions.js';
 import { templatesApi } from './templates.js';
-import { ui } from './ui.js';
+import { DREAMLEASE_HOME, isToolHost, ui } from './ui.js';
 
 const app = new Hono<AppEnv>();
 
@@ -69,7 +69,15 @@ app.route('/api', api);
 
 // ---------- fallbacks ----------
 
-app.notFound((c) => c.json({ error: 'Not found' }, 404));
+// A stray or mistyped address on a customer-facing host (offers.dreamlease.co.uk, or the old workers.dev one) goes to the
+// website rather than a technical error (Matt, 6 Oct 2026). The tool host and /api keep a plain 404 for the tool itself.
+app.notFound((c) => {
+  const page = c.req.method === 'GET' || c.req.method === 'HEAD';
+  if (page && !new URL(c.req.url).pathname.startsWith('/api/') && !isToolHost(c.req.url, c.req.header('cf-connecting-ip'), c.env)) {
+    return c.redirect(DREAMLEASE_HOME, 302);
+  }
+  return c.json({ error: 'Not found' }, 404);
+});
 app.onError((err, c) => {
   if (err instanceof HTTPException) return c.json({ error: err.message || 'Request refused' }, err.status);
   console.error(safeErrorLine(err));

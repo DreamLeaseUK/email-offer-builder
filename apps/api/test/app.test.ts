@@ -146,13 +146,31 @@ describe('the web app (served on the tool host only)', () => {
     expect(await page.text()).toBe('asset /app/');
   });
 
-  it('does not exist on the customer-facing hosts: / goes to dreamlease.co.uk and /app/* is 404', async () => {
+  it('does not exist on the customer-facing hosts: /, /app/* and any unknown address go to dreamlease.co.uk', async () => {
     for (const host of ['https://offers.dreamlease.co.uk', 'https://offer-mailer.matt-wilson-9b8.workers.dev']) {
-      const home = await app.request(`${host}/`, internet, env);
-      expect(home.status).toBe(302);
-      expect(home.headers.get('location')).toBe('https://www.dreamlease.co.uk/');
-      expect((await app.request(`${host}/app/`, internet, env)).status).toBe(404);
-      expect((await app.request(`${host}/app/assets/index.js`, internet, env)).status).toBe(404);
+      for (const path of ['/', '/app/', '/app/assets/index.js', '/anything', '/offers/old-link']) {
+        const res = await app.request(`${host}${path}`, internet, env);
+        expect(res.status, `${host}${path}`).toBe(302);
+        expect(res.headers.get('location')).toBe('https://www.dreamlease.co.uk/');
+      }
+    }
+  });
+
+  // Matt, 6 Oct 2026: a mistyped or shortened customer link lands on the website, never a technical error. The tool
+  // itself, its API and anything that is not a page keep the plain 404.
+  it('keeps a plain 404 on the tool host, under /api and for anything that is not a page request', async () => {
+    const tool = await app.request('https://marketingtools.dreamelectric.uk/anything', internet, env);
+    expect(tool.status).toBe(404);
+    expect(await tool.json()).toEqual({ error: 'Not found' });
+    expect((await app.request('https://offers.dreamlease.co.uk/anything', { ...internet, method: 'POST' }, env)).status).toBe(404);
+    expect((await app.request('https://offers.dreamlease.co.uk/api/nothing-here', internet, env)).headers.get('location')).toBeNull();
+  });
+
+  it('serves a robots.txt that keeps search engines out, on every host', async () => {
+    for (const host of ['https://offers.dreamlease.co.uk', 'https://marketingtools.dreamelectric.uk']) {
+      const res = await app.request(`${host}/robots.txt`, internet, env);
+      expect(res.status).toBe(200);
+      expect(await res.text()).toBe('User-agent: *\nDisallow: /\n');
     }
   });
 

@@ -310,10 +310,12 @@ by setting `DEV_USER_EMAIL` in production (CLAUDE.md).
 - **Residency:** D1 + R2 in **WEUR (EU)**. Cloudflare is the processor (standard DPA applies).
 
 ## B5. Routing surface (`apps/api/src/index.ts`)
-**Public (no login):** `/health` · `/c/:slug` · `/f/*` · `/b/:id` · `/r/:slug/:link` · `/a/*` · `/` (tool host →
-`/app/`; any other host → `https://www.dreamlease.co.uk/`).
-**The web app:** `/app/*` — the built files on the tool host (Access covers the whole host at the edge); 404 on every
-other host, so the internal tool never appears on the customer-facing address (`src/ui.ts`, 28 Sept).
+**Public (no login):** `/health` · `/c/:slug` · `/f/*` · `/b/:id` · `/r/:slug/:link` · `/a/*` · `/robots.txt` (Disallow all,
+every host) · `/` (tool host → `/app/`; any other host → `https://www.dreamlease.co.uk/`). Since 6 Oct 2026 any other
+GET on a customer-facing host (`offers.dreamlease.co.uk`, workers.dev) that matches no route also goes to the website
+(`index.ts` notFound); the tool host, `/api/*` and non-page requests keep the JSON 404.
+**The web app:** `/app/*` — the built files on the tool host (Access covers the whole host at the edge); every other
+host redirects to the website, so the internal tool never appears on the customer-facing address (`src/ui.ts`, 28 Sept).
 **Behind Access (`/api/*`):** `/me`, `/me/photo`, `/me/sender` · `/offers/lookup` · **library (B7c):**
 `/offers/library` (save · list current, `?scope=&category=&q=&maxMonthly=`), `/offers/library/archived`,
 `/offers/library/:id/reprice`, `/…/archive`, `/…/unarchive`, `/…/promote` **(admin)**, `/library/shelves` ·
