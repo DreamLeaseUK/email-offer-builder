@@ -1,6 +1,7 @@
 # DreamLease Offer Mailer — Solution Design & System Architecture
 
-**Status:** current as of 6 Oct 2026 (end of session 11). **Production is v0.7.3**, live behind Microsoft sign-in at
+**Status:** current as of 7 Oct 2026 (session 11). **Production is v0.7.3; 0.7.4 (no processing-fee line on the
+cards, B7) is merged and deploys next.** The tool is live behind Microsoft sign-in at
 `marketingtools.dreamelectric.uk`, with customer links on `offers.dreamlease.co.uk`. **Phase 1 of `evolution.md`, the
 send from the salesperson's own mailbox via Microsoft 365, has been live since 0.7.0 (30 Sept, B13).** On 6 Oct:
 special-offer pricing (0.7.1, A2), the Outlook classic fixes (B7, deviation f), salary sacrifice parked in Compose
@@ -283,7 +284,7 @@ Edit → HTTP Validation → Save → Refresh (runbook C8, done that way on 6 Oc
   account's credit balance is not visible from here), and since Phase 1 `MAIL_CLIENT_SECRET` (IT's Send app secret,
   expires 30 Sept 2027) and `MAIL_TOKEN_KEY` (B13), all set by Matt. Vars (`wrangler.jsonc`): `PUBLIC_BASE_URL`
   (customer links: `https://offers.dreamlease.co.uk` since 0.7.2), `TOOL_BASE_URL` (the only host serving the web
-  app), `APP_VERSION` (0.7.3), `MAIL_TENANT_ID`, `MAIL_CLIENT_ID`, `MAIL_REDIRECT_URI`. Optional: `ADMIN_EMAILS`,
+  app), `APP_VERSION` (0.7.4 in `main`), `MAIL_TENANT_ID`, `MAIL_CLIENT_ID`, `MAIL_REDIRECT_URI`. Optional: `ADMIN_EMAILS`,
   `COMPLIANCE_EMAILS`, `RETENTION_CAMPAIGN_DAYS` (**unset**: Emma sets the period). Locally `.dev.vars`
   (git-ignored, `DEV_USER_EMAIL`).
 
@@ -415,9 +416,13 @@ were deleted on 22 Sept; the schema still accepts the names so a stored campaign
 when the markup changes in a way Emma should re-approve; templates pin the version they were approved against
 (campaigns pin `compliance.approvedWordingVersion`).
 
-Two data-side display rules live in the viewmodel (not markup, so the reference is untouched): **PCH
-(personal) cards always show the standard £299.99 processing fee** even when the site returned none (BCH/salsac
-unchanged — first stage); and **every card in a multi-offer campaign shows the same, even number of stat
+Data-side display rules live in the viewmodel (not markup, so the reference is untouched). **No card carries a
+processing-fee line** (Matt, 7 Oct 2026, for every contract type; from 16 Sept to 7 Oct PCH cards showed a forced
+"Processing fee £299.99 inc VAT"): the fee belongs to the compliance wording Emma approves; her personal block of 29 Sept says
+"A processing fee may apply and, where applicable, will be detailed in your quotation" (her business and salary
+sacrifice blocks were not re-read for this change). The offer still records
+`pricing.processingFee`. With no validity date either (since 0.6.2), a card without a brochure has no small print,
+and its paragraph is left out (deviation g). **Every card in a multi-offer campaign shows the same, even number of stat
 tiles** (the common count across the offers, floored to even) so the cards read as a matched set — a single
 hero keeps its natural count (Matt, 6 Oct: leave it as it is; also left: a tile showing "Ns" when the site gives no
 0–62 figure). A third (21 Sept): when the attached brochure is the manufacturer's **European
@@ -439,8 +444,9 @@ takes the base alone. The tags sit on the **destination** in the stored link map
 `diff-reference` is unaffected; `/r` delivers them to the site, where GA4 records `utm_term` without site-side set-up.
 Matt, 23 Sept: "whatever works as salesperson identifier", so `utm_term` stands.
 
-**Deviations from the v5 reference** (recorded as a–f in the header of `cards.ts`). a–e were made for the paste route
-of A5 and for Matt's reading of the result; f is for Outlook classic now that the email arrives intact. `diff-reference`
+**Deviations from the v5 reference** (recorded as a–g in the header of `cards.ts`). a–e were made for the paste route
+of A5 and for Matt's reading of the result; f is for Outlook classic now that the email arrives intact; g follows
+the removal of the processing-fee line (7 Oct) and does not change the count. `diff-reference`
 reports **172 lines**:
 - 8 pre-date 21 Sept (2 the logo width, 6 the third hero pill);
 - 10 are the inline-block pills (6) and the stack card's image column (4);
@@ -480,6 +486,10 @@ mismatch); Outlook classic now shows what she approved. The deviations:
 
   The candidates were compared with `scripts/diag-outlook.ts`. Nothing changed in Gmail, Apple Mail, iPhone or
   Outlook.com.
+- **No empty small print (7 Oct 2026, deviation g).** Without the fee line, a card without a brochure has no small
+  print. Its paragraph is left out (Word draws an empty paragraph as a blank line), and the stacked card's small-print
+  row becomes a 16px spacer cell (`spacerCell`, `html.ts`), keeping the card's bottom padding. `diff-reference`
+  compares cards with a brochure, so its count is unchanged.
 - (Earlier, 14 Sept) up to three pills on the hero where the reference has two; logo 98px wide.
 
 **Our own file addresses (0.7.2).** `links.ts` `ownFileUrl(url, base)` puts any image URL whose path is
@@ -656,8 +666,8 @@ the EVs shelf while kept on the personal shelf).
 | 7 Template admin, approval, register, suppression | **Done** (register, compliance-approver-only templates since 28 Sept, suppression list) |
 | 8 Stubs & `evolution.md` | Not started (low value) |
 
-**PII plan: complete** (items 1–4). Build-order steps 1–7 done. **Production is v0.7.3 (6 Oct 2026)** and holds
-everything in `main`. Since the last full update of this section:
+**PII plan: complete** (items 1–4). Build-order steps 1–7 done. **Production is v0.7.3 (6 Oct 2026)**; `main` is
+0.7.4 (7 Oct), which Matt deploys next. Since the last full update of this section:
 - **0.6.1 (29 Sept):** live behind Access on `marketingtools.dreamelectric.uk` (`status-2026-09-29.md`).
 - **0.6.2 (30 Sept):** the email no longer states a validity date.
 - **0.7.0 (30 Sept):** Phase 1, Send from the salesperson's own mailbox (B13).
@@ -665,6 +675,7 @@ everything in `main`. Since the last full update of this section:
 - **6 Oct, no version bump:** the Outlook classic fixes (B7, deviation f), and salary sacrifice parked in Compose (A1).
 - **0.7.2 (6 Oct):** customer links on `offers.dreamlease.co.uk` (B1).
 - **0.7.3 (6 Oct):** unknown customer addresses go to the website, plus `robots.txt` (B5).
+- **0.7.4 (7 Oct, merged; deploy pending):** no processing-fee line on the offer cards (B7, deviation g).
 
 Each was shipped on Matt's "ship it" and deployed by him. The log is `status-2026-10-06.md`.
 
@@ -686,8 +697,8 @@ the automatic pre-send checks, built in Phase 1).
   recurring (`evolution.md` decision 4).
 - **Equal-height card columns** — built 21 Sept as matched rows (B7), then made moot the same day by the
   one-offer-per-row decision. Button alignment across cards no longer arises. Deleted 22 Sept.
-- **BCH / salary-sacrifice processing fee** — the £299.99 fee is forced on **PCH only** (first stage); decide
-  BCH/salsac handling.
+- ~~**BCH / salary-sacrifice processing fee**~~ — settled 7 Oct 2026: no card shows a processing fee, for any
+  contract type (B7).
 
 **Remaining build-order:** step 8 stubs (low value; `evolution.md` exists). **Open, owed by others (6 Oct; the
 ranked list is in `PICKUP-PROMPT.md` §4):**
@@ -702,7 +713,7 @@ ranked list is in `PICKUP-PROMPT.md` §4):**
   audience; Tawk webchat.
 
 ## B10. Testing & verification
-- `pnpm test` — **319 tests** (6 Oct 2026: schema 23, render 39, adapters 122, api 135), all run by CI on every pull
+- `pnpm test` — **321 tests** (7 Oct 2026: schema 23, render 41, adapters 122, api 135), all run by CI on every pull
   request. What they cover:
   - **Phase 1 (30 Sept):** sending against a stand-in for Microsoft (`m365.test.ts`), token encryption, "only as
     yourself", every pre-send check rule by rule (`presend.test.ts`), Send's reservation and outcomes
@@ -712,6 +723,8 @@ ranked list is in `PICKUP-PROMPT.md` §4):**
       old-way offers;
     - spacing and badges in the Outlook classic markup, and `ownFileUrl`;
     - unknown customer addresses redirected, and `robots.txt`.
+  - **7 Oct:** no processing fee on any card (every contract type, layout and output), no empty small-print
+    paragraph, the brochure line kept.
   - **Earlier:**
     - templates: who may read and write, `COMPLIANCE_EMAILS`, `/me`'s `complianceApprover`, the placeholder seeded
       without an approver;
@@ -734,7 +747,7 @@ ranked list is in `PICKUP-PROMPT.md` §4):**
 
 ## B11. Key files index
 - Model & guard: `packages/schema/src/model.ts`, `capid.ts`, `text.ts` (the site's HTML entities, decoded at lookup and again wherever an offer reaches the server)
-- Rendering: `packages/render/src/render.ts`, `cards.ts` (header: the deviations a–f), `html.ts` (`spacer`), `viewmodel.ts`, `layout.ts`, `links.ts` (`ownFileUrl`); `scripts/diff-reference.ts`, `scripts/diag-outlook.ts`
+- Rendering: `packages/render/src/render.ts`, `cards.ts` (header: the deviations a–g), `html.ts` (`spacer`, `spacerCell`), `viewmodel.ts`, `layout.ts`, `links.ts` (`ownFileUrl`); `scripts/diff-reference.ts`, `scripts/diag-outlook.ts`
 - Adapters: `packages/adapters/src/url/*` (`parse-page.ts` incl. the special-offer id, `pricing.ts` incl. `PRICING_VERSION`), `firecrawl/`, `brochure/` (`finder.ts`, `operate.ts`, `harvest.ts`, `ensure.ts`), `m365/` (`client.ts`, `output.ts`: the Microsoft client and the send), `scripts/finder-sweep.mts`
 - Worker: `apps/api/src/index.ts` (routes + Cron), `campaigns.ts`, `profile.ts`, `templates.ts`,
   `suppressions.ts`, `retention.ts`, `roles.ts`, `files.ts`, `brochures.ts`, `lookup.ts`, `library.ts`,

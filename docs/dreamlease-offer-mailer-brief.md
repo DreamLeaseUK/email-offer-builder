@@ -507,6 +507,14 @@ monday.com's email tool is superseded.
 - **Copy for Outlook** stays as a backup and runs the same checks (all but the address).
 - **Who:** dreamlease.co.uk staff only (`config/mail.json`); SalSac is a later iteration.
 
+### As built — 7 October 2026
+
+- **§5.5 "Every email shows … processing fee, … offer validity date":** neither is on the offer cards any more (Matt:
+  the validity date went on 30 Sept, the processing-fee line on 7 Oct). The fee belongs to the compliance wording
+  Emma approves (her personal block, 29 Sept: "A processing fee may apply and, where applicable, will be detailed in
+  your quotation"); `pricing.processingFee` (§5.1) is still recorded but no longer shown;
+  `validUntil` still expires the hosted page and is checked before a send.
+
 ## 9. Assumptions and open items
 
 - Salary sacrifice 20% and 40% figures are entered by hand for now. A `salsac.gross` field and a calculator hook are reserved so the HMRC-verified calculator logic can be plugged in later.

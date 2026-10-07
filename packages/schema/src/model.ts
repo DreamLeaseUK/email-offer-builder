@@ -132,7 +132,7 @@ export const Pricing = z.object({
   initialMonths: z.union([z.literal(1), z.literal(3), z.literal(6), z.literal(9), z.literal(12)]),
   termMonths: z.number().int().min(12).max(60),
   annualMileage: z.number().int().positive(),
-  /** £ inc VAT, from the site, shown in small print */
+  /** £ inc VAT, from the site. Recorded only: not shown on the cards since 7 Oct 2026 (the compliance wording covers the fee). */
   processingFee: z.number().nonnegative().optional(),
   maintenance: z.boolean(),
   /** Salary sacrifice only; entered by hand in stage one. */

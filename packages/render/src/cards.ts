@@ -35,7 +35,7 @@
  * diff-reference reports 172 lines in all: 8 pre-date 21 Sept (2 the logo width, 6 the third hero pill), 10 are
  * a (6) and b (4), 64 are d (50 the row card, 14 the hero), 2 are e (the plain recipient greeting, in
  * render.ts's intro), and 88 are f (8 the footer, the rest the two cards); c sits outside the sections the script
- * compares:
+ * compares, and g shows only on a card without a brochure, which the script does not compare:
  *  a. pills are inline-block tables, not align="left" floats: the clearing spacer did not survive, and the
  *     make name ran beside the pill and broke in Gmail ("VOLKSWA / GEN").
  *  b. the row card's image column is calc()-fluid (its desktop width beside the details, the full card width
@@ -63,9 +63,14 @@
  *     sliver; and the badge pills sit in an Outlook-only ghost row, one cell each (Word had stacked the hero's three
  *     into one orange block). The tool's preview and the other clients look the same, so
  *     MARKUP_VERSION stays: Outlook classic now shows what Emma approved.
+ *  g. (7 Oct 2026) the cards no longer carry a "Processing fee" line (Matt; the fee belongs to Emma's compliance wording),
+ *     so a card without a brochure has no small print. Its paragraph is then left out, not rendered empty (Word draws
+ *     an empty paragraph as a blank line), and the row card's small-print row becomes a 16px spacer cell, which keeps
+ *     the card's bottom padding. Data-only otherwise: diff-reference compares cards with a brochure, so its count is
+ *     unchanged. MARKUP_VERSION stays 2.
  * And the tool sends one offer per row (auto: 1 → single, 2+ → stack).
  */
-import { C, FF, LH, esc, mso, spacer, table } from './html.js';
+import { C, FF, LH, esc, mso, spacer, spacerCell, table } from './html.js';
 import { HERO_IMG, HERO_IMG_H, ICON, PILL_HERO, PILL_SMALL, STACK_CONTENT_COL, STACK_IMG, STACK_IMG_COL, STACK_IMG_H, STACK_INNER } from './layout.js';
 import type { CardVM, Stat } from './viewmodel.js';
 
@@ -209,8 +214,9 @@ const brochureHero = (b: Brochure) => table('', 'display:inline-block; vertical-
 /** Stack: under the button, left aligned. */
 const brochureStack = (b: Brochure) => `${spacer(8)}\n${table('', '', `<tr>\n${brochureIconTd(b, '0 6px 0 0')}\n${brochureLinkTd(b, b.label, 13, 18, '')}\n</tr>`)}`;
 
+/** Nothing at all when there is no small print (deviation g): an empty paragraph is a blank line in Word. */
 const smallPrint = (text: string, margin: string, font: number, lh: number) =>
-  `<p class="lock-body" style="margin:${margin}; font-size:${font}px; line-height:${lh}px; ${LH}; color:${C.graphite};">${esc(text)}</p>`;
+  text ? `<p class="lock-body" style="margin:${margin}; font-size:${font}px; line-height:${lh}px; ${LH}; color:${C.graphite};">${esc(text)}</p>` : '';
 
 // ---------- A. Hero (single) — image on top ----------
 
@@ -317,11 +323,17 @@ ${contentCol}
 ${mso('</td></tr></table>')}
 </td>
 </tr>
-<tr>
+${
+  vm.smallPrint
+    ? `<tr>
 <td style="padding:0 18px 16px 18px; font-size:14px; text-align:left; ${FF}">
 ${smallPrint(vm.smallPrint, '12px 0 0 0', 11, 16)}
 </td>
-</tr>`,
+</tr>`
+    : // No small print (deviation g): the row keeps only the card's bottom padding, as a spacer cell, because Word
+      // gives an empty padded cell a line of its own.
+      `<tr>\n${spacerCell(16)}\n</tr>`
+}`,
   )}\n${spacer(16)}`;
 }
 

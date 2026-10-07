@@ -4,7 +4,7 @@
  */
 import { CTA_DEFAULT_LABELS, availableCtaKinds } from '@offer-mailer/schema';
 import type { Brochure, Campaign, Offer, Sender } from '@offer-mailer/schema';
-import { gbp, gbpPence, number } from './format.js';
+import { gbp, number } from './format.js';
 import { Links, campaignUtm, ownFileUrl, withUtm } from './links.js';
 
 export class RenderError extends Error {
@@ -42,6 +42,7 @@ export interface CardVM {
   viewHref?: string;
   /** iconUrl is the 14px glyph on our origin. */
   brochure?: { href: string; label: string; alt: string; kind: 'pdf' | 'gated'; iconUrl: string; european?: boolean };
+  /** Empty when there is nothing to say (no brochure): the card then has no small-print paragraph. */
   smallPrint: string;
   validUntil: string;
 }
@@ -52,8 +53,6 @@ export interface VmOptions {
   links: Links;
 }
 
-/** DreamLease's standard PCH processing fee (£, inc VAT). Must match the compliance block wording. */
-const PCH_PROCESSING_FEE = 299.99;
 /**
  * Small print added when the attached brochure is the manufacturer's European edition (Brochure.market 'eu':
  * the finder found no UK edition). Data-side text, like the sentence it follows, so the v5 markup is untouched.
@@ -147,13 +146,11 @@ export function buildCards(campaign: Campaign, opts: VmOptions): CardVM[] {
     }
 
     const smallPrintParts = [];
-    // PCH (personal) orders always carry the standard processing fee — the compliance block states it is
-    // "payable on all orders" — so show it on every personal card even when the site returned none. BCH /
-    // salary sacrifice keep whatever their pricing carried (first stage; those audiences revisited later).
-    const processingFee = offer.contractType === 'personal' ? PCH_PROCESSING_FEE : p.processingFee;
-    if (processingFee !== undefined) smallPrintParts.push(`Processing fee ${gbpPence(processingFee)} inc VAT`);
+    // No "Processing fee £… inc VAT" line on the cards (Matt, 7 Oct 2026), for any contract type. The fee belongs to
+    // the compliance wording Emma approves (her personal block of 29 Sept: "A processing fee may apply and, where
+    // applicable, will be detailed in your quotation"), not to a figure the tool adds. offer.pricing.processingFee is still recorded.
     // No "Offer valid until …" line (Matt, 30 Sept 2026): validUntil still expires the hosted page and is checked before a
-    // send, but the email and the page no longer state a date.
+    // send, but the email and the page no longer state a date. So a card without a brochure has no small print at all.
     if (brochure) smallPrintParts.push(`Brochure figures are the manufacturer's and may differ from this offer.${brochure.european ? ` ${EUROPEAN_BROCHURE_NOTE}` : ''}`);
 
     const vm: CardVM = {
