@@ -106,6 +106,13 @@ Three audiences / lease products, each with its own compliance wording and terms
   offers, Check and create, Send from Outlook); Renewal is the default use case; WhatsApp is shown "coming soon" and
   cannot reach an email (`WHATSAPP_LIVE` in `Compose.tsx`); preview links point straight at the site in a new tab
   (the created campaign keeps its tracked `/r/` links).
+- **Steps 1–3 remembered (7 Oct 2026, a salesperson's request via Matt):** a new campaign starts from what this person
+  used last, not the defaults: campaign name, audience, use case, subject, message and offer button (browser storage per
+  signed-in person, `dl-compose-last:v1:<email>`, no expiry, written as they type), and their details (the saved
+  profile, which Create now also saves when they changed step 3 in that campaign; never a copied campaign's older
+  details, never the defaults after a failed profile load, and a saved WhatsApp number is kept while WhatsApp is off). "+ New campaign" clears only the offers and the customer's name; every field
+  stays editable. The customer's name and email are never kept. A draft (a campaign with offers) still wins on
+  reload; a copied campaign sets everything from the copy. Salary sacrifice, while parked, comes back as personal.
 - **Library, simplified (29 Sept):** tabs Team offers (first) and My saved offers; Add to email and Remove per card;
   admins see removed offers, restore them and Share with team. Archive / unarchive need the entry's owner or an admin.
 - **Brochure near miss (29 Sept):** when nothing verifies, the panel offers the closest document from the stored trace

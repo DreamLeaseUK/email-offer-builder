@@ -41,7 +41,7 @@ const salsacReady = (o: Offer): boolean => (o.pricing.salsac?.net20 ?? 0) > 0 &&
 /** The six steps of a campaign, in the order the screen asks for them (Matt, 29 Sept 2026: guide a new user). */
 const STEPS = ['Who it’s for', 'Your message', 'Your details', 'Add offers', 'Check and create', 'Send'] as const;
 
-/** A fresh campaign's starting text (also what "New campaign" resets to). Renewal first (Matt, 29 Sept 2026). */
+/** The very first campaign's starting text; later ones start from what was used last (Remembered). Renewal first (Matt, 29 Sept 2026). */
 const DEFAULT_NAME = 'Renewal offers';
 const DEFAULT_SUBJECT = 'The options we talked about';
 const DEFAULT_INTRO = 'Thanks for your time. As promised, here are the options that fit what we discussed.';
@@ -122,6 +122,49 @@ function clearSavedDraft(email: string): void {
     /* ignore */
   }
 }
+/**
+ * Remembered steps 1 and 2 (a salesperson's feedback, Matt 7 Oct 2026: "the last entry stays persistent, but option
+ * to override it is still available"). A new campaign starts from what this person used last, not from the defaults:
+ * the campaign name, audience, use case, subject, message and offer button. Every field stays editable. Kept in this
+ * browser per signed-in person, with no expiry, updated as they type. Never the customer's name or email address.
+ * Step 3 (your details) is the saved profile on the server, which Create now also saves when they changed it. Guarded like the draft:
+ * without browser storage, Compose starts from the defaults as before.
+ */
+const rememberKey = (email: string): string => `dl-compose-last:v1:${email.trim().toLowerCase()}`;
+interface Remembered {
+  name: string;
+  audience: Audience;
+  useCase: UseCase;
+  useCaseNote: string;
+  subject: string;
+  intro: string;
+  ctaKind: CtaKind;
+  ctaLabel: string;
+}
+function readRemembered(email: string): Remembered | null {
+  try {
+    const raw = localStorage.getItem(rememberKey(email));
+    if (!raw) return null;
+    const r = JSON.parse(raw) as Partial<Remembered> | null;
+    const ok =
+      !!r &&
+      [r.name, r.useCaseNote, r.subject, r.intro, r.ctaLabel].every((v) => typeof v === 'string') &&
+      AUDIENCE_VALUES.includes(r.audience as string) &&
+      USE_CASE_VALUES.includes(r.useCase as string) &&
+      CTA_VALUES.includes(r.ctaKind as string);
+    return ok ? (r as Remembered) : null;
+  } catch {
+    return null;
+  }
+}
+function writeRemembered(email: string, r: Remembered): void {
+  try {
+    localStorage.setItem(rememberKey(email), JSON.stringify(r));
+  } catch {
+    /* storage full or blocked: remembering is a convenience only */
+  }
+}
+
 const whenSaved = (iso: string): string => new Date(iso).toLocaleString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 
 /** What Microsoft's return from Connect Outlook (?outlook=…) means, in plain words. */
@@ -593,6 +636,14 @@ export function Compose({ email, base, items, setItems, seed, onSeedApplied, onH
   const [recipientFirst, setRecipientFirst] = useState('');
   // Auto-save: restore once (when the signed-in email is known), then save as the draft changes.
   const draftRestored = useRef(false);
+  /** True once the saved draft or the remembered steps have been applied: only then are steps 1 and 2 remembered, so
+   *  the defaults on screen before that can never overwrite what was remembered. */
+  const [rememberReady, setRememberReady] = useState(false);
+  /** Step 3 is saved on Create only when the salesperson changed it in this campaign and their saved profile has
+   *  loaded (see doCreate). The prefill, a copied campaign and the defaults never set detailsEdited. */
+  const profileLoaded = useRef(false);
+  const detailsEdited = useRef(false);
+  const savedWhatsapp = useRef('');
   const [restoredAt, setRestoredAt] = useState<string | null>(null);
   /** The draft as last saved or restored (JSON, without its time): unchanged content is not saved again, so the saved
    *  time stays the time of the last real edit (it drives the 30-day expiry). '' means nothing saved. */
@@ -707,8 +758,10 @@ export function Compose({ email, base, items, setItems, seed, onSeedApplied, onH
     api
       .me()
       .then((m) => {
+        profileLoaded.current = true;
         const s = m.savedSender;
         if (!s) return;
+        savedWhatsapp.current = s.whatsapp;
         setSenderName(s.displayName);
         setSenderTitle(s.jobTitle);
         setSenderPhone(s.phone);
@@ -827,14 +880,28 @@ export function Compose({ email, base, items, setItems, seed, onSeedApplied, onH
   }, [seed]);
 
   // Restore the unsent campaign saved in this browser, once, as soon as we know who is signed in. A campaign being
-  // copied (seed), or offers already in the tray (the Library), win over it.
+  // copied (seed), or offers already in the tray (the Library), win over it. With no draft to restore, steps 1 and 2
+  // start from what this person used last (the audience only when the tray is empty, so it cannot contradict offers
+  // already in it).
   useEffect(() => {
     if (!email || draftRestored.current) return;
     draftRestored.current = true;
-    if (seed || items.length > 0) return;
-    const d = readSavedDraft(email);
+    setRememberReady(true);
+    if (seed) return;
+    const d = items.length > 0 ? null : readSavedDraft(email);
     if (!d) {
       lastSavedBody.current = '';
+      const r = readRemembered(email);
+      if (r) {
+        setName(r.name);
+        if (items.length === 0) setAudience(r.audience === 'salary_sacrifice' && !SALSAC_LIVE ? 'personal' : r.audience);
+        setUseCase(r.useCase);
+        setUseCaseNote(r.useCaseNote);
+        setSubject(r.subject);
+        setIntro(r.intro);
+        setCtaKind(r.ctaKind === 'whatsapp' && !WHATSAPP_LIVE ? 'view_offer' : r.ctaKind);
+        setCtaLabel(r.ctaLabel);
+      }
       return;
     }
     setName(d.name);
@@ -860,11 +927,17 @@ export function Compose({ email, base, items, setItems, seed, onSeedApplied, onH
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [email]);
 
-  // Save as the draft changes (half a second after the last change). An untouched Compose leaves nothing behind.
+  // Remember steps 1 and 2 as they change (see Remembered). A copied campaign's values count as the last used.
+  useEffect(() => {
+    if (!email || !rememberReady) return;
+    writeRemembered(email, { name, audience, useCase, useCaseNote, subject, intro, ctaKind, ctaLabel });
+  }, [email, rememberReady, name, audience, useCase, useCaseNote, subject, intro, ctaKind, ctaLabel]);
+
+  // Save as the draft changes (half a second after the last change). A draft is a campaign with offers in it: without
+  // offers there is nothing to pick up again (the text is remembered anyway), so nothing is kept.
   useEffect(() => {
     if (!email || !draftRestored.current) return;
-    const untouched =
-      items.length === 0 && name === DEFAULT_NAME && audience === 'personal' && useCase === 'renewal' && !useCaseNote && subject === DEFAULT_SUBJECT && !preheader && intro === DEFAULT_INTRO && ctaKind === 'view_offer' && !ctaLabel;
+    const untouched = items.length === 0;
     const body = draftBody({ name, audience, useCase, useCaseNote, subject, preheader, intro, ctaKind, ctaLabel, items });
     const json = untouched ? '' : JSON.stringify(body);
     if (json === lastSavedBody.current) {
@@ -937,14 +1010,29 @@ export function Compose({ email, base, items, setItems, seed, onSeedApplied, onH
   /** Is a secondary contact method usable yet — its underlying sender field filled? (Email always is.) */
   const secondaryReady = (m: ContactMethod): boolean =>
     m === 'email' ? true : m === 'call' ? !!senderPhone.trim() : m === 'whatsapp' ? WHATSAPP_LIVE && !!senderWhatsapp.trim() : !!senderBooking.trim();
-  const toggleSecondary = (m: ContactMethod) => setSecondary((cur) => (cur.includes(m) ? cur.filter((x) => x !== m) : [...cur, m]));
+  const toggleSecondary = (m: ContactMethod) => {
+    detailsEdited.current = true;
+    setSecondary((cur) => (cur.includes(m) ? cur.filter((x) => x !== m) : [...cur, m]));
+  };
+
+  /** Step 3 as it is saved. While WhatsApp is not live its field is disabled and a copied campaign carries no number,
+   *  so the saved number is sent back unchanged rather than erased. */
+  const senderToSave = () => ({
+    displayName: senderName || email,
+    jobTitle: senderTitle,
+    phone: senderPhone,
+    whatsapp: WHATSAPP_LIVE ? senderWhatsapp : savedWhatsapp.current,
+    bookingUrl: senderBooking,
+    secondaryContacts: secondary,
+  });
 
   async function saveDetails() {
     setSavingDetails(true);
     setDetailsError('');
     setDetailsSaved(false);
     try {
-      await api.saveSender({ displayName: senderName || email, jobTitle: senderTitle, phone: senderPhone, whatsapp: senderWhatsapp, bookingUrl: senderBooking, secondaryContacts: secondary });
+      await api.saveSender(senderToSave());
+      detailsEdited.current = false;
       setDetailsSaved(true);
       setTimeout(() => setDetailsSaved(false), 2500);
     } catch (e) {
@@ -1156,22 +1244,17 @@ export function Compose({ email, base, items, setItems, seed, onSeedApplied, onH
   }
 
   /**
-   * Start a new campaign (Matt, 30 Sept 2026): clear the offers, the message and the customer, back to the defaults.
-   * Your own details and the Outlook connection stay. Asks first only when there is work that was never sent.
+   * Start a new campaign (Matt, 30 Sept 2026): clear the offers and the customer. Steps 1 to 3 stay as last used (Matt,
+   * 7 Oct 2026: the campaign name, audience, use case, subject, message, offer button and your details), all still
+   * editable; salary sacrifice, while parked, goes back to personal. The Outlook connection stays. Asks first only when
+   * there is work that was never sent.
    */
   function startNew() {
     const unsent = items.length > 0 && !sentAt;
-    if (unsent && !window.confirm('Start a new campaign? This clears the offers and your message. Nothing has been sent.')) return;
-    setName(DEFAULT_NAME);
-    setAudience('personal');
-    setUseCase('renewal');
-    setUseCaseNote('');
-    setSubject(DEFAULT_SUBJECT);
+    if (unsent && !window.confirm('Start a new campaign? This clears the offers and the customer’s name; your message and details stay. Nothing has been sent.')) return;
+    if (audience === 'salary_sacrifice' && !SALSAC_LIVE) setAudience('personal');
     setPreheader('');
-    setIntro(DEFAULT_INTRO);
     setRecipientFirst('');
-    setCtaKind('view_offer');
-    setCtaLabel('');
     setUrl('');
     setAddError('');
     setWarnings([]);
@@ -1201,6 +1284,16 @@ export function Compose({ email, base, items, setItems, seed, onSeedApplied, onH
     setCreateError('');
     try {
       const res = await api.create(draft);
+      // Step 3 is remembered too (Matt, 7 Oct 2026): details the salesperson changed here become their saved profile,
+      // so the next campaign starts with them. Only their own edits, and only once the profile has loaded: a copied
+      // campaign's older details or the defaults left by a failed load never overwrite it. Quietly: a failure here never
+      // blocks the campaign (it is tried again at the next Create, and "Save my details" remains).
+      if (profileLoaded.current && detailsEdited.current) {
+        detailsEdited.current = false;
+        void api.saveSender(senderToSave()).catch(() => {
+          detailsEdited.current = true;
+        });
+      }
       createdFrom.current = JSON.stringify(draft);
       setChangedAfterCreate(false);
       setCreated(res); // res.html stays absolute — Copy-for-Outlook needs it that way
@@ -1304,7 +1397,7 @@ export function Compose({ email, base, items, setItems, seed, onSeedApplied, onH
       {/* ---- details ---- */}
       <section className="panel">
         <Step n={1} />
-        {restoredAt && <p className="dl-small app__muted">Picked up where you left off (saved {whenSaved(restoredAt)}). “+ New campaign” at the top clears it.</p>}
+        {restoredAt && <p className="dl-small app__muted">Picked up where you left off (saved {whenSaved(restoredAt)}). “+ New campaign” at the top clears the offers.</p>}
         <Field label="Campaign name" help="Your own label, to find it again on the Campaigns tab. The customer never sees it.">{(id) => <Input id={id} value={name} onChange={(e) => setName(e.target.value)} />}</Field>
         <Field label="Audience type" help="Sets the compliance wording, terms and disclaimer for the whole campaign.">{(id) => (
           <Select id={id} value={audience} onChange={(e) => changeAudience(e.target.value as Audience)}>
@@ -1348,13 +1441,13 @@ export function Compose({ email, base, items, setItems, seed, onSeedApplied, onH
         <Field label="Button label" help="Optional — rename the button. Up to 30 characters, so it fits.">{(id) => <Input id={id} value={ctaLabel} onChange={(e) => setCtaLabel(e.target.value)} placeholder={ctaDefaultLabel(ctaKind)} maxLength={30} />}</Field>
 
         <Step n={3} />
-        <Field label="Name">{(id) => <Input id={id} value={senderName} onChange={(e) => setSenderName(e.target.value)} />}</Field>
-        <Field label="Job title">{(id) => <Input id={id} value={senderTitle} onChange={(e) => setSenderTitle(e.target.value)} />}</Field>
-        <Field label="Direct phone" help="Enables the Call CTA.">{(id) => <Input id={id} value={senderPhone} onChange={(e) => setSenderPhone(e.target.value)} />}</Field>
+        <Field label="Name">{(id) => <Input id={id} value={senderName} onChange={(e) => { detailsEdited.current = true; setSenderName(e.target.value); }} />}</Field>
+        <Field label="Job title">{(id) => <Input id={id} value={senderTitle} onChange={(e) => { detailsEdited.current = true; setSenderTitle(e.target.value); }} />}</Field>
+        <Field label="Direct phone" help="Enables the Call CTA.">{(id) => <Input id={id} value={senderPhone} onChange={(e) => { detailsEdited.current = true; setSenderPhone(e.target.value); }} />}</Field>
         <div className={WHATSAPP_LIVE ? undefined : 'soon'}>
-          <Field label={`WhatsApp number${WHATSAPP_LIVE ? '' : ' (coming soon)'}`} help={WHATSAPP_LIVE ? 'E.164 with country code, e.g. +447700900123. Enables the WhatsApp CTA.' : 'WhatsApp contact is on the way. You will be able to add your number here and offer a WhatsApp button.'}>{(id) => <Input id={id} value={senderWhatsapp} onChange={(e) => setSenderWhatsapp(e.target.value)} placeholder="+44…" disabled={!WHATSAPP_LIVE} />}</Field>
+          <Field label={`WhatsApp number${WHATSAPP_LIVE ? '' : ' (coming soon)'}`} help={WHATSAPP_LIVE ? 'E.164 with country code, e.g. +447700900123. Enables the WhatsApp CTA.' : 'WhatsApp contact is on the way. You will be able to add your number here and offer a WhatsApp button.'}>{(id) => <Input id={id} value={senderWhatsapp} onChange={(e) => { detailsEdited.current = true; setSenderWhatsapp(e.target.value); }} placeholder="+44…" disabled={!WHATSAPP_LIVE} />}</Field>
         </div>
-        <Field label="Booking link" help="Your Microsoft Bookings page (https). Enables the Book CTA.">{(id) => <Input id={id} value={senderBooking} onChange={(e) => setSenderBooking(e.target.value)} placeholder="https://outlook.office365.com/book/…" />}</Field>
+        <Field label="Booking link" help="Your Microsoft Bookings page (https). Enables the Book CTA.">{(id) => <Input id={id} value={senderBooking} onChange={(e) => { detailsEdited.current = true; setSenderBooking(e.target.value); }} placeholder="https://outlook.office365.com/book/…" />}</Field>
         <Field label="Secondary contact links" help="Optional — extra ways to reach you, shown as a row under your signature. This is separate from the green offer button.">{() => (
           <div className="secondary">
             {SECONDARY_OPTIONS.map((o) => {
@@ -1370,7 +1463,7 @@ export function Compose({ email, base, items, setItems, seed, onSeedApplied, onH
         )}</Field>
         <div className="dl-field portrait__side">
           <Button variant="outline" size="sm" onClick={saveDetails} disabled={savingDetails}>{savingDetails ? 'Saving…' : detailsSaved ? 'Saved ✓' : 'Save my details'}</Button>
-          <span className="dl-small app__muted">Saves your name and contact details for next time — edit them anytime. (Your photo saves when you upload it.)</span>
+          <span className="dl-small app__muted">Saves your name and contact details for next time; creating a campaign saves them too. Edit them anytime. (Your photo saves when you upload it.)</span>
           {detailsError && <span className="dl-small brochure__err">{detailsError}</span>}
         </div>
         <SenderPhoto base={base} onChange={onHeadshotChange} />
