@@ -48,8 +48,11 @@ export const table = (attrs: string, style: string, rows: string): string =>
  * height, not 0: Word (Outlook classic) drew a font-size:0 line as a grey sliver and shrank the cell to it (unspam.email
  * renders of 6 Oct 2026, scripts/diag-outlook.ts).
  */
-export const spacer = (h: number): string =>
-  table('width="100%"', '', `<tr><td height="${h}" style="height:${h}px; font-size:${h}px; line-height:${h}px; ${LH};">&nbsp;</td></tr>`);
+export const spacer = (h: number): string => table('width="100%"', '', `<tr>${spacerCell(h)}</tr>`);
+
+/** The spacer's cell alone, for a row of a table that is already open (the row card's empty small-print row). */
+export const spacerCell = (h: number): string =>
+  `<td height="${h}" style="height:${h}px; font-size:${h}px; line-height:${h}px; ${LH};">&nbsp;</td>`;
 
 /** Outlook conditional comment. */
 export const mso = (html: string): string => `<!--[if mso]>${html}<![endif]-->`;

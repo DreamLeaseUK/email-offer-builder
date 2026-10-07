@@ -375,9 +375,13 @@ were deleted on 22 Sept; the schema still accepts the names so a stored campaign
 when the markup changes in a way Emma should re-approve; templates pin the version they were approved against
 (campaigns pin `compliance.approvedWordingVersion`).
 
-Two data-side display rules live in the viewmodel (not markup, so the reference is untouched): **PCH
-(personal) cards always show the standard £299.99 processing fee** even when the site returned none (BCH/salsac
-unchanged — first stage); and **every card in a multi-offer campaign shows the same, even number of stat
+Data-side display rules live in the viewmodel (not markup, so the reference is untouched). **No card carries a
+processing-fee line** (Matt, 7 Oct 2026, for every contract type; from 16 Sept to 7 Oct PCH cards showed a forced
+"Processing fee £299.99 inc VAT"): the fee belongs to the compliance wording Emma approves; her personal block of 29 Sept says
+"A processing fee may apply and, where applicable, will be detailed in your quotation" (her business and salary
+sacrifice blocks were not re-read for this change). The offer still records
+`pricing.processingFee`. With no validity date either (since 0.6.2), a card without a brochure has no small print,
+and its paragraph is left out (deviation g). **Every card in a multi-offer campaign shows the same, even number of stat
 tiles** (the common count across the offers, floored to even) so the cards read as a matched set — a single
 hero keeps its natural count. A third (21 Sept): when the attached brochure is the manufacturer's **European
 edition** (`Brochure.market === 'eu'`), the small print adds "This is the manufacturer's European brochure;
@@ -417,6 +421,10 @@ markup is undecided:
   print under the image, so on a phone, where the columns wrap, the legal line came between the picture and the
   car's name (Matt's screenshots, 22 Sept). Hero: the same heading row above the full-width image, carrying the
   card's rounded top corners; the image is square below it (Matt: "it should match").
+- **No empty small print (7 Oct 2026, deviation g).** Without the fee line, a card without a brochure has no small
+  print. Its paragraph is left out (Word draws an empty paragraph as a blank line), and the stacked card's small-print
+  row becomes a 16px spacer cell (`spacerCell`, `html.ts`), keeping the card's bottom padding. `diff-reference`
+  compares cards with a brochure, so its count is unchanged.
 - (Earlier, 14 Sept) up to three pills on the hero where the reference has two; logo 98px wide.
 
 **Matched rows** (`match.ts`, `measure.ts`) and the grid cards were deleted on 22 Sept, once Matt had confirmed the
@@ -620,8 +628,8 @@ subdomain, and a real test send from `main` should come first.
   capture — we don't send). None built.
 - **Equal-height card columns** — built 21 Sept as matched rows (B7), then made moot the same day by the
   one-offer-per-row decision. Button alignment across cards no longer arises. Deleted 22 Sept.
-- **BCH / salary-sacrifice processing fee** — the £299.99 fee is forced on **PCH only** (first stage); decide
-  BCH/salsac handling.
+- ~~**BCH / salary-sacrifice processing fee**~~ — settled 7 Oct 2026: no card shows a processing fee, for any
+  contract type (B7).
 
 **Remaining build-order:** step 8 stubs + `evolution.md` (low value). **Owed by others / parked:** Emma —
 approved compliance wording (then publish a real template to replace the placeholder) + the retention period;

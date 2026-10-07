@@ -387,7 +387,8 @@ function plainText(campaign: Campaign, template: Template, cards: CardVM[], comp
     lines.push(`${c.cta.label}: ${c.cta.href}`);
     if (c.viewHref) lines.push(`View this offer: ${c.viewHref}`);
     if (c.brochure) lines.push(`${c.brochure.label}: ${c.brochure.href}`);
-    lines.push(c.smallPrint, '');
+    if (c.smallPrint) lines.push(c.smallPrint);
+    lines.push('');
   }
   const s = campaign.sender;
   lines.push(s.displayName, ...(s.jobTitle ? [s.jobTitle] : []), ...(s.phone ? [s.phone] : []), s.email);
