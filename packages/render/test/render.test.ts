@@ -223,15 +223,44 @@ describe('render()', () => {
     expect(render(campaign, fixtureTemplate, { publicBaseUrl: BASE, brochures }).html).toContain('BATTERY');
   });
 
-  it('shows the standard £299.99 processing fee on every PCH card, even when the offer carried none', () => {
-    const personal = fixtureCampaign({ offerCount: 1, contractType: 'personal' });
-    delete personal.campaign.offers[0]!.pricing.processingFee; // the site returned no fee for this one
-    expect(render(personal.campaign, fixtureTemplate, { publicBaseUrl: BASE, brochures: personal.brochures }).html).toMatch(/Processing fee £299\.99 inc VAT/);
+  // Matt, 7 Oct 2026: no processing-fee line on the cards. The fee belongs to the compliance wording Emma approves.
+  it('puts no processing fee on any card, whatever the contract type, layout or the fee the offer carries', () => {
+    for (const contractType of ['personal', 'business', 'salary_sacrifice'] as const) {
+      for (const offerCount of [1, 3]) {
+        for (const brochure of ['none', 'pdf'] as const) {
+          const { campaign, brochures } = fixtureCampaign({ offerCount, contractType, brochure });
+          for (const o of campaign.offers) o.pricing.processingFee = 299.99; // the site priced one
+          const out = render(campaign, fixtureTemplate, { publicBaseUrl: BASE, brochures });
+          const label = `${contractType} ${offerCount} ${brochure}`;
+          // the fixture's compliance wording mentions "A processing fee of £299.99…": only the cards are checked
+          for (const doc of [out.html, out.hostedHtml, out.text]) {
+            expect(doc.replace(/A processing fee of £299\.99 inc VAT is payable on all orders\./g, ''), label).not.toMatch(/processing fee|299\.99/i);
+          }
+        }
+      }
+    }
+  });
 
-    // BCH keeps whatever its pricing carried (here: none) — the PCH rule does not force it (first stage)
-    const business = fixtureCampaign({ offerCount: 1, contractType: 'business' });
-    delete business.campaign.offers[0]!.pricing.processingFee;
-    expect(render(business.campaign, fixtureTemplate, { publicBaseUrl: BASE, brochures: business.brochures }).html).not.toMatch(/Processing fee/);
+  it('leaves out the small print entirely when a card has nothing to say (no brochure)', () => {
+    for (const offerCount of [1, 3]) {
+      const { campaign, brochures } = fixtureCampaign({ offerCount, brochure: 'none' });
+      const out = render(campaign, fixtureTemplate, { publicBaseUrl: BASE, brochures });
+      // no empty paragraph: Word would draw it as a blank line
+      expect(out.html).not.toMatch(/<p class="lock-body"[^>]*><\/p>/);
+      expect(out.hostedHtml).not.toMatch(/<p class="lock-body"[^>]*><\/p>/);
+      // the plain text has no run of blank lines where the small print was
+      expect(out.text).not.toMatch(/\n\n\n/);
+    }
+    // the stacked card keeps its bottom padding as a spacer cell
+    const { campaign, brochures } = fixtureCampaign({ offerCount: 2, brochure: 'none' });
+    expect(render(campaign, fixtureTemplate, { publicBaseUrl: BASE, brochures }).html).toMatch(/<tr>\n<td height="16"[^>]*>&nbsp;<\/td>\n<\/tr>/);
+  });
+
+  it('keeps the brochure line as the small print when there is a brochure', () => {
+    const { campaign, brochures } = fixtureCampaign({ offerCount: 2, brochure: 'pdf' });
+    const out = render(campaign, fixtureTemplate, { publicBaseUrl: BASE, brochures });
+    expect(out.html).toMatch(/<p class="lock-body"[^>]*>Brochure figures are the manufacturer&#39;s and may differ from this offer\.<\/p>/);
+    expect(out.text).toContain("Brochure figures are the manufacturer's and may differ from this offer.");
   });
 
   it('locks the compliance block and footer lines into every variant', () => {
