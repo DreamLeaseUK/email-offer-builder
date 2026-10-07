@@ -1,8 +1,8 @@
 # Pickup prompt — DreamLease Offer Mailer
 
 Paste everything below the line into a new Claude Code session opened in `C:\Users\MatthewWilson\email-offer-builder`.
-**Updated 7 October 2026 (session 11). Production is v0.7.3; 0.7.4 (no processing-fee line on the offer cards) is
-merged and waits only on Matt's deploy. Phase 1 (send from the salesperson's own mailbox) is live. No other work is
+**Updated 7 October 2026 (session 11). Production is v0.7.3; 0.7.4–0.7.6 (no processing fee anywhere in the tool;
+Compose steps 1–3 start from what was used last) are merged and wait only on Matt's deploy. Phase 1 (send from the salesperson's own mailbox) is live. No other work is
 in flight.** This prompt supersedes all earlier
 ones.
 
@@ -111,10 +111,10 @@ ranked in §4; do not start any of them without his go.
 
 | Item | State |
 |---|---|
-| Git | `main` at `55498e3` (PR #22, 0.7.4) [verified 7 Oct]; untracked scratch files `body.txt`, `m.txt`, `u.txt`, `u2.txt` in the repo root: saved web responses from the 5 Oct check of `mailer.` (the old Mautic's "does not support PHP 8.4" page and an access form), not project files; ask Matt before deleting them [verified 6 Oct]. This hand-over is on branch `docs/session-11-handover`: check `gh pr list` for whether it merged. |
-| Tests | `pnpm test` **321 pass** (schema 23, render 41, adapters 122, api 135) [verified 7 Oct]; `pnpm typecheck` clean; `diff-reference` **172** (more is a regression). Run `diff-reference` from **Git Bash**: under PowerShell its `diff` is missing and it falsely reports "all sections match" [verified 6 Oct]. |
-| Production | **v0.7.3**. `/health` on workers.dev and on offers.dreamlease.co.uk: 0.7.3, db ok, images true, firecrawl true. marketingtools.dreamelectric.uk redirects to the Access sign-in [verified 6 Oct]. **0.7.4 is merged but was not deployed when this was written:** check `/health`; if it still says 0.7.3, Matt deploys first (§4). |
-| Releases since 29 Sept | 0.6.2 and 0.7.0 (Phase 1) on 30 Sept. On 6 Oct: 0.7.1 (special offers), the Outlook classic fixes and salary sacrifice parked (no bump), 0.7.2 (customer address), 0.7.3 (unknown addresses to the website, robots.txt). On 7 Oct: 0.7.4 (no processing-fee line on the cards, PR #22; Emma's personal block already says "A processing fee may apply and, where applicable, will be detailed in your quotation"). Each was merged on "ship it"; all but 0.7.4 deployed by Matt [verified 7 Oct: git log; 0.7.3 on /health]. |
+| Git | `main` at `802d7f4` (PR #24, 0.7.6) [verified 7 Oct]; untracked scratch files `body.txt`, `m.txt`, `u.txt`, `u2.txt` in the repo root: saved web responses from the 5 Oct check of `mailer.` (the old Mautic's "does not support PHP 8.4" page and an access form), not project files; ask Matt before deleting them [verified 6 Oct]. This hand-over is on branch `docs/session-11-handover`: check `gh pr list` for whether it merged. |
+| Tests | `pnpm test` **320 pass** (schema 23, render 40, adapters 122, api 135) [verified 7 Oct]; `pnpm typecheck` clean; `diff-reference` **172** (more is a regression). Run `diff-reference` from **Git Bash**: under PowerShell its `diff` is missing and it falsely reports "all sections match" [verified 6 Oct]. |
+| Production | **v0.7.3**. `/health` on workers.dev and on offers.dreamlease.co.uk: 0.7.3, db ok, images true, firecrawl true. marketingtools.dreamelectric.uk redirects to the Access sign-in [verified 6 Oct]. **0.7.4–0.7.6 are merged but were not deployed when this was written:** check `/health`; if it does not say 0.7.6, Matt deploys first (§4). |
+| Releases since 29 Sept | 0.6.2 and 0.7.0 (Phase 1) on 30 Sept. On 6 Oct: 0.7.1 (special offers), the Outlook classic fixes and salary sacrifice parked (no bump), 0.7.2 (customer address), 0.7.3 (unknown addresses to the website, robots.txt). On 7 Oct: 0.7.4 (no processing-fee line on the cards, PR #22), 0.7.5 (no processing fee anywhere in the tool, PR #23), 0.7.6 (Compose steps 1–3 start from what was used last, PR #24). Each was merged on "ship it"; all but 0.7.4–0.7.6 deployed by Matt [verified 7 Oct: git log; 0.7.3 on /health]. |
 | Sign-in | Access app `marketingtools`, shared **Staff** policy (dreamlease.co.uk and salsac.co.uk), Entra as the identity provider. `ACCESS_AUD` is set: `/api` on a customer host answers 401 [verified 6 Oct]. |
 | Send (Phase 1) | Vars `MAIL_TENANT_ID`, `MAIL_CLIENT_ID`, `MAIL_REDIRECT_URI` are in `wrangler.jsonc` [verified 6 Oct]. Secrets `MAIL_CLIENT_SECRET` (expires 30 Sept 2027) and `MAIL_TOKEN_KEY` were set by Matt [asserted]. Real sends exist, e.g. BYD Seal 6 + Alfa Romeo Junior, 30 Sept, `sentVia: m365` [verified 6 Oct via `/api/campaigns`]. Only dreamlease.co.uk addresses may send (`config/mail.json`). |
 | Compliance wording | Emma's "Approved Wording - 29/09/2026", version 4, `markupVersion` 2, approved by `emma@dreamlease.co.uk` on 29 Sept 12:42 UTC; blocks for personal, business and salary sacrifice [verified 6 Oct via `/api/templates`]. `MARKUP_VERSION` is 2 [verified 6 Oct]. |
@@ -130,7 +130,7 @@ ranked in §4; do not start any of them without his go.
 | Part | Source of truth | Code | Constraint | Now |
 |---|---|---|---|---|
 | Offer price | dreamlease.co.uk's `GET /api/carresults/GetOfferDropdownsForCar` | `packages/adapters/src/url/` (`parse-page.ts`, `pricing.ts`, `url-source.ts`, `build-offer.ts`) | A special offer is priced only when the page's `offer-id` is sent as `offerId`. Every offer is stamped `source.pricingVersion`; an older version is re-looked-up (cache, restored draft, Send). The lookup warns when the price ≠ the page's schema.org `lowPrice`. | `PRICING_VERSION` 2. A live sweep of 10 specials matched to the penny on 6 Oct. |
-| Email markup | `design/dreamlease-offer-mailer-v5.html` | `packages/render` (`cards.ts`, `render.ts`, `html.ts`, `links.ts`) | `render()` is the only HTML producer. Deviations a–g are recorded in the `cards.ts` header. No processing-fee line on the cards (since 0.7.4). `diff-reference` = 172. A visible change bumps `MARKUP_VERSION`, and then Emma must re-approve. | `MARKUP_VERSION` 2. Outlook 2016/2019, Gmail, Apple Mail, iPhone and Outlook.com render correctly (unspam.email, 6 Oct). Dark Outlook.com/365/Mac is dark but readable (accept). |
+| Email markup | `design/dreamlease-offer-mailer-v5.html` | `packages/render` (`cards.ts`, `render.ts`, `html.ts`, `links.ts`) | `render()` is the only HTML producer. Deviations a–g are recorded in the `cards.ts` header. No processing fee anywhere in the tool (0.7.4, 0.7.5). `diff-reference` = 172. A visible change bumps `MARKUP_VERSION`, and then Emma must re-approve. | `MARKUP_VERSION` 2. Outlook 2016/2019, Gmail, Apple Mail, iPhone and Outlook.com render correctly (unspam.email, 6 Oct). Dark Outlook.com/365/Mac is dark but readable (accept). |
 | Compliance | Emma's published template | `apps/api/src/templates.ts`, `config/compliance.json` | Only a compliance approver writes or publishes. The placeholder never sends. | Version 4, approved 29 Sept. Its salary sacrifice block still says "the date shown on each offer". |
 | Send | Salesperson's own Microsoft 365 mailbox | `packages/adapters/src/m365/`, `apps/api/src/mail.ts`, `send.ts`, `presend.ts`, `mail-crypto.ts` | Rule 4: the signed-in creator only, after the checks, one customer, once. The address is never stored. | Live since 0.7.0. Copy for Outlook is the backup, behind the same checks. |
 | Audiences | — | `apps/web/src/Compose.tsx` | `SALSAC_LIVE = false`, `WHATSAPP_LIVE = false`. | PCH and BCH only. Salary sacrifice and WhatsApp show "coming soon". |
@@ -140,7 +140,11 @@ ranked in §4; do not start any of them without his go.
 
 ## 4. Open items, ranked (start none without Matt's go)
 
-0. **Deploy 0.7.4** (Matt, if `/health` still says 0.7.3), then confirm `/health` answers 0.7.4.
+**Before the list:**
+- **Deploy 0.7.6** (Matt, if `/health` does not say 0.7.6), then confirm `/health` answers 0.7.6.
+- **Emma removes the processing-fee sentence from her compliance wording** (Templates → new version → edit →
+   publish; her personal block says "A processing fee may apply…"; check her business and salary sacrifice blocks
+   too). It is the only fee mention left in an email, and only a compliance approver can change it (rule 3).
 
 1. **DKIM and DMARC for dreamlease.co.uk.**
    - The instructions are the Claude Doc "DreamLease email: DKIM and DMARC setup",
