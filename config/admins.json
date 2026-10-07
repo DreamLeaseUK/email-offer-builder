@@ -1,4 +1,4 @@
 {
-  "_comment": "Master-admin allowlist (stage one). Emails matched case-insensitively; extend at runtime with the ADMIN_EMAILS env var (comma-separated). A master admin can use the template admin and self-approves templates. Everyone else is a salesperson.",
+  "_comment": "Master-admin allowlist (stage one). Emails matched case-insensitively; extend at runtime with the ADMIN_EMAILS env var (comma-separated). A master admin gets the admin-only actions (library promote, suppression removal) and can read templates, but not change or approve them: only compliance approvers can (compliance.json, since 28 Sept 2026). Everyone else is a salesperson.",
   "admins": ["matt.wilson@dreamlease.co.uk"]
 }

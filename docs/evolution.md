@@ -1,6 +1,6 @@
 # DreamLease Offer Mailer — evolution plan (multi-year)
 
-**Status: decided by Matt on 29 September 2026, after the demo. Phase 1 is built on branch `feat/phase1-send-m365` (session 10, 29 Sept; not yet deployed): §6 records it as built.**
+**Status: decided by Matt on 29 September 2026, after the demo. Phase 1 is LIVE since 0.7.0 (30 Sept 2026); §6 records it as built and what happened after (production v0.7.3, 6 Oct). Phase 2 starts only when Matt says.**
 Requirements come from Matt's interview the same afternoon. This document is the plan; `docs/architecture.md` stays
 the description of what exists, and is updated as each phase ships.
 
@@ -31,7 +31,7 @@ change, not the markup.
 ## 3. Decisions (Matt, 29 Sept: "all as recommended")
 
 1. **Rule 4 changes** from "drafts only, the Worker never sends" to: *the salesperson presses Send in the tool; the
-   email is sent from their own mailbox via Microsoft 365; never automatically.* Until Phase 1 ships, delivery stays
+   email is sent from their own mailbox via Microsoft 365; never automatically.* Until Phase 1 shipped (0.7.0, 30 Sept), delivery stayed
    Copy for Outlook.
 2. **Microsoft permission: "Connect Outlook" once per salesperson** (delegated `Mail.Send`), through a **second Entra
    app**, "DreamLease Offer Mailer - Send", separate from the sign-in app. IT grants admin consent once; each
@@ -121,14 +121,14 @@ dependency on them, slotted in whenever they can do it.
 5. Security: the full checks run, and the part-time developer gets a short review pack before the deploy.
 6. A 12-month client secret, not a certificate (as for the sign-in app); if IT's policy blocks secrets, switch.
 
-**Dependencies found in the hand-over check (29 Sept).** (a) **Emma publishes the approved wording** for all three
-contract types: the Send check refuses the placeholder, so no real send, not even the local proof or the
-certification morning, can pass before that. **Deploy only after she has**: Copy for Outlook now runs the same checks,
-so on the placeholder it stops too (found by the code review, 29 Sept). (b) **Matt applies the new table to production** (`pnpm db:migrate`)
+**Dependencies found in the hand-over check (29 Sept), all met.** (a) **Emma publishes the approved wording** for
+all three contract types: the Send check refuses the placeholder, so no real send can pass before that. **Done 29 Sept:**
+"Approved Wording - 29/09/2026", version 4. Copy for Outlook runs the same checks, so on the placeholder it stops too
+(found by the code review, 29 Sept). (b) **Matt applies the new table to production** (`pnpm db:migrate`)
 before the first local test send (`dev:live` uses production D1) and before the deploy; the deploy does not migrate.
 **Done 29 Sept.**
 (c) IT's CNAME for offers.dreamlease.co.uk should exist before the first real customer email (links to workers.dev
-may be caught by spam filters).
+may be caught by spam filters). **Done 6 Oct:** customer links are on `offers.dreamlease.co.uk` since 0.7.2.
 
 **What changed in the code** (as built, one PR, contract-tested):
 
@@ -184,8 +184,28 @@ Word does not understand calc(). The certification exists to catch this; fixes g
 
 **Cost.** Microsoft 365 sending is included in the licences; no new subscriptions in Phase 1.
 
+**As it went (30 Sept – 6 Oct 2026; `status-2026-10-06.md`).**
+- **Go-live.** IT's Send app was done by Emma on 30 Sept, and Matt set the secrets. 0.7.0 was deployed on 30 Sept,
+  and real sends went out from salespeople's mailboxes the same day.
+- **Not done.** The part-time developer's review (decision 5) was not done before the deploy; it is optional now.
+- **Certification** was done on unspam.email (free) with Matt's real campaign and Emma's live template, in place of
+  test mailboxes.
+- **The main risk came true in part.** Outlook 2016/2019 drew the button as a green strip, ignored the table margins,
+  showed grey notches and stacked the badges. It was fixed on 6 Oct as deviation f (`cards.ts` header;
+  `architecture.md` B7). The stacked card's calc() image column rendered correctly there, held by its `[if mso]` ghost table. `MARKUP_VERSION` stays
+  2, because the preview and the other clients are unchanged.
+- **Special offers.** The website's pricing changed (special offers need their `offerId`), and 0.7.1 follows it.
+  `PRICING_VERSION` makes every old-way offer re-price, at Send too.
+- **Still to do for Phase 1:**
+  - one real send from the live tool to unspam.email's test address;
+  - wipe the test campaigns from the register before the first real customer email;
+  - DKIM and DMARC for dreamlease.co.uk (not set up yet), so the emails authenticate fully.
+
 ## 7. Open questions for later phases
 
 - Phase 2: the monday.com board(s), column names and the consent field; who creates the API token.
 - Phase 2: whether MotorComplete can carry a reference through the website's enquiry form.
-- Phase 4: Mautic — existing or new, hosted where, which sending service, and the DNS records it needs.
+- Phase 4: Mautic — existing or new, hosted where, which sending service, and the DNS records it needs. Found 5 Oct:
+  an old Mautic already runs on `mailer.dreamlease.co.uk` (20i hosting, sending through SendGrid). Its web side
+  answers HTTP 500 and it is out of security support. There is also a Mailjet DKIM key on dreamlease.co.uk. Find both
+  owners first (`status-2026-10-06.md` §6).
