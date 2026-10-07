@@ -145,7 +145,6 @@ export function buildOffer(i: BuildOfferInput): OfferT {
   if (i.page.bodyStyle) offer.vehicle.bodyStyle = i.page.bodyStyle;
   if (i.page.fuelType) offer.vehicle.fuelType = i.page.fuelType;
   if (i.page.transmission) offer.vehicle.transmission = i.page.transmission;
-  if (priced.processingFee > 0) offer.pricing.processingFee = priced.processingFee;
   if (hot) offer.hotBadge = hot;
   if (stock) offer.stock = stock;
   if (i.image) offer.image = i.image;

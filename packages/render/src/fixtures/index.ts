@@ -67,7 +67,6 @@ export function fixtureOffer(seed: Seed, contractType: ContractType): Offer {
       initialMonths: 9,
       termMonths: 36,
       annualMileage: 8000,
-      processingFee: 299.99,
       maintenance: salsac,
     },
     badges: seed.badges,
@@ -124,7 +123,7 @@ export const fixtureTemplate: Template = {
       title: 'Personal contract hire',
       paragraphs: [
         'Prices shown include VAT and are based on the term, annual mileage and initial payment stated on each offer. Excess mileage charges and a fair wear and tear standard apply at the end of the agreement.',
-        'A processing fee of £299.99 inc VAT is payable on all orders. At the end of the lease the vehicle must be returned in its original condition. You will not own the vehicle.',
+        'At the end of the lease the vehicle must be returned in its original condition. You will not own the vehicle.',
         'Offers are subject to status and availability, and are for UK residents aged 18 or over. Guarantees may be required.',
         'DreamLease Ltd is a credit broker, not a lender, and is authorised and regulated by the Financial Conduct Authority, firm reference number [000000]. We may receive commission from the funder for introducing your business.',
       ],
@@ -133,7 +132,7 @@ export const fixtureTemplate: Template = {
       title: 'Business contract hire',
       paragraphs: [
         'Prices shown exclude VAT and are based on the term, annual mileage and initial payment stated on each offer. Business contract hire is available to limited companies, partnerships and sole traders. Excess mileage charges and a fair wear and tear standard apply.',
-        'A processing fee of £299.99 inc VAT is payable on all orders. At the end of the lease the vehicle must be returned in its original condition. Your business will not own the vehicle.',
+        'At the end of the lease the vehicle must be returned in its original condition. Your business will not own the vehicle.',
         "Offers are subject to status and availability. Directors' guarantees may be required.",
         'DreamLease Ltd is a credit broker, not a lender, and is authorised and regulated by the Financial Conduct Authority, firm reference number [000000]. We may receive commission from the funder for introducing your business.',
       ],

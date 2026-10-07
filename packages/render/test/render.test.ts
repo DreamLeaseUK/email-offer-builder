@@ -223,24 +223,6 @@ describe('render()', () => {
     expect(render(campaign, fixtureTemplate, { publicBaseUrl: BASE, brochures }).html).toContain('BATTERY');
   });
 
-  // Matt, 7 Oct 2026: no processing-fee line on the cards. The fee belongs to the compliance wording Emma approves.
-  it('puts no processing fee on any card, whatever the contract type, layout or the fee the offer carries', () => {
-    for (const contractType of ['personal', 'business', 'salary_sacrifice'] as const) {
-      for (const offerCount of [1, 3]) {
-        for (const brochure of ['none', 'pdf'] as const) {
-          const { campaign, brochures } = fixtureCampaign({ offerCount, contractType, brochure });
-          for (const o of campaign.offers) o.pricing.processingFee = 299.99; // the site priced one
-          const out = render(campaign, fixtureTemplate, { publicBaseUrl: BASE, brochures });
-          const label = `${contractType} ${offerCount} ${brochure}`;
-          // the fixture's compliance wording mentions "A processing fee of £299.99…": only the cards are checked
-          for (const doc of [out.html, out.hostedHtml, out.text]) {
-            expect(doc.replace(/A processing fee of £299\.99 inc VAT is payable on all orders\./g, ''), label).not.toMatch(/processing fee|299\.99/i);
-          }
-        }
-      }
-    }
-  });
-
   it('leaves out the small print entirely when a card has nothing to say (no brochure)', () => {
     for (const offerCount of [1, 3]) {
       const { campaign, brochures } = fixtureCampaign({ offerCount, brochure: 'none' });

@@ -375,13 +375,14 @@ were deleted on 22 Sept; the schema still accepts the names so a stored campaign
 when the markup changes in a way Emma should re-approve; templates pin the version they were approved against
 (campaigns pin `compliance.approvedWordingVersion`).
 
-Data-side display rules live in the viewmodel (not markup, so the reference is untouched). **No card carries a
-processing-fee line** (Matt, 7 Oct 2026, for every contract type; from 16 Sept to 7 Oct PCH cards showed a forced
-"Processing fee £299.99 inc VAT"): the fee belongs to the compliance wording Emma approves; her personal block of 29 Sept says
-"A processing fee may apply and, where applicable, will be detailed in your quotation" (her business and salary
-sacrifice blocks were not re-read for this change). The offer still records
-`pricing.processingFee`. With no validity date either (since 0.6.2), a card without a brochure has no small print,
-and its paragraph is left out (deviation g). **Every card in a multi-offer campaign shows the same, even number of stat
+Data-side display rules live in the viewmodel (not markup, so the reference is untouched). **The tool states no
+processing fee anywhere** (Matt, 7 Oct 2026: "remove all references to any processing fee"). The cards' fee line went
+in 0.7.4; in 0.7.5 the offer model no longer has a `processingFee` field, the page parser and the pricing reader no
+longer read the site's fees, and the fixtures, tests and design reference carry no fee text. Stored offers that still
+hold the old key parse as before (the schema drops unknown keys). The one fee mention left in an email is in Emma's
+approved compliance wording (her personal block of 29 Sept: "A processing fee may apply…"), which only a compliance
+approver can change (rule 3). With no validity date either (since 0.6.2), the small print is the brochure line only,
+so a card without a brochure has no small print and its paragraph is left out (deviation g). **Every card in a multi-offer campaign shows the same, even number of stat
 tiles** (the common count across the offers, floored to even) so the cards read as a matched set — a single
 hero keeps its natural count. A third (21 Sept): when the attached brochure is the manufacturer's **European
 edition** (`Brochure.market === 'eu'`), the small print adds "This is the manufacturer's European brochure;

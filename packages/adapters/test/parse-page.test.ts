@@ -12,7 +12,7 @@ describe('parseOfferPage', () => {
     expect(page.slugs.derivative).toBe('390kw-excellence-awd-83kwh-4dr-auto');
   });
 
-  it('reads identity, slugs, defaults, fees, stats and the image from a personal EV page', async () => {
+  it('reads identity, slugs, defaults, stats and the image from a personal EV page', async () => {
     const page = await parseOfferPage(fixture('offer-page-personal.html'), Rewriter);
     expect(page.make).toBe('BYD');
     expect(page.model).toBe('Seal');
@@ -26,7 +26,6 @@ describe('parseOfferPage', () => {
     expect(page.isVan).toBe(false);
     expect(page.tags).toEqual([]);
     expect(page.defaults).toEqual({ initialRental: 12, contractLength: 48, annualMileage: 6000, includeMaintenance: false, financeType: 'Personal Contract Hire' });
-    expect(page.processingFee).toEqual({ personal: 299.99, business: 249.99 });
     expect(page.stats).toEqual([
       { value: '3.8', unit: 'secs', label: '0 to 62 mph' },
       { value: '530', unit: 'bhp', label: 'Engine power' },

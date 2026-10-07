@@ -146,10 +146,8 @@ export function buildCards(campaign: Campaign, opts: VmOptions): CardVM[] {
     }
 
     const smallPrintParts = [];
-    // No "Processing fee £… inc VAT" line on the cards (Matt, 7 Oct 2026), for any contract type. The fee belongs to
-    // the compliance wording Emma approves (her personal block of 29 Sept: "A processing fee may apply and, where
-    // applicable, will be detailed in your quotation"), not to a figure the tool adds. offer.pricing.processingFee is still recorded.
-    // No "Offer valid until …" line (Matt, 30 Sept 2026): validUntil still expires the hosted page and is checked before a
+    // The small print is the brochure line only. No fee (Matt, 7 Oct 2026: the tool states no fee anywhere) and no
+    // "Offer valid until …" line (Matt, 30 Sept 2026): validUntil still expires the hosted page and is checked before a
     // send, but the email and the page no longer state a date. So a card without a brochure has no small print at all.
     if (brochure) smallPrintParts.push(`Brochure figures are the manufacturer's and may differ from this offer.${brochure.european ? ` ${EUROPEAN_BROCHURE_NOTE}` : ''}`);
 

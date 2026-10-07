@@ -525,7 +525,7 @@ class Component extends DCLogic {
         book: 'https://outlook.office.com/book/DreamLease@dreamlease.co.uk/',
         link: 'https://www.dreamlease.co.uk/news/',
       }[cta];
-      const smallPrint = `Processing fee £299.99 inc VAT · Offer valid until ${LONG_VALID[o.valid] || o.valid}`
+      const smallPrint = `Offer valid until ${LONG_VALID[o.valid] || o.valid}`
         + (hasBrochure ? ' · Brochure figures are the manufacturer\'s and may differ from this offer.' : '');
       return {
         id: o.id, make: o.make, model: o.model, derivative: o.derivative, alt: `${o.make} ${o.model}`,
@@ -550,13 +550,13 @@ class Component extends DCLogic {
     const complianceByType = {
       personal: ['Personal contract hire', [
         'Prices shown include VAT and are based on the term, annual mileage and initial payment stated on each offer. Excess mileage charges and a fair wear and tear standard apply at the end of the agreement.',
-        'A processing fee of £299.99 inc VAT is payable on all orders. At the end of the lease the vehicle must be returned in its original condition. You will not own the vehicle.',
+        'At the end of the lease the vehicle must be returned in its original condition. You will not own the vehicle.',
         'Offers are subject to status and availability, are for UK residents aged 18 or over, and are valid until the date shown on each offer. Guarantees may be required.',
         'DreamLease Ltd is a credit broker, not a lender, and is authorised and regulated by the Financial Conduct Authority, firm reference number [000000]. We may receive commission from the funder for introducing your business.',
       ]],
       business: ['Business contract hire', [
         'Prices shown exclude VAT and are based on the term, annual mileage and initial payment stated on each offer. Business contract hire is available to limited companies, partnerships and sole traders. Excess mileage charges and a fair wear and tear standard apply.',
-        'A processing fee of £299.99 inc VAT is payable on all orders. At the end of the lease the vehicle must be returned in its original condition. Your business will not own the vehicle.',
+        'At the end of the lease the vehicle must be returned in its original condition. Your business will not own the vehicle.',
         'Offers are subject to status and availability and are valid until the date shown on each offer. Directors\' guarantees may be required.',
         'DreamLease Ltd is a credit broker, not a lender, and is authorised and regulated by the Financial Conduct Authority, firm reference number [000000]. We may receive commission from the funder for introducing your business.',
       ]],
@@ -581,7 +581,7 @@ class Component extends DCLogic {
       brochureLabel: brochure === 'pdf' ? 'Download brochure (PDF)' : 'Request a brochure',
       brochureIcon: brochure === 'pdf' ? 'assets/icon-doc-2x.png' : 'assets/icon-external-2x.png',
       brochureAlt: brochure === 'pdf' ? 'PDF document' : 'Opens manufacturer site',
-      compactSmallPrint: 'All offers: processing fee £299.99 inc VAT.' + (hasBrochure ? ' Brochure figures are the manufacturer\'s and may differ from this offer.' : ''),
+      compactSmallPrint: (hasBrochure ? 'Brochure figures are the manufacturer\'s and may differ from this offer.' : ''),
       showHeadshot: !shared, sender,
       complianceTitle, complianceLines,
     };
