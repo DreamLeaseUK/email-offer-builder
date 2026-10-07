@@ -41,7 +41,6 @@ export const offer: Offer = {
     initialMonths: 9,
     termMonths: 36,
     annualMileage: 8000,
-    processingFee: 299.99,
     maintenance: false,
   },
   badges: ['Factory order'],

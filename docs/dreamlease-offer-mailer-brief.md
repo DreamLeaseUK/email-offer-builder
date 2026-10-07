@@ -510,9 +510,9 @@ monday.com's email tool is superseded.
 ### As built — 7 October 2026
 
 - **§5.5 "Every email shows … processing fee, … offer validity date":** neither is on the offer cards any more (Matt:
-  the validity date went on 30 Sept, the processing-fee line on 7 Oct). The fee belongs to the compliance wording
-  Emma approves (her personal block, 29 Sept: "A processing fee may apply and, where applicable, will be detailed in
-  your quotation"); `pricing.processingFee` (§5.1) is still recorded but no longer shown;
+  the validity date went on 30 Sept, the processing-fee line on 7 Oct). Matt, 7 Oct: the tool states no processing
+  fee anywhere, so `pricing.processingFee` (§5.1) and the parsing of the site's fees (§5.3) are gone too (0.7.5). Any
+  fee wording is Emma's, in the compliance block;
   `validUntil` still expires the hosted page and is checked before a send.
 
 ## 9. Assumptions and open items

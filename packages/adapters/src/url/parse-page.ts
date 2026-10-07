@@ -2,8 +2,8 @@
  * Offer page parser — brief §5.3 step 3, with HTMLRewriter (streaming, cheap on Worker CPU).
  *
  * What the page actually carries (checked against the live site on 14 Sept 2026): the vehicle
- * identity, the four slugs the pricing API needs, the headline stats, the quick-spec line, the
- * processing fees and the default lease configuration are server-rendered. Prices, initial payment
+ * identity, the four slugs the pricing API needs, the headline stats, the quick-spec line and the
+ * default lease configuration are server-rendered. Prices, initial payment
  * and the badge flags are NOT in the HTML; the page's Vue component loads them from
  * /api/carresults/GetOfferDropdownsForCar (see pricing.ts). The parser therefore returns identity
  * and configuration, plus the site's image URL for the image pipeline to consume.
@@ -43,7 +43,6 @@ export interface PageData {
    * request only; never stored. A page that is not a special offer has none.
    */
   offerId?: string;
-  processingFee: { personal?: number; business?: number };
   stats: PageStat[];
   /** Site image URL for viewPoint 1. Fetch it, transform it, forget it. */
   imageSourceUrl?: string;
@@ -105,8 +104,6 @@ export async function parseOfferPage(html: string, HTMLRewriter: HtmlRewriterCto
   let stat: PageStat | null = null;
   const quickSpec: string[] = [];
   let quickItem = '';
-  let personalFee: number | undefined;
-  let businessFee: number | undefined;
   let formOfferId: string | undefined;
   let imageSourceUrl: string | undefined;
 
@@ -123,10 +120,6 @@ export async function parseOfferPage(html: string, HTMLRewriter: HtmlRewriterCto
     })
     .on('lease-term-config-form', {
       element(el) {
-        const p = Number(el.getAttribute('personal-processing-fee'));
-        const b = Number(el.getAttribute('business-processing-fee'));
-        if (Number.isFinite(p) && p > 0) personalFee = p;
-        if (Number.isFinite(b) && b > 0) businessFee = b;
         const id = el.getAttribute('offer-id')?.trim();
         if (id && /^\d+$/.test(id)) formOfferId = id;
       },
@@ -233,7 +226,6 @@ export async function parseOfferPage(html: string, HTMLRewriter: HtmlRewriterCto
     isVan: init['isVan'] === true,
     tags,
     defaults,
-    processingFee: {},
     stats: cleanStats,
   };
   const transmission = str('transmission');
@@ -243,8 +235,6 @@ export async function parseOfferPage(html: string, HTMLRewriter: HtmlRewriterCto
   if (bodyStyle) page.bodyStyle = bodyStyle;
   if (doors !== undefined) page.doors = doors;
   if (fuelType) page.fuelType = fuelType;
-  if (personalFee !== undefined) page.processingFee.personal = personalFee;
-  if (businessFee !== undefined) page.processingFee.business = businessFee;
   if (imageSourceUrl) page.imageSourceUrl = imageSourceUrl;
   if (ldPrice !== undefined) page.ldPrice = ldPrice;
   // the component's own attribute first (it is exactly what the page sends), the init block's hotOfferId otherwise

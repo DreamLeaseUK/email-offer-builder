@@ -41,7 +41,6 @@ export interface PricedOffer {
   specialOffer: boolean;
   isInStock: boolean;
   preRegistered: boolean;
-  processingFee: number;
   /** "p-12-48-6000-n": the site's code for this configuration; goes into the offer link. */
   offerCode: string;
   poa: boolean;
@@ -78,7 +77,6 @@ const RawOffer = z.object({
   preRegistered: z.boolean().default(false),
   includesMaintenance: z.boolean().default(false),
   offerSlug: z.string(),
-  processingFee: z.number().nullable().default(0),
   imageOverrideUrl: z.string().nullable().optional(),
   pricingUnavailable: z.boolean().default(false),
 });
@@ -162,7 +160,6 @@ export function parsePricingResponse(body: unknown): PricingResult {
       specialOffer: o.specialOffer,
       isInStock: o.isInStock,
       preRegistered: o.preRegistered,
-      processingFee: o.processingFee ?? 0,
       offerCode: o.offerSlug,
       poa: o.poa,
       pricingUnavailable: o.pricingUnavailable,
