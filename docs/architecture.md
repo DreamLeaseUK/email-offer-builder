@@ -1,7 +1,7 @@
 # DreamLease Offer Mailer — Solution Design & System Architecture
 
-**Status:** current as of 7 Oct 2026 (session 11). **Production is v0.7.3; 0.7.4–0.7.6 are merged and deploy next**
-(7 Oct: no processing fee anywhere in the tool, B7; Compose steps 1–3 start from what was used last, A3). The tool is live behind Microsoft sign-in at
+**Status:** current as of 7 Oct 2026 (session 11). **Production is v0.7.6** (7 Oct: no processing fee anywhere in the tool, B7; Compose steps 1–3 start from what was used
+last, A3); **0.7.7** (an Install app button and a bold app icon, A3) is the next release. The tool is live behind Microsoft sign-in at
 `marketingtools.dreamelectric.uk`, with customer links on `offers.dreamlease.co.uk`. **Phase 1 of `evolution.md`, the
 send from the salesperson's own mailbox via Microsoft 365, has been live since 0.7.0 (30 Sept, B13).** On 6 Oct:
 special-offer pricing (0.7.1, A2), the Outlook classic fixes (B7, deviation f), salary sacrifice parked in Compose
@@ -121,6 +121,15 @@ Three audiences / lease products, each with its own compliance wording and terms
   details, never the defaults after a failed profile load, and a saved WhatsApp number is kept while WhatsApp is off). "+ New campaign" clears only the offers and the customer's name; every field
   stays editable. The customer's name and email are never kept. A draft (a campaign with offers) still wins on
   reload; a copied campaign sets everything from the copy. Salary sacrifice, while parked, comes back as personal.
+- **Install as an app (7 Oct 2026, Matt):** the tool installs as its own app (the web app manifest, since 0.7.0), so a
+  salesperson can pin it to the Windows taskbar. An **Install app** button sits in the top bar only while the browser
+  offers the install (Chrome and Edge's `beforeinstallprompt`; never in the installed app, never once installed, never
+  in Firefox or Safari) and goes once it is installed (`appinstalled`). The browser cannot pin to the taskbar itself,
+  so after installing the tab says how, and the installed app's first window shows a one-off "Pin to taskbar" tip
+  (`apps/web/src/install.ts`). **The app icon** is the DreamLease pictogram in white on a solid Ignition Red rounded
+  tile (`apps/web/public/app-icon-*.png`, a maskable variant, the favicon and the iOS icon), so it is as bold as the
+  other taskbar icons; the earlier icon was the thin red outline on white. An app installed before 0.7.7 picks up
+  the new icon when the browser next checks the manifest (Chrome may ask the user to accept the change).
 - **Library, simplified (29 Sept):** tabs Team offers (first) and My saved offers; Add to email and Remove per card;
   admins see removed offers, restore them and Share with team. Archive / unarchive need the entry's owner or an admin.
 - **Brochure near miss (29 Sept):** when nothing verifies, the panel offers the closest document from the stored trace
@@ -291,7 +300,7 @@ Edit → HTTP Validation → Save → Refresh (runbook C8, done that way on 6 Oc
   account's credit balance is not visible from here), and since Phase 1 `MAIL_CLIENT_SECRET` (IT's Send app secret,
   expires 30 Sept 2027) and `MAIL_TOKEN_KEY` (B13), all set by Matt. Vars (`wrangler.jsonc`): `PUBLIC_BASE_URL`
   (customer links: `https://offers.dreamlease.co.uk` since 0.7.2), `TOOL_BASE_URL` (the only host serving the web
-  app), `APP_VERSION` (0.7.6 in `main`), `MAIL_TENANT_ID`, `MAIL_CLIENT_ID`, `MAIL_REDIRECT_URI`. Optional: `ADMIN_EMAILS`,
+  app), `APP_VERSION` (0.7.7 in `main`), `MAIL_TENANT_ID`, `MAIL_CLIENT_ID`, `MAIL_REDIRECT_URI`. Optional: `ADMIN_EMAILS`,
   `COMPLIANCE_EMAILS`, `RETENTION_CAMPAIGN_DAYS` (**unset**: Emma sets the period). Locally `.dev.vars`
   (git-ignored, `DEV_USER_EMAIL`).
 
@@ -674,8 +683,8 @@ the EVs shelf while kept on the personal shelf).
 | 7 Template admin, approval, register, suppression | **Done** (register, compliance-approver-only templates since 28 Sept, suppression list) |
 | 8 Stubs & `evolution.md` | Not started (low value) |
 
-**PII plan: complete** (items 1–4). Build-order steps 1–7 done. **Production is v0.7.3 (6 Oct 2026)**; `main` is
-0.7.6 (7 Oct), which Matt deploys next. Since the last full update of this section:
+**PII plan: complete** (items 1–4). Build-order steps 1–7 done. **Production is v0.7.6 (7 Oct 2026)**; `main` is
+0.7.7, which Matt deploys next. Since the last full update of this section:
 - **0.6.1 (29 Sept):** live behind Access on `marketingtools.dreamelectric.uk` (`status-2026-09-29.md`).
 - **0.6.2 (30 Sept):** the email no longer states a validity date.
 - **0.7.0 (30 Sept):** Phase 1, Send from the salesperson's own mailbox (B13).
@@ -683,9 +692,10 @@ the EVs shelf while kept on the personal shelf).
 - **6 Oct, no version bump:** the Outlook classic fixes (B7, deviation f), and salary sacrifice parked in Compose (A1).
 - **0.7.2 (6 Oct):** customer links on `offers.dreamlease.co.uk` (B1).
 - **0.7.3 (6 Oct):** unknown customer addresses go to the website, plus `robots.txt` (B5).
-- **0.7.4 (7 Oct, merged; deploy pending):** no processing-fee line on the offer cards (B7, deviation g).
-- **0.7.5 (7 Oct, merged; deploy pending):** no processing fee anywhere in the tool: model, parser, fixtures, design (B7).
-- **0.7.6 (7 Oct, merged; deploy pending):** Compose steps 1–3 start from what was used last (A3).
+- **0.7.4 (7 Oct):** no processing-fee line on the offer cards (B7, deviation g).
+- **0.7.5 (7 Oct):** no processing fee anywhere in the tool: model, parser, fixtures, design (B7).
+- **0.7.6 (7 Oct):** Compose steps 1–3 start from what was used last (A3).
+- **0.7.7 (7 Oct, next release):** the Install app button and a bold app icon (A3).
 
 Each was shipped on Matt's "ship it" and deployed by him. The log is `status-2026-10-06.md`.
 
@@ -767,7 +777,7 @@ ranked list is in `PICKUP-PROMPT.md` §4):**
   the laptop), and since Phase 1 `mail.ts` (Connect Outlook), `mail-crypto.ts`, `send.ts`, `presend.ts` (the
   pre-send checks); `apps/api/scripts/fix-placeholder-template.sql` (the one-off production correction of 28 Sept)
 - Web: `apps/web/src/App.tsx` (header portrait, `addFromLibrary`), `Compose.tsx` (incl. `repriceCopied`, the resizable
-  columns, Connect Outlook and Send, the `WHATSAPP_LIVE` and `SALSAC_LIVE` switches), `Campaigns.tsx`, `Library.tsx`, `Register.tsx`, `Suppressions.tsx`, `Templates.tsx`, `api.ts`
+  columns, Connect Outlook and Send, the `WHATSAPP_LIVE` and `SALSAC_LIVE` switches), `Campaigns.tsx`, `Library.tsx`, `Register.tsx`, `Suppressions.tsx`, `Templates.tsx`, `install.ts` (Install app), `api.ts`
   (incl. `currentBrochure`), `styles.css`; `apps/web/vite.config.ts` (proxy + tunnel `allowedHosts`)
 - Config: `apps/api/wrangler.jsonc`, `config/` (`badges.json`, `admins.json`, `compliance.json`,
   `library-shelves.json`, `mail.json` (who may send, the size limit, the 24-hour offer rule)), `.claude/launch.json` (the dev servers for the desktop app)
