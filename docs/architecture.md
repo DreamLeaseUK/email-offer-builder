@@ -114,6 +114,13 @@ Three audiences / lease products, each with its own compliance wording and terms
   offers, Check and create, Send — "Send from Outlook" until Phase 1); Renewal is the default use case; WhatsApp is shown "coming soon" and
   cannot reach an email (`WHATSAPP_LIVE` in `Compose.tsx`); preview links point straight at the site in a new tab
   (the created campaign keeps its tracked `/r/` links).
+- **Steps 1–3 remembered (7 Oct 2026, a salesperson's request via Matt):** a new campaign starts from what this person
+  used last, not the defaults: campaign name, audience, use case, subject, message and offer button (browser storage per
+  signed-in person, `dl-compose-last:v1:<email>`, no expiry, written as they type), and their details (the saved
+  profile, which Create now also saves when they changed step 3 in that campaign; never a copied campaign's older
+  details, never the defaults after a failed profile load, and a saved WhatsApp number is kept while WhatsApp is off). "+ New campaign" clears only the offers and the customer's name; every field
+  stays editable. The customer's name and email are never kept. A draft (a campaign with offers) still wins on
+  reload; a copied campaign sets everything from the copy. Salary sacrifice, while parked, comes back as personal.
 - **Library, simplified (29 Sept):** tabs Team offers (first) and My saved offers; Add to email and Remove per card;
   admins see removed offers, restore them and Share with team. Archive / unarchive need the entry's owner or an admin.
 - **Brochure near miss (29 Sept):** when nothing verifies, the panel offers the closest document from the stored trace
@@ -416,13 +423,14 @@ were deleted on 22 Sept; the schema still accepts the names so a stored campaign
 when the markup changes in a way Emma should re-approve; templates pin the version they were approved against
 (campaigns pin `compliance.approvedWordingVersion`).
 
-Data-side display rules live in the viewmodel (not markup, so the reference is untouched). **No card carries a
-processing-fee line** (Matt, 7 Oct 2026, for every contract type; from 16 Sept to 7 Oct PCH cards showed a forced
-"Processing fee £299.99 inc VAT"): the fee belongs to the compliance wording Emma approves; her personal block of 29 Sept says
-"A processing fee may apply and, where applicable, will be detailed in your quotation" (her business and salary
-sacrifice blocks were not re-read for this change). The offer still records
-`pricing.processingFee`. With no validity date either (since 0.6.2), a card without a brochure has no small print,
-and its paragraph is left out (deviation g). **Every card in a multi-offer campaign shows the same, even number of stat
+Data-side display rules live in the viewmodel (not markup, so the reference is untouched). **The tool states no
+processing fee anywhere** (Matt, 7 Oct 2026: "remove all references to any processing fee"). The cards' fee line went
+in 0.7.4; in 0.7.5 the offer model no longer has a `processingFee` field, the page parser and the pricing reader no
+longer read the site's fees, and the fixtures, tests and design reference carry no fee text. Stored offers that still
+hold the old key parse as before (the schema drops unknown keys). The one fee mention left in an email is in Emma's
+approved compliance wording (her personal block of 29 Sept: "A processing fee may apply…"), which only a compliance
+approver can change (rule 3). With no validity date either (since 0.6.2), the small print is the brochure line only,
+so a card without a brochure has no small print and its paragraph is left out (deviation g). **Every card in a multi-offer campaign shows the same, even number of stat
 tiles** (the common count across the offers, floored to even) so the cards read as a matched set — a single
 hero keeps its natural count (Matt, 6 Oct: leave it as it is; also left: a tile showing "Ns" when the site gives no
 0–62 figure). A third (21 Sept): when the attached brochure is the manufacturer's **European

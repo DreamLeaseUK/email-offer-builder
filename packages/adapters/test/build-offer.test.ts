@@ -20,7 +20,7 @@ describe('buildOffer', () => {
     const offer = await build();
     expect(Offer.parse(offer)).toEqual(offer);
     expect(offer.vehicle).toMatchObject({ make: 'BYD', model: 'Seal', derivative: '390kW Excellence AWD 83kWh 4dr Auto', bodyStyle: 'Saloon', fuelType: 'Electric', transmission: 'Automatic' });
-    expect(offer.pricing).toEqual({ monthly: 347.8, vat: 'inc', initialPayment: 4173.6, initialMonths: 12, termMonths: 48, annualMileage: 6000, processingFee: 299.99, maintenance: false });
+    expect(offer.pricing).toEqual({ monthly: 347.8, vat: 'inc', initialPayment: 4173.6, initialMonths: 12, termMonths: 48, annualMileage: 6000, maintenance: false });
     expect(offer.hotBadge).toBe('Special offer');
     expect(offer.badges).toEqual([]);
     expect(offer.stock).toBeUndefined();
@@ -44,10 +44,10 @@ describe('buildOffer', () => {
     expect(JSON.stringify(offer)).not.toMatch(/000000|images\.example|rateBook|nodeId|564851/);
   });
 
-  it('prices a business offer ex VAT with the business fee', async () => {
+  it('prices a business offer ex VAT', async () => {
     const offer = await build({ url: businessUrl, pricing: 'pricing-business.json' });
     expect(offer.contractType).toBe('business');
-    expect(offer.pricing).toMatchObject({ monthly: 289.83, vat: 'ex', initialPayment: 3477.96, processingFee: 249.99 });
+    expect(offer.pricing).toMatchObject({ monthly: 289.83, vat: 'ex', initialPayment: 3477.96 });
     expect(offer.offerUrl).toMatch(/\/offers\/business\/.*offer=b-12-48-6000-n/);
   });
 

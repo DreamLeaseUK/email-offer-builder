@@ -63,7 +63,7 @@
  *     sliver; and the badge pills sit in an Outlook-only ghost row, one cell each (Word had stacked the hero's three
  *     into one orange block). The tool's preview and the other clients look the same, so
  *     MARKUP_VERSION stays: Outlook classic now shows what Emma approved.
- *  g. (7 Oct 2026) the cards no longer carry a "Processing fee" line (Matt; the fee belongs to Emma's compliance wording),
+ *  g. (7 Oct 2026) the small print is the brochure line only (Matt: no fee line, as no validity date since 30 Sept),
  *     so a card without a brochure has no small print. Its paragraph is then left out, not rendered empty (Word draws
  *     an empty paragraph as a blank line), and the row card's small-print row becomes a 16px spacer cell, which keeps
  *     the card's bottom padding. Data-only otherwise: diff-reference compares cards with a brochure, so its count is

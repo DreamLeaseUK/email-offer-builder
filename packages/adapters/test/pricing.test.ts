@@ -35,7 +35,7 @@ describe('pricingUrl', () => {
 describe('parsePricingResponse', () => {
   it('maps a personal offer and its option lists', () => {
     const r = parsePricingResponse(fixtureJson('pricing-personal.json'));
-    expect(r.offer).toMatchObject({ monthly: 347.8, monthlyService: 0, initialRental: 12, contractLength: 48, annualMileage: 6000, includesMaintenance: false, specialOffer: true, isInStock: false, preRegistered: false, processingFee: 299.99, offerCode: 'p-12-48-6000-n', poa: false, pricingUnavailable: false, financeType: 'Personal Contract Hire' });
+    expect(r.offer).toMatchObject({ monthly: 347.8, monthlyService: 0, initialRental: 12, contractLength: 48, annualMileage: 6000, includesMaintenance: false, specialOffer: true, isInStock: false, preRegistered: false, offerCode: 'p-12-48-6000-n', poa: false, pricingUnavailable: false, financeType: 'Personal Contract Hire' });
     expect(r.options.initialRental.map((o) => o.value)).toEqual([1, 3, 6, 9, 12]);
     expect(r.options.contractLength.map((o) => o.value)).toEqual([12, 18, 24, 36, 48, 60]);
     expect(r.options.annualMileage.map((o) => o.value)).toEqual([5000, 6000, 8000, 10000, 12000, 15000, 20000]);
@@ -44,10 +44,9 @@ describe('parsePricingResponse', () => {
     expect(r.message).toBe('');
   });
 
-  it('maps a business offer with its ex-VAT price and fee', () => {
+  it('maps a business offer with its ex-VAT price', () => {
     const r = parsePricingResponse(fixtureJson('pricing-business.json'));
     expect(r.offer?.monthly).toBe(289.83);
-    expect(r.offer?.processingFee).toBe(249.99);
     expect(r.offer?.financeType).toBe('Business Contract Hire');
     expect(r.offer?.offerCode).toBe('b-12-48-6000-n');
   });
