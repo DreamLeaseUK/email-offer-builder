@@ -1,9 +1,9 @@
 # Pickup prompt — DreamLease Offer Mailer
 
 Paste everything below the line into a new Claude Code session opened in `C:\Users\MatthewWilson\email-offer-builder`.
-**Updated 7 October 2026 (session 11). Production is v0.7.6 (no processing fee anywhere in the tool; Compose steps
-1–3 start from what was used last), deployed by Matt on 7 Oct; 0.7.7 (an Install app button and a bold app icon) is the
-next release. Phase 1 (send from the salesperson's own mailbox) is live. No other work is
+**Updated 7 October 2026 (session 11). Production is v0.7.7 (no processing fee anywhere in the tool; Compose steps
+1–3 start from what was used last; an Install app button and a bold app icon), deployed by Matt on 7 Oct; 0.7.8 (the
+button reads "Install app and pin to taskbar") is the next release. Phase 1 (send from the salesperson's own mailbox) is live. No other work is
 in flight.** This prompt supersedes all earlier
 ones.
 
@@ -112,10 +112,10 @@ ranked in §4; do not start any of them without his go.
 
 | Item | State |
 |---|---|
-| Git | `main` at `802d7f4` (PR #24, 0.7.6) [verified 7 Oct]; the working tree was clean on 7 Oct (the 5 Oct scratch files `body.txt`, `m.txt`, `u.txt`, `u2.txt` went to the Recycle Bin at Matt's request). This hand-over merged as PR #21. 0.7.7 may have merged since: check `git log` and `gh pr list`. |
+| Git | `main` at `5bf3704` (PR #25, 0.7.7) [verified 7 Oct]; the working tree was clean on 7 Oct (the 5 Oct scratch files `body.txt`, `m.txt`, `u.txt`, `u2.txt` went to the Recycle Bin at Matt's request). This hand-over merged as PR #21. 0.7.7 may have merged since: check `git log` and `gh pr list`. |
 | Tests | `pnpm test` **320 pass** (schema 23, render 40, adapters 122, api 135; the web app has no tests: its changes are proven in a real browser) [verified 7 Oct]; `pnpm typecheck` clean; `diff-reference` **172** (more is a regression). Run `diff-reference` from **Git Bash**: under PowerShell its `diff` is missing and it falsely reports "all sections match" [verified 6 Oct]. |
-| Production | **v0.7.6**, deployed by Matt on 7 Oct. `/health` on workers.dev and on offers.dreamlease.co.uk: 0.7.6, db ok, images true, firecrawl true; marketingtools.dreamelectric.uk redirects to the Access sign-in [verified 7 Oct]. 0.7.7 (Install app, bold icon) is the next release: check `/health` for what is live. |
-| Releases since 29 Sept | 0.6.2 and 0.7.0 (Phase 1) on 30 Sept. On 6 Oct: 0.7.1 (special offers), the Outlook classic fixes and salary sacrifice parked (no bump), 0.7.2 (customer address), 0.7.3 (unknown addresses to the website, robots.txt). On 7 Oct: 0.7.4 (no processing-fee line on the cards, PR #22), 0.7.5 (no processing fee anywhere in the tool, PR #23), 0.7.6 (Compose steps 1–3 start from what was used last, PR #24). Each was merged on "ship it"; all deployed by Matt [verified 7 Oct: git log; 0.7.6 on /health]. Next: 0.7.7, the Install app button and a bold app icon. |
+| Production | **v0.7.7**, deployed by Matt on 7 Oct. `/health` on workers.dev and on offers.dreamlease.co.uk: 0.7.7, db ok, images true, firecrawl true; marketingtools.dreamelectric.uk redirects to the Access sign-in [verified 7 Oct]. 0.7.8 (the button label) is the next release: check `/health` for what is live. |
+| Releases since 29 Sept | 0.6.2 and 0.7.0 (Phase 1) on 30 Sept. On 6 Oct: 0.7.1 (special offers), the Outlook classic fixes and salary sacrifice parked (no bump), 0.7.2 (customer address), 0.7.3 (unknown addresses to the website, robots.txt). On 7 Oct: 0.7.4 (no processing-fee line on the cards, PR #22), 0.7.5 (no processing fee anywhere in the tool, PR #23), 0.7.6 (Compose steps 1–3 start from what was used last, PR #24). Each was merged on "ship it"; 0.7.7 (Install app button, bold app icon, PR #25). All deployed by Matt [verified 7 Oct: git log; 0.7.7 on /health]. Next: 0.7.8, the button reads "Install app and pin to taskbar". |
 | Sign-in | Access app `marketingtools`, shared **Staff** policy (dreamlease.co.uk and salsac.co.uk), Entra as the identity provider. `ACCESS_AUD` is set: `/api` on a customer host answers 401 [verified 6 Oct]. |
 | Send (Phase 1) | Vars `MAIL_TENANT_ID`, `MAIL_CLIENT_ID`, `MAIL_REDIRECT_URI` are in `wrangler.jsonc` [verified 6 Oct]. Secrets `MAIL_CLIENT_SECRET` (expires 30 Sept 2027) and `MAIL_TOKEN_KEY` were set by Matt [asserted]. Real sends exist, e.g. BYD Seal 6 + Alfa Romeo Junior, 30 Sept, `sentVia: m365` [verified 6 Oct via `/api/campaigns`]. Only dreamlease.co.uk addresses may send (`config/mail.json`). |
 | Compliance wording | Emma's "Approved Wording - 29/09/2026", version 4, `markupVersion` 2, approved by `emma@dreamlease.co.uk` on 29 Sept 12:42 UTC; blocks for personal, business and salary sacrifice [verified 6 Oct via `/api/templates`]. `MARKUP_VERSION` is 2 [verified 6 Oct]. |
@@ -142,7 +142,9 @@ ranked in §4; do not start any of them without his go.
 ## 4. Open items, ranked (start none without Matt's go)
 
 **Before the list:**
-- **Ship and deploy 0.7.7** (the Install app button and the bold icon) if `/health` does not say 0.7.7 yet, then confirm it.
+- **Ship and deploy 0.7.8** (the "Install app and pin to taskbar" label) if `/health` does not say 0.7.8 yet, then confirm it.
+- **Auto-pinning is not possible from the tool** (Windows allows only the person or IT policy to pin). If Matt wants it for
+  everyone, IT force-installs and pins via Edge `WebAppInstallForceList` + a Windows taskbar layout (needs Intune).
 - **Emma removes the processing-fee sentence from her compliance wording** (Templates → new version → edit →
    publish; her personal block says "A processing fee may apply…"; check her business and salary sacrifice blocks
    too). It is the only fee mention left in an email, and only a compliance approver can change it (rule 3).

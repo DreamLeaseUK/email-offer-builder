@@ -1,5 +1,5 @@
 /**
- * "Install app" (Matt, 7 Oct 2026): a button in the top bar that installs the tool as its own app, so a salesperson can
+ * "Install app and pin to taskbar" (Matt, 7 Oct 2026): a button in the top bar that installs the tool as its own app, so a salesperson can
  * pin it to the Windows taskbar, and that disappears once it is installed.
  *
  * Chrome and Edge announce that a page can be installed with `beforeinstallprompt`, and only while it is NOT installed

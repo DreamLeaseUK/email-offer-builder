@@ -106,17 +106,17 @@ export function App() {
         <span className="app__spacer" />
         {canInstall && (
           <span className="app__install">
-            <Button size="sm" variant="outline" onClick={() => void install()} title="Install the Offer Mailer as an app, then pin it to your taskbar">
-              <InstallIcon /> Install app
+            <Button size="sm" variant="outline" onClick={() => void install()} title="Install the Offer Mailer as its own app; then right-click its taskbar icon and choose Pin to taskbar">
+              <InstallIcon /> Install app and pin to taskbar
             </Button>
           </span>
         )}
         <span className="app__new">
           <Button size="sm" onClick={newCampaign}>+ New campaign</Button>
         </span>
-        <span className="app__user">
+        <span className="app__user" title={email || undefined}>
           {headshotUrl && <img className="app__avatar" src={sameOrigin(headshotUrl)} alt="" />}
-          <span className="dl-small">{email || (meError ? 'not signed in' : '…')}</span>
+          <span className="dl-small app__email">{email || (meError ? 'not signed in' : '…')}</span>
         </span>
       </header>
 

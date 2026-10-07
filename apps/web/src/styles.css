@@ -473,6 +473,13 @@ body {
 .app__install-icon {
   flex: none;
 }
+/* On a laptop-width screen the install button and the signed-in email do not both fit on one line: while the button
+   shows, the email gives way (the photo stays, and the email is its tooltip). */
+@media (max-width: 1439px) {
+  .app__bar:has(.app__install) .app__email {
+    display: none;
+  }
+}
 .outlook__row {
   display: flex;
   flex-wrap: wrap;
