@@ -1,3 +1,5 @@
+// First: catch the browser's install offer, which can arrive before the app has drawn anything (install.ts).
+import './install';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import 'dreamlease-design-system/styles/dreamlease.css';

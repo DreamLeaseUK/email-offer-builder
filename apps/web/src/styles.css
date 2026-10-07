@@ -461,6 +461,18 @@ body {
 .app__new {
   margin-right: 16px;
 }
+/* "Install app" in the top bar (only while the browser can install the tool) */
+.app__install {
+  margin-right: 10px;
+}
+.app__install .dl-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.app__install-icon {
+  flex: none;
+}
 .outlook__row {
   display: flex;
   flex-wrap: wrap;

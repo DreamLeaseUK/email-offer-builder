@@ -8,6 +8,7 @@ import { Library } from './Library';
 import { Register } from './Register';
 import { Suppressions } from './Suppressions';
 import { Templates } from './Templates';
+import { pinTipNeeded, pinTipSeen, useInstallApp } from './install';
 
 const errMsg = (e: unknown): string => (e instanceof Error ? e.message : String(e));
 
@@ -28,6 +29,10 @@ export function App() {
   const [seed, setSeed] = useState<ComposeSeed | null>(null);
   // "+ New campaign" in the top bar: each press asks Compose (which owns the draft) to start again.
   const [newCampaignRequest, setNewCampaignRequest] = useState(0);
+  // "Install app" (Matt, 7 Oct 2026): shown only while the browser can install the tool; gone once it is installed.
+  const { canInstall, justInstalled, install } = useInstallApp();
+  const [installedTipClosed, setInstalledTipClosed] = useState(false);
+  const [showPinTip, setShowPinTip] = useState(pinTipNeeded);
   const newCampaign = () => {
     setView('compose');
     setNewCampaignRequest((n) => n + 1);
@@ -99,6 +104,13 @@ export function App() {
           {seesTemplates && tab('templates', 'Templates')}
         </nav>
         <span className="app__spacer" />
+        {canInstall && (
+          <span className="app__install">
+            <Button size="sm" variant="outline" onClick={() => void install()} title="Install the Offer Mailer as an app, then pin it to your taskbar">
+              <InstallIcon /> Install app
+            </Button>
+          </span>
+        )}
         <span className="app__new">
           <Button size="sm" onClick={newCampaign}>+ New campaign</Button>
         </span>
@@ -107,6 +119,23 @@ export function App() {
           <span className="dl-small">{email || (meError ? 'not signed in' : '…')}</span>
         </span>
       </header>
+
+      {justInstalled && !installedTipClosed && (
+        <div className="app__notice">
+          <Alert tone="success" title="The Offer Mailer is installed">
+            It opens in its own window with the DreamLease icon. To keep it on your taskbar, right-click that icon and choose <strong>Pin to taskbar</strong>.{' '}
+            <Button size="sm" variant="ghost" onClick={() => setInstalledTipClosed(true)}>Got it</Button>
+          </Alert>
+        </div>
+      )}
+      {showPinTip && (
+        <div className="app__notice">
+          <Alert tone="info" title="Pin the Offer Mailer to your taskbar">
+            Right-click the DreamLease icon on your taskbar and choose <strong>Pin to taskbar</strong>, so it is one click away next time.{' '}
+            <Button size="sm" variant="ghost" onClick={() => { pinTipSeen(); setShowPinTip(false); }}>Got it</Button>
+          </Alert>
+        </div>
+      )}
 
       {meError && (
         <div className="app__notice">
@@ -126,5 +155,15 @@ export function App() {
       {view === 'suppressions' && <Suppressions role={role} />}
       {view === 'templates' && seesTemplates && <Templates canEdit={complianceApprover} />}
     </div>
+  );
+}
+
+/** A screen with a down arrow: "install this as an app". Follows the button's text colour. */
+function InstallIcon() {
+  return (
+    <svg className="app__install-icon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="2.5" y="3.5" width="19" height="13" rx="2" />
+      <path d="M8 20.5h8M12 16.5v4M12 6.5v6M9.2 9.8 12 12.6l2.8-2.8" />
+    </svg>
   );
 }
