@@ -43,6 +43,14 @@ describe('offer library', () => {
     expect((await save(anOffer(), anon)).status).toBe(503);
   });
 
+  it('never keeps a campaign\'s "no brochure found" mark on a library entry (0.7.10)', async () => {
+    const o = anOffer({ id: '1a000000-0000-4000-8000-0000000000b1', noBrochure: true });
+    const res = await save(o, authed());
+    expect(res.status).toBe(201);
+    const saved = ((await res.json()) as { entry: LibraryEntry }).entry;
+    expect(saved.offer).not.toHaveProperty('noBrochure');
+  });
+
   it('saves to the caller’s personal shelf, current and priced, lists it, and deletes it', async () => {
     const o = anOffer({ id: '1a000000-0000-4000-8000-000000000001' });
     const res = await save(o, authed());

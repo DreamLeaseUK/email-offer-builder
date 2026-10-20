@@ -85,6 +85,8 @@ export interface Item {
   options?: PricingOptions;
   /** The attached brochure record, kept for display; the offer itself only stores its id + include flag. */
   brochure?: Brochure;
+  /** The brochure search completed and verified nothing; the campaign's copy of the offer then carries noBrochure. */
+  noBrochureFound?: boolean;
 }
 
 export interface EnsureBrochureResponse {

@@ -68,6 +68,11 @@
  *     an empty paragraph as a blank line), and the row card's small-print row becomes a 16px spacer cell, which keeps
  *     the card's bottom padding. Data-only otherwise: diff-reference compares cards with a brochure, so its count is
  *     unchanged. MARKUP_VERSION stays 2.
+ *  h. (20 Oct 2026, Matt) a card whose brochure search completed and verified nothing (Offer.noBrochure) says
+ *     "Brochure unavailable for this vehicle" in small grey text (12px Graphite paragraph) where the brochure link
+ *     would be, under the button (and the "View this offer" link), only when another card in the same email has a
+ *     brochure link. diff-reference compares cards with a brochure, so its count is unchanged. MARKUP_VERSION stays 2,
+ *     as for 0.7.9 (Matt's OK to add visible changes without template re-approval).
  * And the tool sends one offer per row (auto: 1 → single, 2+ → stack).
  */
 import { C, FF, LH, esc, mso, spacer, spacerCell, table } from './html.js';
@@ -213,6 +218,9 @@ const brochureLinkTd = (b: Brochure, label: string, font: number, lh: number, pa
 const brochureHero = (b: Brochure) => table('', 'display:inline-block; vertical-align:middle;', `<tr>\n${brochureIconTd(b, '10px 6px 10px 16px')}\n${brochureLinkTd(b, b.label, 13, 18, '10px 0')}\n</tr>`);
 /** Stack: under the button, left aligned. */
 const brochureStack = (b: Brochure) => `${spacer(8)}\n${table('', '', `<tr>\n${brochureIconTd(b, '0 6px 0 0')}\n${brochureLinkTd(b, b.label, 13, 18, '')}\n</tr>`)}`;
+/** Deviation h: where the brochure link would be, small grey text saying there is none for this car. */
+const brochureNote = (text: string, mt: number) =>
+  `<p class="lock-body" style="margin:${mt}px 0 0 0; font-size:12px; line-height:16px; ${LH}; color:${C.graphite};">${esc(text)}</p>`;
 
 /** Nothing at all when there is no small print (deviation g): an empty paragraph is a blank line in Word. */
 const smallPrint = (text: string, margin: string, font: number, lh: number) =>
@@ -258,7 +266,7 @@ ${priceBlock}
 ${specP(vm.specLine, 14, 20, 16)}
 ${statsRow(vm.stats)}
 ${ctaRow}
-${vm.viewHref ? viewLink(vm.viewHref, 14, 20, 12, false) : ''}
+${vm.viewHref ? viewLink(vm.viewHref, 14, 20, 12, false) : ''}${vm.brochureNote ? `\n${brochureNote(vm.brochureNote, 12)}` : ''}
 ${smallPrint(vm.smallPrint, '14px 0 0 0', 12, 18)}
 </td>
 </tr>`,
@@ -299,7 +307,7 @@ ${specP(vm.specLine, 13, 18, 12)}
 ${statsPairs(vm.stats, 14)}
 ${button(vm.cta.href, vm.cta.label, 10, 22, 14, 18)}
 ${vm.viewHref ? viewLink(vm.viewHref, 13, 18, 8, false) : ''}
-${vm.brochure ? brochureStack(vm.brochure) : ''}
+${vm.brochure ? brochureStack(vm.brochure) : vm.brochureNote ? brochureNote(vm.brochureNote, 8) : ''}
 </td>
 </tr>`,
   );

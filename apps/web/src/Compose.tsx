@@ -330,7 +330,7 @@ const SEARCH_STAGES = ['Searching for the official UK brochure…', 'Opening the
  * without. A search that FAILED is shown differently from one that found nothing, and offers a retry.
  * The offer stores only { brochureId, include }; the full record rides on the tray Item for display.
  */
-function BrochureControl({ item, onAttach, onToggle, onRemove }: { item: Item; onAttach: (b: Brochure, include?: boolean) => void; onToggle: (include: boolean) => void; onRemove: () => void }) {
+function BrochureControl({ item, onAttach, onToggle, onRemove, onSearched }: { item: Item; onAttach: (b: Brochure, include?: boolean) => void; onToggle: (include: boolean) => void; onRemove: () => void; onSearched: (nothingFound: boolean) => void }) {
   const o = item.offer;
   const attached = item.brochure;
   const included = o.brochure?.include ?? false;
@@ -362,6 +362,8 @@ function BrochureControl({ item, onAttach, onToggle, onRemove }: { item: Item; o
       const res = await api.ensureBrochure(o.vehicle.make, o.vehicle.model, force);
       setSearch(res.search);
       setRemembered(!!res.remembered);
+      // Completed and verified nothing: the email may say "Brochure unavailable for this vehicle" (render, deviation h).
+      onSearched(res.search?.status === 'not_verified' && !res.brochure);
       if (res.brochure) {
         // a European edition someone accepted earlier is shown, but NOT included until this salesperson ticks it
         const european = res.brochure.market === 'eu';
@@ -1002,7 +1004,13 @@ export function Compose({ email, base, items, setItems, seed, onSeedApplied, onH
     if (run !== repriceRun.current) return;
     // Merge into the tray as it is NOW: only offers still there and untouched since this started are replaced, so
     // anything added, removed or changed meanwhile stays as the salesperson left it.
-    setItems((cur) => cur.map((x) => refreshed.get(x.offer) ?? x));
+    // A brochure search that found nothing (0.7.10) still stands for the same car, unless a brochure came back.
+    setItems((cur) =>
+      cur.map((x) => {
+        const r = refreshed.get(x.offer);
+        return r ? { ...r, ...(x.noBrochureFound && !r.brochure ? { noBrochureFound: true } : {}) } : x;
+      }),
+    );
     setRepricing(false);
     setWarnings(failed.length ? [`Couldn't re-price ${failed.join(', ')} — the copied price is shown and its brochure was not re-attached. That offer page may have changed; re-fetch it (the chips reload it) or remove it before sending.`] : []);
   }
@@ -1077,7 +1085,12 @@ export function Compose({ email, base, items, setItems, seed, onSeedApplied, onH
       ...(preheader ? { preheader } : {}),
       intro,
       layout,
-      offers: items.map((x) => applyCta(x.offer, ctaKind, ctaLabel)),
+      // A car whose brochure search found nothing (and has none attached) is marked, so the email can say so.
+      // Only this session's search decides: a flag carried in on a copied campaign's offer is dropped.
+      offers: items.map((x) => {
+        const { noBrochure: _inherited, ...o } = applyCta(x.offer, ctaKind, ctaLabel);
+        return x.noBrochureFound && !x.brochure ? { ...o, noBrochure: true as const } : o;
+      }),
       sender,
       ...(recipientFirst ? { recipient: { firstName: recipientFirst } } : {}),
     }),
@@ -1158,7 +1171,8 @@ export function Compose({ email, base, items, setItems, seed, onSeedApplied, onH
       u.searchParams.set(param, String(value));
       const res = await api.lookup(u.toString());
       const offer = isSalsac(prev) ? toSalsac(res.offer, prev) : res.offer; // keep the hand-entered nets
-      setItems((it) => it.map((x, k) => (k === i ? { offer, options: res.options } : x)));
+      // a new term or mileage is the same car: a brochure search that found nothing still stands (0.7.10)
+      setItems((it) => it.map((x, k) => (k === i ? { offer, options: res.options, ...(x.noBrochureFound && !offer.brochure ? { noBrochureFound: true } : {}) } : x)));
       clearOutput();
     } catch (err) {
       setAddError(errMsg(err));
@@ -1217,6 +1231,10 @@ export function Compose({ email, base, items, setItems, seed, onSeedApplied, onH
   function toggleBrochure(i: number, include: boolean) {
     setItems((it) => it.map((x, k) => (k === i && x.offer.brochure ? { ...x, offer: { ...x.offer, brochure: { ...x.offer.brochure, include } } } : x)));
     clearOutput();
+  }
+  function markBrochureSearch(i: number, nothingFound: boolean) {
+    setItems((it) => it.map((x, k) => (k === i && !!x.noBrochureFound !== nothingFound ? { ...x, noBrochureFound: nothingFound } : x)));
+    if (nothingFound) clearOutput();
   }
   function removeBrochure(i: number) {
     setItems((it) =>
@@ -1534,7 +1552,7 @@ export function Compose({ email, base, items, setItems, seed, onSeedApplied, onH
                   {!isSalsac(o) && <ChipRow label="Initial" options={options.initialRental} current={o.pricing.initialMonths} disabled={reloading !== null} format={(v) => `${v} mo`} onPick={(v) => reLook(i, 'initialRental', v)} />}
                 </div>
               )}
-              <BrochureControl item={{ offer: o, options, brochure }} onAttach={(b, include) => attachBrochure(i, b, include)} onToggle={(inc) => toggleBrochure(i, inc)} onRemove={() => removeBrochure(i)} />
+              <BrochureControl item={{ offer: o, options, brochure }} onAttach={(b, include) => attachBrochure(i, b, include)} onToggle={(inc) => toggleBrochure(i, inc)} onRemove={() => removeBrochure(i)} onSearched={(nothing) => markBrochureSearch(i, nothing)} />
               <div className="offers__btns">
                 <Button variant="outline" size="sm" onClick={() => saveToLibrary(o)} disabled={saving === o.id || savedIds.has(o.id)}>{savedIds.has(o.id) ? 'Saved ✓' : saving === o.id ? 'Saving…' : 'Save to library'}</Button>
                 <Button variant="ghost" size="sm" onClick={() => removeOffer(i)} disabled={reloading === i}>Remove</Button>

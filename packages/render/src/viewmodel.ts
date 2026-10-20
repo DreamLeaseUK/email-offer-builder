@@ -42,6 +42,8 @@ export interface CardVM {
   viewHref?: string;
   /** iconUrl is the 14px glyph on our origin. */
   brochure?: { href: string; label: string; alt: string; kind: 'pdf' | 'gated'; iconUrl: string; european?: boolean };
+  /** In place of the brochure link: the search found none for this car, and another card in the email has one. */
+  brochureNote?: string;
   /** Empty when there is nothing to say (no brochure): the card then has no small-print paragraph. */
   smallPrint: string;
   validUntil: string;
@@ -59,6 +61,13 @@ export interface VmOptions {
  * Wording agreed with Matt 21 Sept 2026; Emma approves it with the template block (brief §5.8 step 9).
  */
 export const EUROPEAN_BROCHURE_NOTE = "This is the manufacturer's European brochure; specification, equipment and prices may differ from UK models.";
+
+/**
+ * Shown in small grey text where the brochure link would be (Matt, 20 Oct 2026) on a card whose brochure search
+ * completed and verified nothing (`Offer.noBrochure`), when another card in the same email has a brochure link,
+ * so the recipient does not wonder why one car has a brochure and the other not.
+ */
+export const BROCHURE_UNAVAILABLE_NOTE = 'Brochure unavailable for this vehicle';
 
 function ctaFor(offer: Offer, sender: Sender, index: number, links: Links, offerUrlWithUtm: string): CardVM['cta'] {
   const cta = offer.cta ?? { kind: 'view_offer' as const };
@@ -100,7 +109,7 @@ export function buildCards(campaign: Campaign, opts: VmOptions): CardVM[] {
   // odd count leaves a lonely tile — so for a multi-offer campaign use the common count, floored to even.
   const commonStats = Math.min(4, ...campaign.offers.map((o) => (o.vehicle.stats ?? []).length));
   const statCount = campaign.offers.length > 1 ? commonStats - (commonStats % 2) : commonStats;
-  return campaign.offers.map((offer, i): CardVM => {
+  const cards = campaign.offers.map((offer, i): CardVM => {
     const n = i + 1;
     const isSalsac = offer.contractType === 'salary_sacrifice';
     if (isSalsac && !offer.pricing.salsac) throw new RenderError(`offer ${n}: salary sacrifice offer has no salsac figures`);
@@ -178,4 +187,11 @@ export function buildCards(campaign: Campaign, opts: VmOptions): CardVM[] {
     }
     return vm;
   });
+  if (cards.some((c) => c.brochure)) {
+    campaign.offers.forEach((offer, i) => {
+      const card = cards[i]!;
+      if (offer.noBrochure && !card.brochure) card.brochureNote = BROCHURE_UNAVAILABLE_NOTE;
+    });
+  }
+  return cards;
 }

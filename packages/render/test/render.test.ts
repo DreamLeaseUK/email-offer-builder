@@ -441,6 +441,33 @@ describe('render()', () => {
     expect(out.text).toContain('View these offers online: ');
   });
 
+  it('says "Brochure unavailable for this vehicle" on a car whose search found none, only when another car in the email has a brochure (Matt, 20 Oct 2026)', () => {
+    const note = 'Brochure unavailable for this vehicle';
+    const count = (s: string) => s.split(note).length - 1;
+    for (const layout of ['stack', 'single'] as const) {
+      const { campaign, brochures } = fixtureCampaign({ layout, offerCount: 3, brochure: 'pdf' });
+      // car 2: searched, nothing found; car 3: no brochure, never searched (or the salesperson removed it)
+      const { brochure: _b2, ...two } = campaign.offers[1]!;
+      const { brochure: _b3, ...three } = campaign.offers[2]!;
+      campaign.offers[1] = { ...two, noBrochure: true };
+      campaign.offers[2] = three;
+      const out = render(campaign, fixtureTemplate, { publicBaseUrl: BASE, brochures });
+      expect(count(out.html)).toBe(1);
+      expect(count(out.hostedHtml)).toBe(1);
+      expect(count(out.text)).toBe(1);
+      // it sits on the second card, after the first card's brochure link and before the third card
+      const at = out.html.indexOf(note);
+      expect(out.html.indexOf(campaign.offers[1]!.vehicle.derivative)).toBeLessThan(at);
+      expect(out.html.indexOf(campaign.offers[2]!.vehicle.derivative, at)).toBeGreaterThan(at);
+    }
+    // nobody else has a brochure: nothing to explain, so no note
+    const { campaign: none, brochures: nb } = fixtureCampaign({ layout: 'stack', offerCount: 2 });
+    none.offers[0] = { ...none.offers[0]!, noBrochure: true };
+    const quiet = render(none, fixtureTemplate, { publicBaseUrl: BASE, brochures: nb });
+    expect(count(quiet.html)).toBe(0);
+    expect(count(quiet.text)).toBe(0);
+  });
+
   it('heads BCH emails and their hosted page with the DreamFleet logo; PCH and salary sacrifice keep DreamLease (Matt, 20 Oct 2026)', () => {
     const logos = (html: string) => [...html.matchAll(/<img src="[^"]*\/a\/((?:dreamfleet-)?logo-2x\.png)"[^>]*alt="([^"]*)"/g)].map((m) => `${m[1]} ${m[2]}`);
     for (const contractType of ['personal', 'business', 'salary_sacrifice'] as const) {
