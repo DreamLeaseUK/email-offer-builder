@@ -1080,8 +1080,9 @@ export function Compose({ email, base, items, setItems, seed, onSeedApplied, onH
       intro,
       layout,
       // A car whose brochure search found nothing (and has none attached) is marked, so the email can say so.
+      // Only this session's search decides: a flag carried in on a copied campaign's offer is dropped.
       offers: items.map((x) => {
-        const o = applyCta(x.offer, ctaKind, ctaLabel);
+        const { noBrochure: _inherited, ...o } = applyCta(x.offer, ctaKind, ctaLabel);
         return x.noBrochureFound && !x.brochure ? { ...o, noBrochure: true as const } : o;
       }),
       sender,
@@ -1164,7 +1165,8 @@ export function Compose({ email, base, items, setItems, seed, onSeedApplied, onH
       u.searchParams.set(param, String(value));
       const res = await api.lookup(u.toString());
       const offer = isSalsac(prev) ? toSalsac(res.offer, prev) : res.offer; // keep the hand-entered nets
-      setItems((it) => it.map((x, k) => (k === i ? { offer, options: res.options } : x)));
+      // a new term or mileage is the same car: a brochure search that found nothing still stands (0.7.10)
+      setItems((it) => it.map((x, k) => (k === i ? { offer, options: res.options, ...(x.noBrochureFound && !offer.brochure ? { noBrochureFound: true } : {}) } : x)));
       clearOutput();
     } catch (err) {
       setAddError(errMsg(err));

@@ -217,6 +217,8 @@ iPhone. Matt, 6 Oct: older clients with a small share do not matter, **apart fro
   `MARKUP_VERSION`, and Emma re-approves.
   **Exception, 0.7.9 (20 Oct 2026, Matt's explicit OK):** the DreamFleet logo on BCH emails and the top link "Can't
   see images? Click here" went in without a bump, so sending did not stop for re-approval (recorded in `render.ts`).
+  Likewise 0.7.10 (Matt's "ship it" after being told it went in the same way): the "Brochure unavailable for this
+  vehicle" line (B7, deviation h).
 
 **History: the paste route (21–29 Sept 2026).** Until Phase 1 the only route was Copy for Outlook. The demo of
 29 Sept showed that most salespeople use Outlook classic, whose editor is Word: a pasted email is rewritten there and
@@ -473,7 +475,7 @@ takes the base alone. The tags sit on the **destination** in the stored link map
 `diff-reference` is unaffected; `/r` delivers them to the site, where GA4 records `utm_term` without site-side set-up.
 Matt, 23 Sept: "whatever works as salesperson identifier", so `utm_term` stands.
 
-**Deviations from the v5 reference** (recorded as a–g in the header of `cards.ts`). a–e were made for the paste route
+**Deviations from the v5 reference** (recorded as a–h in the header of `cards.ts`). a–e were made for the paste route
 of A5 and for Matt's reading of the result; f is for Outlook classic now that the email arrives intact; g follows
 the removal of the processing-fee line (7 Oct) and does not change the count. `diff-reference`
 reports **172 lines**:
@@ -519,6 +521,11 @@ mismatch); Outlook classic now shows what she approved. The deviations:
   print. Its paragraph is left out (Word draws an empty paragraph as a blank line), and the stacked card's small-print
   row becomes a 16px spacer cell (`spacerCell`, `html.ts`), keeping the card's bottom padding. `diff-reference`
   compares cards with a brochure, so its count is unchanged.
+- **"Brochure unavailable for this vehicle" (20 Oct 2026, Matt, 0.7.10, deviation h).** A card whose brochure search
+  completed and verified nothing (`Offer.noBrochure`, set by Compose on the campaign's copy only, stripped from library
+  saves) says so in a 12px Graphite paragraph where the brochure link would be, under the button, but only when another
+  card in the same email has a brochure link. Email, hosted page and plain text. `diff-reference` compares cards with a
+  brochure, so its count is unchanged.
 - (Earlier, 14 Sept) up to three pills on the hero where the reference has two; logo 98px wide.
 
 **Our own file addresses (0.7.2).** `links.ts` `ownFileUrl(url, base)` puts any image URL whose path is
@@ -791,7 +798,7 @@ ranked list is in `PICKUP-PROMPT.md` §4):**
 
 ## B11. Key files index
 - Model & guard: `packages/schema/src/model.ts`, `capid.ts`, `text.ts` (the site's HTML entities, decoded at lookup and again wherever an offer reaches the server)
-- Rendering: `packages/render/src/render.ts`, `cards.ts` (header: the deviations a–g), `html.ts` (`spacer`, `spacerCell`), `viewmodel.ts`, `layout.ts`, `links.ts` (`ownFileUrl`); `scripts/diff-reference.ts`, `scripts/diag-outlook.ts`
+- Rendering: `packages/render/src/render.ts`, `cards.ts` (header: the deviations a–h), `html.ts` (`spacer`, `spacerCell`), `viewmodel.ts`, `layout.ts`, `links.ts` (`ownFileUrl`); `scripts/diff-reference.ts`, `scripts/diag-outlook.ts`
 - Adapters: `packages/adapters/src/url/*` (`parse-page.ts` incl. the special-offer id, `pricing.ts` incl. `PRICING_VERSION`), `firecrawl/`, `brochure/` (`finder.ts`, `operate.ts`, `harvest.ts`, `ensure.ts`), `m365/` (`client.ts`, `output.ts`: the Microsoft client and the send), `scripts/finder-sweep.mts`
 - Worker: `apps/api/src/index.ts` (routes + Cron), `campaigns.ts`, `profile.ts`, `templates.ts`,
   `suppressions.ts`, `retention.ts`, `roles.ts`, `files.ts`, `brochures.ts`, `lookup.ts`, `library.ts`,

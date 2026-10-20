@@ -131,14 +131,16 @@ libraryApi.post('/offers/library', async (c) => {
   const body = (await c.req.json().catch(() => ({}))) as { offer?: unknown };
   const parsed = Offer.safeParse(body.offer);
   if (!parsed.success) return c.json({ error: 'That is not a valid offer.', issues: parsed.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`) }, 422);
+  // noBrochure belongs to one campaign's brochure search (0.7.10), never to a library entry: a later search may find one.
+  const { noBrochure: _campaignOnly, ...offerIn } = parsed.data;
   const email = c.get('user').email;
   const repo = libraryRepo(c.env);
   // saving the same offer again refreshes the existing entry rather than making a second (upsert by offer id)
-  const existing = await repo.get(parsed.data.id);
+  const existing = await repo.get(offerIn.id);
   const now = new Date();
   const entry: LibraryEntryT = existing
-    ? { ...existing, offer: decodeOfferText({ ...parsed.data, createdBy: existing.addedBy }), lastPricedAt: now.toISOString(), updatedAt: now.toISOString(), urlHealth: { state: 'ok', checkedAt: now.toISOString() } }
-    : newLibraryEntry({ offer: { ...parsed.data, createdBy: email }, scope: 'personal', addedBy: email }, now);
+    ? { ...existing, offer: decodeOfferText({ ...offerIn, createdBy: existing.addedBy }), lastPricedAt: now.toISOString(), updatedAt: now.toISOString(), urlHealth: { state: 'ok', checkedAt: now.toISOString() } }
+    : newLibraryEntry({ offer: { ...offerIn, createdBy: email }, scope: 'personal', addedBy: email }, now);
   await repo.save(entry);
   return c.json({ entry, offer: entry.offer }, existing ? 200 : 201);
 });

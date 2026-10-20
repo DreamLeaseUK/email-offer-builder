@@ -19,7 +19,8 @@ export { RenderError };
  * Bump when the markup changes in a way Emma should re-approve. 2 = the v5 reference markup.
  * Deliberately NOT bumped for 0.7.9 (Matt, 20 Oct 2026, his explicit OK to build it in without re-approval): BCH
  * emails carry the DreamFleet logo, and the top link reads "Can't see images? Click here". A bump would have stopped
- * every send until the templates were re-approved.
+ * every send until the templates were re-approved. Likewise 0.7.10 (Matt's "ship it" after being told it went in the
+ * same way): the "Brochure unavailable for this vehicle" line (cards.ts deviation h).
  */
 export const MARKUP_VERSION = 2;
 
