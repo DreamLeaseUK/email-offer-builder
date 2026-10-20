@@ -81,6 +81,8 @@ export interface SavedSender {
 
 /** An offer in the compose tray; options (the chips) are present for freshly-looked-up offers only. */
 export interface Item {
+  /** This row's own identity in the tray, made in this browser and never sent (`tray.ts`). */
+  key: string;
   offer: Offer;
   options?: PricingOptions;
   /** The attached brochure record, kept for display; the offer itself only stores its id + include flag. */
