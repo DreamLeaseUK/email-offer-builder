@@ -1004,7 +1004,13 @@ export function Compose({ email, base, items, setItems, seed, onSeedApplied, onH
     if (run !== repriceRun.current) return;
     // Merge into the tray as it is NOW: only offers still there and untouched since this started are replaced, so
     // anything added, removed or changed meanwhile stays as the salesperson left it.
-    setItems((cur) => cur.map((x) => refreshed.get(x.offer) ?? x));
+    // A brochure search that found nothing (0.7.10) still stands for the same car, unless a brochure came back.
+    setItems((cur) =>
+      cur.map((x) => {
+        const r = refreshed.get(x.offer);
+        return r ? { ...r, ...(x.noBrochureFound && !r.brochure ? { noBrochureFound: true } : {}) } : x;
+      }),
+    );
     setRepricing(false);
     setWarnings(failed.length ? [`Couldn't re-price ${failed.join(', ')} — the copied price is shown and its brochure was not re-attached. That offer page may have changed; re-fetch it (the chips reload it) or remove it before sending.`] : []);
   }
