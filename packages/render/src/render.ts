@@ -208,7 +208,7 @@ function hostedDocument(campaign: Campaign, body: string): string {
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <meta name="color-scheme" content="light only">
-<title>${esc(campaign.subject)} · DreamLease</title>
+<title>${esc(campaign.subject)} · ${BRAND_LOGO[brandFor(campaign)].alt}</title>
 <style type="text/css">
 ${STYLE}
   body { font-family: ${FONT}; }

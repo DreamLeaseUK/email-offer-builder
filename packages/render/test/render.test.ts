@@ -448,6 +448,8 @@ describe('render()', () => {
       const expected = contractType === 'business' ? 'dreamfleet-logo-2x.png DreamFleet' : 'logo-2x.png DreamLease';
       expect(logos(out.html)).toEqual([expected]);
       expect(logos(out.hostedHtml)).toEqual([expected]);
+      // The hosted page's browser tab names the same brand.
+      expect(out.hostedHtml).toMatch(new RegExp(`<title>[^<]* · ${contractType === 'business' ? 'DreamFleet' : 'DreamLease'}</title>`));
     }
   });
 

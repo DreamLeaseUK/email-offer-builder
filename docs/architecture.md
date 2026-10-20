@@ -133,6 +133,13 @@ Three audiences / lease products, each with its own compliance wording and terms
   **No automatic pinning:** Windows lets only the person (or IT policy) pin something to the taskbar, never a website
   or the app itself. Edge's install dialog offers a "Pin to taskbar" tick box; IT could force-install and pin the app
   for everyone with Edge's `WebAppInstallForceList` and a Windows taskbar layout policy (needs device management).
+- **An expired sign-in (0.7.9, 20 Oct 2026, Matt: left open overnight, the tool had to be refreshed by hand).** The
+  Cloudflare Access sign-in lasts 24 hours from sign-in and activity does not extend it. Every API call goes through
+  `apiFetch` in `api.ts` with `redirect: 'manual'`, so Access's sign-in redirect (or our 401) shows "Your sign-in has
+  expired" with a Reload button instead of a vague error. Coming back after 15 minutes or more away, the app checks the
+  sign-in and reloads itself once if it has run out (Microsoft usually signs the person straight back in). Compose
+  keeps its draft; the Templates editor holds the reload off while wording is being edited; a 2-minute guard stops a
+  reload loop (`apps/web/src/session.ts`, rules in `session-rules.ts`, tests in `apps/web/test/`).
 - **Library, simplified (29 Sept):** tabs Team offers (first) and My saved offers; Add to email and Remove per card;
   admins see removed offers, restore them and Share with team. Archive / unarchive need the entry's owner or an admin.
 - **Brochure near miss (29 Sept):** when nothing verifies, the panel offers the closest document from the stored trace
@@ -208,6 +215,8 @@ iPhone. Matt, 6 Oct: older clients with a small share do not matter, **apart fro
   fixes were of HTML pasted into unspam, not a send from the live tool.
 - **The automatic pre-send checks** (B13) keep each email inside what was certified. A visible markup change bumps
   `MARKUP_VERSION`, and Emma re-approves.
+  **Exception, 0.7.9 (20 Oct 2026, Matt's explicit OK):** the DreamFleet logo on BCH emails and the top link "Can't
+  see images? Click here" went in without a bump, so sending did not stop for re-approval (recorded in `render.ts`).
 
 **History: the paste route (21–29 Sept 2026).** Until Phase 1 the only route was Copy for Outlook. The demo of
 29 Sept showed that most salespeople use Outlook classic, whose editor is Word: a pasted email is rewritten there and
@@ -452,7 +461,7 @@ specification, equipment and prices may differ from UK models."
 **Inbox preview (23 Sept).** The Compose preheader field was removed. `render.ts` `preheader()` uses an explicit
 `campaign.preheader` if there is one (a copied older campaign may carry one), otherwise it derives the hidden preview
 text from the intro: whitespace collapsed, the first ~100 characters cut at a word boundary with "…". Without it the
-inbox would fall back to the first visible text, the "View these offers online" link. Email only; the hosted page has
+inbox would fall back to the first visible text, the "Can't see images? Click here" link (it read "View these offers online" until 0.7.9). Email only; the hosted page has
 no preheader. Tested in `render.test.ts`.
 
 **Attribution (23 Sept).** `links.ts` `campaignUtm(code, extra)` is the one UTM base for our own website links:
@@ -700,6 +709,8 @@ the EVs shelf while kept on the personal shelf).
 - **0.7.6 (7 Oct):** Compose steps 1–3 start from what was used last (A3).
 - **0.7.7 (7 Oct):** the Install app button and a bold app icon (A3).
 - **0.7.8 (7 Oct, next release):** the button reads "Install app and pin to taskbar" (A3).
+- **0.7.9 (20 Oct, next release):** the DreamFleet logo on BCH emails and their online page; the top link reads "Can't
+  see images? Click here"; the app recovers from an expired sign-in (A3, B12).
 
 Each was shipped on Matt's "ship it" and deployed by him. The log is `status-2026-10-06.md`.
 
@@ -781,7 +792,7 @@ ranked list is in `PICKUP-PROMPT.md` §4):**
   the laptop), and since Phase 1 `mail.ts` (Connect Outlook), `mail-crypto.ts`, `send.ts`, `presend.ts` (the
   pre-send checks); `apps/api/scripts/fix-placeholder-template.sql` (the one-off production correction of 28 Sept)
 - Web: `apps/web/src/App.tsx` (header portrait, `addFromLibrary`), `Compose.tsx` (incl. `repriceCopied`, the resizable
-  columns, Connect Outlook and Send, the `WHATSAPP_LIVE` and `SALSAC_LIVE` switches), `Campaigns.tsx`, `Library.tsx`, `Register.tsx`, `Suppressions.tsx`, `Templates.tsx`, `install.ts` (Install app), `api.ts`
+  columns, Connect Outlook and Send, the `WHATSAPP_LIVE` and `SALSAC_LIVE` switches), `Campaigns.tsx`, `Library.tsx`, `Register.tsx`, `Suppressions.tsx`, `Templates.tsx`, `install.ts` (Install app), `session.ts` and `session-rules.ts` (an expired sign-in, 0.7.9), `api.ts` (every call through `apiFetch`)
   (incl. `currentBrochure`), `styles.css`; `apps/web/vite.config.ts` (proxy + tunnel `allowedHosts`)
 - Config: `apps/api/wrangler.jsonc`, `config/` (`badges.json`, `admins.json`, `compliance.json`,
   `library-shelves.json`, `mail.json` (who may send, the size limit, the 24-hour offer rule)), `.claude/launch.json` (the dev servers for the desktop app)
@@ -801,6 +812,8 @@ system, one API, and a UI that only calls the API.
   4. Writes go on the `api` sub-app, where the cross-site guard covers them; public routes stay GET-only. A test of
      any non-JSON write (an upload, a bodyless POST or DELETE, a raw text body) sends `SAME_ORIGIN`
      (`test/same-origin.ts`), as the browser does, or it gets 403.
+  5. Call it from the web app through `api.ts` (`apiFetch` or `jsonPost`), never a plain `fetch`: that is what turns an
+     expired sign-in into the "Your sign-in has expired" bar instead of a vague error (`session.ts`).
 - **Connect a new outside system** (monday.com, Mautic, a CRM…).
   1. Give it its own adapter in `packages/adapters/src/<system>/`: a typed interface, the implementation and contract tests with fixtures validated by `@offer-mailer/schema`.
   2. No adapter imports another; the API wires them.
@@ -809,6 +822,11 @@ system, one API, and a UI that only calls the API.
   1. Add it to `packages/schema` as optional (or with a default) so stored JSON snapshots still parse.
   2. D1 changes are additive migrations only (`pnpm db:generate`). Matt applies remote migrations.
   3. Keep `assertNoCapId()` coverage for anything persisted.
+- **Add or change an email brand logo.** Put the PNG in `apps/api/public/a` at 196×64 on white (it shows at 98×32),
+  add it to `BRAND_LOGO` and `brandFor` in `packages/render/src/render.ts`, and extend the brand test in
+  `render.test.ts`. Today BCH (contract type `business`) carries DreamFleet and everything else DreamLease, in the
+  email and on its online page. A visible change like this normally bumps `MARKUP_VERSION` and Emma re-approves; 0.7.9
+  did not, on Matt's explicit OK (B7).
 - **Release WhatsApp.** Set `WHATSAPP_LIVE` to true in `apps/web/src/Compose.tsx` and deploy: the number field, the CTA and the signature link come back.
 - **Release salary sacrifice.** Set `SALSAC_LIVE` to true in `apps/web/src/Compose.tsx` and deploy: the audience option comes back. First ask Emma to check her salary sacrifice wording. It still mentions "the date shown on each offer", and the email shows none.
 - **When dreamlease.co.uk's pricing changes again.** Bump `PRICING_VERSION` (`packages/adapters/src/url/pricing.ts`) with the fix. An offer priced the old way is then looked up again at three points: the next look-up (the cache entry is stale), a restored draft (Compose re-prices it) and Send (the pre-send check). No data migration is needed. Prove it with a live sweep against each page's schema.org `lowPrice`.

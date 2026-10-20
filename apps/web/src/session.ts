@@ -1,38 +1,29 @@
 /**
  * Keeping the tool usable after a long gap (Matt, 20 Oct 2026: left overnight, it had to be refreshed by hand).
  *
- * The tool sits behind Cloudflare Access. Its sign-in lasts a fixed time and activity does not extend it, so a
- * "keep-alive" would not help. Once it has run out, Access answers our API calls with a redirect to its sign-in
- * page instead of letting them through, and only a page load signs the person in again (Microsoft usually does it
- * without asking). So:
- *  - every API call is made with `redirect: 'manual'` (api.ts), and a sign-in redirect or a 401 becomes a clear
- *    "your sign-in has expired" bar with a Reload button (App.tsx) instead of a vague failed request;
+ * The tool sits behind Cloudflare Access. Its sign-in lasts a fixed time (24 hours, docs/it-runbook-sign-in.md) and
+ * activity does not extend it, so a "keep-alive" would not help. Once it has run out, Access answers our API calls
+ * with a redirect to its sign-in page instead of letting them through, and only a page load signs the person in
+ * again (Microsoft usually does it without asking). So:
+ *  - every API call is made with `redirect: 'manual'` (apiFetch in api.ts), and a sign-in redirect or a 401 becomes
+ *    a clear "your sign-in has expired" bar with a Reload button (App.tsx) instead of a vague failed request;
  *  - coming back to the tool after a long gap, it checks the sign-in quietly and reloads itself if it has run out.
- *    Compose keeps its draft in the browser, so nothing typed is lost. A guard stops it reloading in a loop.
+ *    Compose keeps its draft in the browser, so nothing typed there is lost. A screen with unsaved work held only in
+ *    memory (the Templates editor) calls holdAutoReload, and then the bar shows instead. A guard stops reload loops.
+ * The decisions themselves are in session-rules.ts.
  */
+import { cameBackAfterIdle, onExpired, signedOut } from './session-rules';
 
-/** Away this long, the tool checks the sign-in when the person comes back. */
-const IDLE_MS = 15 * 60 * 1000;
-/** No second automatic reload within this time; the bar shows instead. */
-const RELOAD_GUARD_MS = 2 * 60 * 1000;
-const RELOAD_GUARD_KEY = 'dl-session-reload-at';
+export { signedOut };
 
 export const SESSION_EXPIRED_EVENT = 'dl-session-expired';
+const RELOAD_GUARD_KEY = 'dl-session-reload-at';
 
 export class SessionExpiredError extends Error {
   constructor() {
     super('Your sign-in has expired. Reload the page to sign in again.');
     this.name = 'SessionExpiredError';
   }
-}
-
-/**
- * True when a response came from Cloudflare Access's sign-in rather than from our API. With `redirect: 'manual'`
- * the browser hands back an opaque redirect instead of following it to another site (which would fail as a
- * cross-site request). Our API answers 401 only when there is no signed-in user.
- */
-export function signedOut(r: Pick<Response, 'type' | 'status'>): boolean {
-  return r.type === 'opaqueredirect' || r.status === 401;
 }
 
 export function announceSignedOut(): void {
@@ -50,12 +41,17 @@ export async function checkSession(): Promise<'ok' | 'expired' | 'unknown'> {
   }
 }
 
-function reloadedRecently(now: number): boolean {
+let holds = 0;
+/** A screen with unsaved work held only in memory turns this on while that work is open, and off after. */
+export function holdAutoReload(on: boolean): void {
+  holds = Math.max(0, holds + (on ? 1 : -1));
+}
+
+function lastReloadAt(): number | null {
   try {
-    const at = Number(sessionStorage.getItem(RELOAD_GUARD_KEY));
-    return at > 0 && now - at < RELOAD_GUARD_MS;
+    return Number(sessionStorage.getItem(RELOAD_GUARD_KEY)) || null;
   } catch {
-    return false;
+    return null;
   }
 }
 
@@ -72,17 +68,18 @@ let checking = false;
 
 async function onReturn(): Promise<void> {
   const now = Date.now();
-  const away = now - lastActive;
+  const idle = cameBackAfterIdle(lastActive, now);
   lastActive = now;
-  if (away < IDLE_MS || checking) return;
+  if (!idle || checking) return;
   checking = true;
   try {
     if ((await checkSession()) !== 'expired') return;
-    if (reloadedRecently(Date.now())) {
+    const at = Date.now();
+    if (onExpired({ now: at, lastReloadAt: lastReloadAt(), held: holds > 0 }) === 'show-bar') {
       announceSignedOut();
       return;
     }
-    markReload(Date.now());
+    markReload(at);
     window.location.reload();
   } finally {
     checking = false;
@@ -90,7 +87,7 @@ async function onReturn(): Promise<void> {
 }
 
 function onActivity(): void {
-  if (Date.now() - lastActive >= IDLE_MS) void onReturn();
+  if (cameBackAfterIdle(lastActive, Date.now())) void onReturn();
   else lastActive = Date.now();
 }
 

@@ -247,6 +247,9 @@ importers:
       vite:
         specifier: ^7.3.6
         version: 7.3.6(@types/node@24.13.4)(tsx@4.23.13)
+      vitest:
+        specifier: ^4.1.11
+        version: 4.1.11(@types/node@24.13.4)(vite@7.3.6(@types/node@24.13.4)(tsx@4.23.13))
 
   packages/adapters:
     dependencies:
