@@ -15,8 +15,24 @@ import { RenderError, buildCards, type CardVM } from './viewmodel.js';
 
 export { RenderError };
 
-/** Bump when the markup changes in a way Emma should re-approve. 2 = the v5 reference markup. */
+/**
+ * Bump when the markup changes in a way Emma should re-approve. 2 = the v5 reference markup.
+ * Deliberately NOT bumped for 0.7.9 (Matt, 20 Oct 2026, his explicit OK to build it in without re-approval): BCH
+ * emails carry the DreamFleet logo, and the top link reads "Can't see images? Click here". A bump would have stopped
+ * every send until the templates were re-approved.
+ */
 export const MARKUP_VERSION = 2;
+
+/** The brand whose logo heads an email. DreamFleet is DreamLease's business brand: every BCH email carries it. */
+export type EmailBrand = 'dreamlease' | 'dreamfleet';
+/** The logo files in apps/api/public/a (both 196×64 on white, shown at LOGO_W × LOGO_H). */
+const BRAND_LOGO: Record<EmailBrand, { file: string; alt: string }> = {
+  dreamlease: { file: 'logo-2x.png', alt: 'DreamLease' },
+  dreamfleet: { file: 'dreamfleet-logo-2x.png', alt: 'DreamFleet' },
+};
+export const brandFor = (campaign: Campaign): EmailBrand => (campaign.compliance.variant === 'business' ? 'dreamfleet' : 'dreamlease');
+/** The link at the top of the email to its online copy (Matt, 20 Oct 2026). The hosted page itself has none. */
+export const VIEW_ONLINE_LABEL = "Can't see images? Click here";
 
 export class TemplateNotApprovedError extends Error {
   constructor(template: Template) {
@@ -123,7 +139,7 @@ const MSO_HEAD = `<!--[if mso]>
 /**
  * The inbox preview line. An explicit preheader wins; otherwise it is derived from the intro's first
  * ~100 characters. The compose form no longer offers a preheader field, and a blank one would let the
- * client fall back to the first visible text (the "View these offers online" link), so we synthesise
+ * client fall back to the first visible text (the "Can't see images?" link), so we synthesise
  * a sensible preview from the intro instead. Email only — the hosted page has no preheader.
  */
 function introPreview(intro: string, max = 100): string {
@@ -192,7 +208,7 @@ function hostedDocument(campaign: Campaign, body: string): string {
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <meta name="color-scheme" content="light only">
-<title>${esc(campaign.subject)} · DreamLease</title>
+<title>${esc(campaign.subject)} · ${BRAND_LOGO[brandFor(campaign)].alt}</title>
 <style type="text/css">
 ${STYLE}
   body { font-family: ${FONT}; }
@@ -224,11 +240,12 @@ const bodyP = (text: string, size: number, lh: number, margin: string, extra = '
   `<p class="lock-body" style="margin:${margin}; ${extra}font-size:${size}px; line-height:${lh}px; ${LH}; color:${C.graphite};">${text}</p>`;
 
 function emailBody(campaign: Campaign, template: Template, cards: CardVM[], layout: TemplateLayout, compliance: ComplianceBlock, ctx: BodyCtx): string {
+  const logo = BRAND_LOGO[brandFor(campaign)];
   const viewOnline = ctx.forHostedPage
     ? ''
     : `<tr>
           <td align="right" class="lock-body" style="padding-bottom:14px; ${FF} font-size:12px; line-height:16px; ${LH}; color:${C.graphite};">
-            <a href="${esc(ctx.hostedUrl)}" style="color:${C.red}; text-decoration:underline;" class="lock-red">View these offers online</a>
+            <a href="${esc(ctx.hostedUrl)}" style="color:${C.red}; text-decoration:underline;" class="lock-red">${esc(VIEW_ONLINE_LABEL)}</a>
           </td>
         </tr>
         `;
@@ -242,7 +259,7 @@ function emailBody(campaign: Campaign, template: Template, cards: CardVM[], layo
         `
         ${viewOnline}<tr>
           <td style="padding-bottom:20px; border-bottom:1px solid ${C.border};">
-            <img src="${esc(ctx.base)}/a/logo-2x.png" width="${LOGO_W}" height="${LOGO_H}" alt="DreamLease" style="display:block; border:0; width:${LOGO_W}px; height:${LOGO_H}px;" />
+            <img src="${esc(ctx.base)}/a/${logo.file}" width="${LOGO_W}" height="${LOGO_H}" alt="${logo.alt}" style="display:block; border:0; width:${LOGO_W}px; height:${LOGO_H}px;" />
           </td>
         </tr>
       `,
@@ -378,6 +395,7 @@ ${footer}
 function plainText(campaign: Campaign, template: Template, cards: CardVM[], compliance: ComplianceBlock, hostedUrl: string): string {
   const lines: string[] = [];
   if (campaign.recipient?.firstName) lines.push(`Hi ${campaign.recipient.firstName},`, '');
+  // Plain text has no images, so its link keeps the plain wording.
   lines.push(campaign.intro.trim(), '', `View these offers online: ${hostedUrl}`, '');
   for (const c of cards) {
     lines.push(`${c.make} ${c.model} — ${c.derivative}`);

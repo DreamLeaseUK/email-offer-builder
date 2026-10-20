@@ -430,11 +430,27 @@ describe('render()', () => {
     expect(hero).not.toContain('align="left"');
   });
 
-  it('omits the "View these offers online" link from the hosted page', () => {
+  it('links "Can\'t see images? Click here" to the online copy in the email, never on the hosted page', () => {
     const { out } = r();
-    expect(out.html).toContain('View these offers online');
-    expect(out.hostedHtml).not.toContain('View these offers online');
+    const link = 'Can&#39;t see images? Click here';
+    expect(out.html).toContain(link);
+    expect(out.html).not.toContain('View these offers online');
+    expect(out.hostedHtml).not.toContain(link);
     expect(out.hostedHtml).toContain('noindex');
+    // Plain text has no images, so it keeps the plain wording.
+    expect(out.text).toContain('View these offers online: ');
+  });
+
+  it('heads BCH emails and their hosted page with the DreamFleet logo; PCH and salary sacrifice keep DreamLease (Matt, 20 Oct 2026)', () => {
+    const logos = (html: string) => [...html.matchAll(/<img src="[^"]*\/a\/((?:dreamfleet-)?logo-2x\.png)"[^>]*alt="([^"]*)"/g)].map((m) => `${m[1]} ${m[2]}`);
+    for (const contractType of ['personal', 'business', 'salary_sacrifice'] as const) {
+      const { out } = r({ contractType });
+      const expected = contractType === 'business' ? 'dreamfleet-logo-2x.png DreamFleet' : 'logo-2x.png DreamLease';
+      expect(logos(out.html)).toEqual([expected]);
+      expect(logos(out.hostedHtml)).toEqual([expected]);
+      // The hosted page's browser tab names the same brand.
+      expect(out.hostedHtml).toMatch(new RegExp(`<title>[^<]* · ${contractType === 'business' ? 'DreamFleet' : 'DreamLease'}</title>`));
+    }
   });
 
   it('greets the recipient in the email but never on the public hosted page', () => {

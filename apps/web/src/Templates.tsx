@@ -8,6 +8,7 @@ import { useEffect, useState } from 'react';
 import { Alert, Badge, Button, Field, Input, Textarea } from 'dreamlease-design-system';
 import type { ContractType, Template } from '@offer-mailer/schema';
 import { api, type TemplateInput } from './api';
+import { holdAutoReload } from './session';
 
 const errMsg = (e: unknown): string => (e instanceof Error ? e.message : String(e));
 
@@ -62,6 +63,13 @@ export function Templates({ canEdit }: { canEdit: boolean }) {
   useEffect(() => {
     load();
   }, []);
+  // Wording being edited lives only on this screen: never let the expired-sign-in recovery reload over it (session.ts).
+  const editing = !!form && !viewOnly;
+  useEffect(() => {
+    if (!editing) return;
+    holdAutoReload(true);
+    return () => holdAutoReload(false);
+  }, [editing]);
 
   const startNew = () => { setEditingId(null); setViewOnly(false); setForm(blankForm()); setNotice(''); setError(''); };
   const startEdit = (t: Template) => { setEditingId(t.id); setViewOnly(false); setForm(formFrom(t)); setNotice(''); setError(''); };

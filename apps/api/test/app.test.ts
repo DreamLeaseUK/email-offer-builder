@@ -108,10 +108,12 @@ describe('dev preview', () => {
   it('renders a fixture and can publish its hosted page', async () => {
     const res = await app.request('/api/dev/preview?layout=stack&count=4&cta=book&brochure=pdf&publish=1', {}, env);
     expect(res.status).toBe(200);
-    expect(await res.text()).toMatch(/Book a time to talk/);
+    const email = await res.text();
+    expect(email).toMatch(/Book a time to talk/);
+    expect(email).toMatch(/Can&#39;t see images\? Click here/);
     const hostedRes = await app.request('/c/k3J9xQ2mZp8LwN4vR7tY', {}, env);
     expect(hostedRes.status).toBe(200);
-    expect(await hostedRes.text()).not.toMatch(/View these offers online/);
+    expect(await hostedRes.text()).not.toMatch(/Can&#39;t see images/);
   });
 
   it('is not served on the live site, so nothing can be published there', async () => {
