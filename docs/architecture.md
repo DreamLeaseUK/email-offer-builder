@@ -312,7 +312,7 @@ Edit → HTTP Validation → Save → Refresh (runbook C8, done that way on 6 Oc
   account's credit balance is not visible from here), and since Phase 1 `MAIL_CLIENT_SECRET` (IT's Send app secret,
   expires 30 Sept 2027) and `MAIL_TOKEN_KEY` (B13), all set by Matt. Vars (`wrangler.jsonc`): `PUBLIC_BASE_URL`
   (customer links: `https://offers.dreamlease.co.uk` since 0.7.2), `TOOL_BASE_URL` (the only host serving the web
-  app), `APP_VERSION` (0.7.8 in `main`), `MAIL_TENANT_ID`, `MAIL_CLIENT_ID`, `MAIL_REDIRECT_URI`. Optional: `ADMIN_EMAILS`,
+  app), `APP_VERSION` (0.7.9 in `main`), `MAIL_TENANT_ID`, `MAIL_CLIENT_ID`, `MAIL_REDIRECT_URI`. Optional: `ADMIN_EMAILS`,
   `COMPLIANCE_EMAILS`, `RETENTION_CAMPAIGN_DAYS` (**unset**: Emma sets the period). Locally `.dev.vars`
   (git-ignored, `DEV_USER_EMAIL`).
 
@@ -695,8 +695,8 @@ the EVs shelf while kept on the personal shelf).
 | 7 Template admin, approval, register, suppression | **Done** (register, compliance-approver-only templates since 28 Sept, suppression list) |
 | 8 Stubs & `evolution.md` | Not started (low value) |
 
-**PII plan: complete** (items 1–4). Build-order steps 1–7 done. **Production is v0.7.7 (7 Oct 2026)**; `main` is
-0.7.8, which Matt deploys next. Since the last full update of this section:
+**PII plan: complete** (items 1–4). Build-order steps 1–7 done. **Production is v0.7.8 (7 Oct 2026)**; `main` is
+0.7.9, which Matt deploys next. Since the last full update of this section:
 - **0.6.1 (29 Sept):** live behind Access on `marketingtools.dreamelectric.uk` (`status-2026-09-29.md`).
 - **0.6.2 (30 Sept):** the email no longer states a validity date.
 - **0.7.0 (30 Sept):** Phase 1, Send from the salesperson's own mailbox (B13).
@@ -708,7 +708,7 @@ the EVs shelf while kept on the personal shelf).
 - **0.7.5 (7 Oct):** no processing fee anywhere in the tool: model, parser, fixtures, design (B7).
 - **0.7.6 (7 Oct):** Compose steps 1–3 start from what was used last (A3).
 - **0.7.7 (7 Oct):** the Install app button and a bold app icon (A3).
-- **0.7.8 (7 Oct, next release):** the button reads "Install app and pin to taskbar" (A3).
+- **0.7.8 (7 Oct):** the button reads "Install app and pin to taskbar" (A3).
 - **0.7.9 (20 Oct, next release):** the DreamFleet logo on BCH emails and their online page; the top link reads "Can't
   see images? Click here"; the app recovers from an expired sign-in (A3, B12).
 
@@ -748,7 +748,7 @@ ranked list is in `PICKUP-PROMPT.md` §4):**
   audience; Tawk webchat.
 
 ## B10. Testing & verification
-- `pnpm test` — **320 tests** (7 Oct 2026: schema 23, render 40, adapters 122, api 135), all run by CI on every pull
+- `pnpm test` — **325 tests** (20 Oct 2026: schema 23, web 4, render 41, adapters 122, api 135), all run by CI on every pull
   request. What they cover:
   - **Phase 1 (30 Sept):** sending against a stand-in for Microsoft (`m365.test.ts`), token encryption, "only as
     yourself", every pre-send check rule by rule (`presend.test.ts`), Send's reservation and outcomes
@@ -759,8 +759,12 @@ ranked list is in `PICKUP-PROMPT.md` §4):**
     - spacing and badges in the Outlook classic markup, and `ownFileUrl`;
     - unknown customer addresses redirected, and `robots.txt`.
   - **7 Oct:** no empty small-print paragraph, the brochure line kept (the processing fee is gone from the model,
-    so there is nothing left to test for it). The web app has no tests: Compose's remembered steps were proven in a
-    real browser.
+    so there is nothing left to test for it). Compose's remembered steps were proven in a real browser.
+  - **20 Oct (0.7.9):** the DreamFleet logo for BCH and DreamLease for the rest, in the email, the hosted page and its
+    title; the "Can't see images? Click here" link in the email and not on the hosted page. The web app's first unit
+    tests (`apps/web/test/`, `pnpm --filter @offer-mailer/web test`): the expired sign-in rules in `session-rules.ts`.
+    Web logic that needs proof lives in a browser-free module with a test beside it; the rest is proven in a real
+    browser.
   - **Earlier:**
     - templates: who may read and write, `COMPLIANCE_EMAILS`, `/me`'s `complianceApprover`, the placeholder seeded
       without an approver;
@@ -826,7 +830,7 @@ system, one API, and a UI that only calls the API.
   add it to `BRAND_LOGO` and `brandFor` in `packages/render/src/render.ts`, and extend the brand test in
   `render.test.ts`. Today BCH (contract type `business`) carries DreamFleet and everything else DreamLease, in the
   email and on its online page. A visible change like this normally bumps `MARKUP_VERSION` and Emma re-approves; 0.7.9
-  did not, on Matt's explicit OK (B7).
+  did not, on Matt's explicit OK (A5).
 - **Release WhatsApp.** Set `WHATSAPP_LIVE` to true in `apps/web/src/Compose.tsx` and deploy: the number field, the CTA and the signature link come back.
 - **Release salary sacrifice.** Set `SALSAC_LIVE` to true in `apps/web/src/Compose.tsx` and deploy: the audience option comes back. First ask Emma to check her salary sacrifice wording. It still mentions "the date shown on each offer", and the email shows none.
 - **When dreamlease.co.uk's pricing changes again.** Bump `PRICING_VERSION` (`packages/adapters/src/url/pricing.ts`) with the fix. An offer priced the old way is then looked up again at three points: the next look-up (the cache entry is stale), a restored draft (Compose re-prices it) and Send (the pre-send check). No data migration is needed. Prove it with a live sweep against each page's schema.org `lowPrice`.
