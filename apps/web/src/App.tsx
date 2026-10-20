@@ -10,6 +10,7 @@ import { Suppressions } from './Suppressions';
 import { Templates } from './Templates';
 import { pinTipNeeded, pinTipSeen, useInstallApp } from './install';
 import { SESSION_EXPIRED_EVENT, SessionExpiredError } from './session';
+import { trayItem } from './tray';
 
 const errMsg = (e: unknown): string => (e instanceof Error ? e.message : String(e));
 
@@ -60,7 +61,7 @@ export function App() {
   }, []);
 
   const addFromLibrary = (o: Offer, brochure?: Brochure) => {
-    setItems((it) => (it.some((x) => x.offer.id === o.id) ? it : [...it, { offer: o, ...(brochure ? { brochure } : {}) }].slice(0, 6)));
+    setItems((it) => (it.some((x) => x.offer.id === o.id) ? it : [...it, trayItem({ offer: o, ...(brochure ? { brochure } : {}) })].slice(0, 6)));
     setView('compose');
   };
 

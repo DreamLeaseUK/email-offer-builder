@@ -72,6 +72,13 @@ Three audiences / lease products, each with its own compliance wording and terms
   Offers, Preview) are **resizable**: two draggable dividers set the Campaign and Offers widths, the preview takes the
   rest, with minimum widths (260 / 300 / 300 px), the widths remembered per browser (`localStorage`
   `dl-compose-cols`), and the panels stacking with the dividers hidden below 1100 px.
+- **Each car in the tray is found by its own row key (0.7.11, 20 Oct 2026; `apps/web/src/tray.ts`).** The key is made
+  when the car enters the tray and kept through every re-price; it stays in the browser and is never sent. Before, a
+  brochure search (10–60 seconds) answered by the car's position: removing an earlier car meanwhile shifted the next
+  one into its place, so one model's brochure could land on another car. The offer id is no key: the same URL
+  looked up twice within a day shares one (the lookup cache), and a new term brings a new one. A Term, Mileage or
+  Initial chip change now also keeps the car's attached brochure and its "include" choice (it used to fall off),
+  while the make and model are unchanged.
 - **Audience selector**: PCH / BCH / Salary sacrifice, driving compliance block, terms and (salsac) pricing. Salary
   sacrifice is greyed out "— coming soon" since 6 Oct (A1).
 - **Offer-button CTA**: one primary green button per campaign — *View offer · Call · WhatsApp · Email · Book a
@@ -314,7 +321,7 @@ Edit → HTTP Validation → Save → Refresh (runbook C8, done that way on 6 Oc
   account's credit balance is not visible from here), and since Phase 1 `MAIL_CLIENT_SECRET` (IT's Send app secret,
   expires 30 Sept 2027) and `MAIL_TOKEN_KEY` (B13), all set by Matt. Vars (`wrangler.jsonc`): `PUBLIC_BASE_URL`
   (customer links: `https://offers.dreamlease.co.uk` since 0.7.2), `TOOL_BASE_URL` (the only host serving the web
-  app), `APP_VERSION` (0.7.10 in `main`), `MAIL_TENANT_ID`, `MAIL_CLIENT_ID`, `MAIL_REDIRECT_URI`. Optional: `ADMIN_EMAILS`,
+  app), `APP_VERSION` (0.7.11 in `main`), `MAIL_TENANT_ID`, `MAIL_CLIENT_ID`, `MAIL_REDIRECT_URI`. Optional: `ADMIN_EMAILS`,
   `COMPLIANCE_EMAILS`, `RETENTION_CAMPAIGN_DAYS` (**unset**: Emma sets the period). Locally `.dev.vars`
   (git-ignored, `DEV_USER_EMAIL`).
 
@@ -703,7 +710,7 @@ the EVs shelf while kept on the personal shelf).
 | 8 Stubs & `evolution.md` | Not started (low value) |
 
 **PII plan: complete** (items 1–4). Build-order steps 1–7 done. **Production is v0.7.9 (20 Oct 2026)**; `main` is
-0.7.10, which Matt deploys next. Since the last full update of this section:
+0.7.11, which Matt deploys next. Since the last full update of this section:
 - **0.6.1 (29 Sept):** live behind Access on `marketingtools.dreamelectric.uk` (`status-2026-09-29.md`).
 - **0.6.2 (30 Sept):** the email no longer states a validity date.
 - **0.7.0 (30 Sept):** Phase 1, Send from the salesperson's own mailbox (B13).
@@ -718,10 +725,13 @@ the EVs shelf while kept on the personal shelf).
 - **0.7.8 (7 Oct):** the button reads "Install app and pin to taskbar" (A3).
 - **0.7.9 (20 Oct):** the DreamFleet logo on BCH emails and their online page; the top link reads "Can't
   see images? Click here"; the app recovers from an expired sign-in (A3, B12).
-- **0.7.10 (20 Oct, next release):** a car whose brochure search completed and found nothing says "Brochure
+- **0.7.10 (20 Oct):** a car whose brochure search completed and found nothing says "Brochure
   unavailable for this vehicle" in small grey text where the brochure link would be, but only when another car in
   the same email has a brochure (`Offer.noBrochure`, set by Compose on the campaign's copy; B7, deviation h in
   `cards.ts`).
+- **0.7.11 (20 Oct, next release):** Compose finds each car by its own row key, so a brochure found while an earlier
+  car was removed lands on the right car, and a term, mileage or initial-payment change keeps the attached brochure
+  (A3, `tray.ts`).
 
 Each was shipped on Matt's "ship it" and deployed by him. The log is `status-2026-10-06.md`.
 
@@ -807,7 +817,7 @@ ranked list is in `PICKUP-PROMPT.md` §4):**
   the laptop), and since Phase 1 `mail.ts` (Connect Outlook), `mail-crypto.ts`, `send.ts`, `presend.ts` (the
   pre-send checks); `apps/api/scripts/fix-placeholder-template.sql` (the one-off production correction of 28 Sept)
 - Web: `apps/web/src/App.tsx` (header portrait, `addFromLibrary`), `Compose.tsx` (incl. `repriceCopied`, the resizable
-  columns, Connect Outlook and Send, the `WHATSAPP_LIVE` and `SALSAC_LIVE` switches), `Campaigns.tsx`, `Library.tsx`, `Register.tsx`, `Suppressions.tsx`, `Templates.tsx`, `install.ts` (Install app), `session.ts` and `session-rules.ts` (an expired sign-in, 0.7.9), `api.ts` (every call through `apiFetch`)
+  columns, Connect Outlook and Send, the `WHATSAPP_LIVE` and `SALSAC_LIVE` switches), `tray.ts` (each tray row's key, 0.7.11), `Campaigns.tsx`, `Library.tsx`, `Register.tsx`, `Suppressions.tsx`, `Templates.tsx`, `install.ts` (Install app), `session.ts` and `session-rules.ts` (an expired sign-in, 0.7.9), `api.ts` (every call through `apiFetch`)
   (incl. `currentBrochure`), `styles.css`; `apps/web/vite.config.ts` (proxy + tunnel `allowedHosts`)
 - Config: `apps/api/wrangler.jsonc`, `config/` (`badges.json`, `admins.json`, `compliance.json`,
   `library-shelves.json`, `mail.json` (who may send, the size limit, the 24-hour offer rule)), `.claude/launch.json` (the dev servers for the desktop app)
@@ -845,6 +855,9 @@ system, one API, and a UI that only calls the API.
 - **Release WhatsApp.** Set `WHATSAPP_LIVE` to true in `apps/web/src/Compose.tsx` and deploy: the number field, the CTA and the signature link come back.
 - **Release salary sacrifice.** Set `SALSAC_LIVE` to true in `apps/web/src/Compose.tsx` and deploy: the audience option comes back. First ask Emma to check her salary sacrifice wording. It still mentions "the date shown on each offer", and the email shows none.
 - **When dreamlease.co.uk's pricing changes again.** Bump `PRICING_VERSION` (`packages/adapters/src/url/pricing.ts`) with the fix. An offer priced the old way is then looked up again at three points: the next look-up (the cache entry is stale), a restored draft (Compose re-prices it) and Send (the pre-send check). No data migration is needed. Prove it with a live sweep against each page's schema.org `lowPrice`.
+- **Change a car in the Compose tray.** Make a new row with `trayItem` and change one with `updateRow` by its key
+  (`apps/web/src/tray.ts`, tested in `apps/web/test/tray.test.ts`), never by its position: anything that answers late
+  (a lookup, a brochure search) must still find its own car after others were added or removed.
 - **Add a rule, list or wording.** Put it in `config/` (like `badges.json`, `library-shelves.json`), not in code.
 - **Change who approves the compliance wording.** Use the exact sign-in address from Zero Trust → Team & Resources → Users (Emma signs in as `emma@dreamlease.co.uk`; an assumed `emma.airey@` left her without the Templates tab until PR #12). Edit `config/compliance.json` and deploy, or set
   `COMPLIANCE_EMAILS` for a temporary deputy. Never grant it through `admins.json`: admins read templates, they do not

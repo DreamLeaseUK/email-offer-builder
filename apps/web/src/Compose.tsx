@@ -4,6 +4,7 @@ import { Alert, Badge, Button, Field, Input, OfferCard, Select, Textarea } from 
 import type { Brochure, BrochureSearch, CtaKind, Offer, Sender } from '@offer-mailer/schema';
 import { CTA_DEFAULT_LABELS } from '@offer-mailer/schema';
 import { api, type Audience, type ComposeSeed, type ContactMethod, type CreateResponse, type Draft, type Item, type LayoutChoice, type LeaseOption, type MailStatus, type UseCase } from './api';
+import { relooked, trayItem, updateRow } from './tray';
 
 const gbp = (n: number): string => '£' + Math.round(n).toLocaleString('en-GB');
 const errMsg = (e: unknown): string => (e instanceof Error ? e.message : String(e));
@@ -669,7 +670,7 @@ export function Compose({ email, base, items, setItems, seed, onSeedApplied, onH
 
   const [url, setUrl] = useState('');
   const [fetching, setFetching] = useState(false);
-  const [reloading, setReloading] = useState<number | null>(null);
+  const [reloading, setReloading] = useState<string | null>(null); // the key of the row being re-priced
   const [saving, setSaving] = useState<string | null>(null);
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
   const [addError, setAddError] = useState('');
@@ -875,7 +876,7 @@ export function Compose({ email, base, items, setItems, seed, onSeedApplied, onH
     setRecipientFirst('');
     setRecipientEmail('');
     setRestoredAt(null);
-    setItems(seed.offers.map((o) => ({ offer: o }))); // show the copied offers at once…
+    setItems(seed.offers.map((o) => trayItem({ offer: o }))); // show the copied offers at once…
     void repriceCopied(seed.offers); // …then refresh each price live
     onSeedApplied?.();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -916,7 +917,7 @@ export function Compose({ email, base, items, setItems, seed, onSeedApplied, onH
     const ctaRestored = d.ctaKind === 'whatsapp' && !WHATSAPP_LIVE ? 'view_offer' : d.ctaKind;
     setCtaKind(ctaRestored);
     setCtaLabel(d.ctaLabel);
-    const offers = d.items.slice(0, 6);
+    const offers = d.items.slice(0, 6).map(({ key: _saved, ...x }) => trayItem(x)); // a draft saved before 0.7.11 has no keys
     setItems(offers);
     setRestoredAt(d.savedAt);
     lastSavedBody.current = JSON.stringify(draftBody({ ...d, ctaKind: ctaRestored, items: offers }));
@@ -984,7 +985,7 @@ export function Compose({ email, base, items, setItems, seed, onSeedApplied, onH
     setRepricing(true);
     setWarnings([]);
     setAddError('');
-    const refreshed = new Map<Offer, Item>();
+    const refreshed = new Map<Offer, Omit<Item, 'key'>>();
     const failed: string[] = [];
     for (const o of offers) {
       try {
@@ -1008,7 +1009,7 @@ export function Compose({ email, base, items, setItems, seed, onSeedApplied, onH
     setItems((cur) =>
       cur.map((x) => {
         const r = refreshed.get(x.offer);
-        return r ? { ...r, ...(x.noBrochureFound && !r.brochure ? { noBrochureFound: true } : {}) } : x;
+        return r ? { ...r, key: x.key, ...(x.noBrochureFound && !r.brochure ? { noBrochureFound: true } : {}) } : x;
       }),
     );
     setRepricing(false);
@@ -1150,7 +1151,7 @@ export function Compose({ email, base, items, setItems, seed, onSeedApplied, onH
         setAddError(`That URL is a ${audienceShort(offer.contractType)} lease, but the audience is set to ${audienceShort(audience)}. Switch the audience above, or paste the matching URL.`);
         return;
       }
-      setItems((it) => [...it, { offer, options: res.options }].slice(0, 6));
+      setItems((it) => [...it, trayItem({ offer, options: res.options })].slice(0, 6));
       setUrl('');
       clearOutput();
       if (res.warnings.length) setWarnings(res.warnings);
@@ -1162,18 +1163,19 @@ export function Compose({ email, base, items, setItems, seed, onSeedApplied, onH
   }
 
   /** Re-price one offer for a changed term / mileage / initial-payment months, in place. */
-  async function reLook(i: number, param: 'contractLength' | 'annualMileage' | 'initialRental', value: number) {
-    setReloading(i);
+  async function reLook(key: string, param: 'contractLength' | 'annualMileage' | 'initialRental', value: number) {
+    const prev = items.find((x) => x.key === key)?.offer;
+    if (!prev) return;
+    setReloading(key);
     setAddError('');
     try {
-      const prev = items[i]!.offer;
       const u = new URL(prev.offerUrl);
       u.searchParams.set(param, String(value));
       const res = await api.lookup(u.toString());
-      const offer = isSalsac(prev) ? toSalsac(res.offer, prev) : res.offer; // keep the hand-entered nets
-      // a new term or mileage is the same car: a brochure search that found nothing still stands (0.7.10)
-      setItems((it) => it.map((x, k) => (k === i ? { offer, options: res.options, ...(x.noBrochureFound && !offer.brochure ? { noBrochureFound: true } : {}) } : x)));
-      clearOutput();
+      // Into the row as it is now, found by its key: the same car keeps its brochure and a search that found nothing
+      // (tray.ts relooked), and the hand-entered salary-sacrifice nets. A removed row is left gone; the tray effect
+      // above drops the created output when the row really changes.
+      setItems((it) => updateRow(it, key, (x) => relooked(x, isSalsac(x.offer) ? toSalsac(res.offer, x.offer) : res.offer, res.options)));
     } catch (err) {
       setAddError(errMsg(err));
     } finally {
@@ -1198,10 +1200,8 @@ export function Compose({ email, base, items, setItems, seed, onSeedApplied, onH
   }
 
   /** Edit a salary-sacrifice offer's hand-entered net figures in place. */
-  function setSalsac(i: number, patch: Partial<{ net20: number; net40: number }>) {
-    setItems((it) =>
-      it.map((x, k) => (k === i ? { ...x, offer: { ...x.offer, pricing: { ...x.offer.pricing, salsac: { ...(x.offer.pricing.salsac ?? { net20: 0, net40: 0 }), ...patch } } } } : x)),
-    );
+  function setSalsac(key: string, patch: Partial<{ net20: number; net40: number }>) {
+    setItems((it) => updateRow(it, key, (x) => ({ ...x, offer: { ...x.offer, pricing: { ...x.offer.pricing, salsac: { ...(x.offer.pricing.salsac ?? { net20: 0, net40: 0 }), ...patch } } } })));
     clearOutput();
   }
 
@@ -1218,28 +1218,28 @@ export function Compose({ email, base, items, setItems, seed, onSeedApplied, onH
     }
   }
 
-  const removeOffer = (i: number) => {
-    setItems((it) => it.filter((_, k) => k !== i));
+  const removeOffer = (key: string) => {
+    setItems((it) => it.filter((x) => x.key !== key));
     clearOutput();
   };
 
+  // Every row change below finds its car by the row's key (tray.ts), never by its position: a brochure search answers
+  // 10–60 seconds later, by when an earlier car may have been removed. The two that answer late (attach, and the
+  // search result) leave the created output to the tray effect above, which drops it only if the row really changed.
   /** Attach a resolved brochure to one offer (id + include on the offer; full record on the Item for display). */
-  function attachBrochure(i: number, brochure: Brochure, include = true) {
-    setItems((it) => it.map((x, k) => (k === i ? { ...x, brochure, offer: { ...x.offer, brochure: { brochureId: brochure.id, include } } } : x)));
+  function attachBrochure(key: string, brochure: Brochure, include = true) {
+    setItems((it) => updateRow(it, key, (x) => ({ ...x, brochure, offer: { ...x.offer, brochure: { brochureId: brochure.id, include } } })));
+  }
+  function toggleBrochure(key: string, include: boolean) {
+    setItems((it) => updateRow(it, key, (x) => (x.offer.brochure ? { ...x, offer: { ...x.offer, brochure: { ...x.offer.brochure, include } } } : x)));
     clearOutput();
   }
-  function toggleBrochure(i: number, include: boolean) {
-    setItems((it) => it.map((x, k) => (k === i && x.offer.brochure ? { ...x, offer: { ...x.offer, brochure: { ...x.offer.brochure, include } } } : x)));
-    clearOutput();
+  function markBrochureSearch(key: string, nothingFound: boolean) {
+    setItems((it) => updateRow(it, key, (x) => (!!x.noBrochureFound !== nothingFound ? { ...x, noBrochureFound: nothingFound } : x)));
   }
-  function markBrochureSearch(i: number, nothingFound: boolean) {
-    setItems((it) => it.map((x, k) => (k === i && !!x.noBrochureFound !== nothingFound ? { ...x, noBrochureFound: nothingFound } : x)));
-    if (nothingFound) clearOutput();
-  }
-  function removeBrochure(i: number) {
+  function removeBrochure(key: string) {
     setItems((it) =>
-      it.map((x, k) => {
-        if (k !== i) return x;
+      updateRow(it, key, (x) => {
         const { brochure: _drop, ...offer } = x.offer;
         const { brochure: _rec, ...rest } = x;
         return { ...rest, offer };
@@ -1520,8 +1520,8 @@ export function Compose({ email, base, items, setItems, seed, onSeedApplied, onH
 
         <div className="offers">
           {items.length === 0 && <p className="dl-small app__muted">No offers yet. Paste a vehicle URL above, or add one from the Library tab.</p>}
-          {items.map(({ offer: o, options, brochure }, i) => (
-            <div key={i} className={`offers__item${reloading === i ? ' offers__item--busy' : ''}`}>
+          {items.map(({ key, offer: o, options, brochure }) => (
+            <div key={key} className={`offers__item${reloading === key ? ' offers__item--busy' : ''}`}>
               <OfferCard
                 make={o.vehicle.make}
                 model={o.vehicle.model}
@@ -1537,25 +1537,25 @@ export function Compose({ email, base, items, setItems, seed, onSeedApplied, onH
                 <div className="salsac">
                   <div className="salsac__row">
                     <label className="salsac__label dl-small">Net · 20% taxpayer</label>
-                    <Input type="number" min={0} inputMode="numeric" placeholder="£/mo" value={o.pricing.salsac?.net20 || ''} onChange={(e) => setSalsac(i, { net20: Number(e.target.value) })} />
+                    <Input type="number" min={0} inputMode="numeric" placeholder="£/mo" value={o.pricing.salsac?.net20 || ''} onChange={(e) => setSalsac(key, { net20: Number(e.target.value) })} />
                   </div>
                   <div className="salsac__row">
                     <label className="salsac__label dl-small">Net · 40% taxpayer</label>
-                    <Input type="number" min={0} inputMode="numeric" placeholder="£/mo" value={o.pricing.salsac?.net40 || ''} onChange={(e) => setSalsac(i, { net40: Number(e.target.value) })} />
+                    <Input type="number" min={0} inputMode="numeric" placeholder="£/mo" value={o.pricing.salsac?.net40 || ''} onChange={(e) => setSalsac(key, { net40: Number(e.target.value) })} />
                   </div>
                 </div>
               )}
               {options && (
                 <div className="chips">
-                  <ChipRow label="Term" options={options.contractLength} current={o.pricing.termMonths} disabled={reloading !== null} format={(v) => `${v} mo`} onPick={(v) => reLook(i, 'contractLength', v)} />
-                  <ChipRow label="Mileage" options={options.annualMileage} current={o.pricing.annualMileage} disabled={reloading !== null} format={kMiles} onPick={(v) => reLook(i, 'annualMileage', v)} />
-                  {!isSalsac(o) && <ChipRow label="Initial" options={options.initialRental} current={o.pricing.initialMonths} disabled={reloading !== null} format={(v) => `${v} mo`} onPick={(v) => reLook(i, 'initialRental', v)} />}
+                  <ChipRow label="Term" options={options.contractLength} current={o.pricing.termMonths} disabled={reloading !== null} format={(v) => `${v} mo`} onPick={(v) => reLook(key, 'contractLength', v)} />
+                  <ChipRow label="Mileage" options={options.annualMileage} current={o.pricing.annualMileage} disabled={reloading !== null} format={kMiles} onPick={(v) => reLook(key, 'annualMileage', v)} />
+                  {!isSalsac(o) && <ChipRow label="Initial" options={options.initialRental} current={o.pricing.initialMonths} disabled={reloading !== null} format={(v) => `${v} mo`} onPick={(v) => reLook(key, 'initialRental', v)} />}
                 </div>
               )}
-              <BrochureControl item={{ offer: o, options, brochure }} onAttach={(b, include) => attachBrochure(i, b, include)} onToggle={(inc) => toggleBrochure(i, inc)} onRemove={() => removeBrochure(i)} onSearched={(nothing) => markBrochureSearch(i, nothing)} />
+              <BrochureControl item={{ key, offer: o, options, brochure }} onAttach={(b, include) => attachBrochure(key, b, include)} onToggle={(inc) => toggleBrochure(key, inc)} onRemove={() => removeBrochure(key)} onSearched={(nothing) => markBrochureSearch(key, nothing)} />
               <div className="offers__btns">
                 <Button variant="outline" size="sm" onClick={() => saveToLibrary(o)} disabled={saving === o.id || savedIds.has(o.id)}>{savedIds.has(o.id) ? 'Saved ✓' : saving === o.id ? 'Saving…' : 'Save to library'}</Button>
-                <Button variant="ghost" size="sm" onClick={() => removeOffer(i)} disabled={reloading === i}>Remove</Button>
+                <Button variant="ghost" size="sm" onClick={() => removeOffer(key)} disabled={reloading === key}>Remove</Button>
               </div>
             </div>
           ))}
