@@ -3,6 +3,7 @@
  * /f, /b and /a to the Worker in dev, and in production the Worker serves the built app too.
  */
 import type { Brochure, BrochureSearch, Campaign, ComplianceBlock, ContractType, LibraryEntry, Offer, Sender, Template } from '@offer-mailer/schema';
+import { announceSignedOut, SessionExpiredError, signedOut } from './session';
 
 /** A shared library shelf (config/library-shelves.json). 'smart' shelves filter live, e.g. price under a cap. */
 export interface LibraryShelf {
@@ -166,30 +167,43 @@ export interface CampaignStats {
   lastView: string | null;
 }
 
+/**
+ * Every API call goes through here. `redirect: 'manual'` keeps a Cloudflare Access sign-in redirect from being
+ * followed to another site; when the sign-in has run out, the app says so and offers a reload (session.ts).
+ */
+async function apiFetch(input: string, init?: RequestInit): Promise<Response> {
+  const r = await fetch(input, { ...init, redirect: 'manual' });
+  if (signedOut(r)) {
+    announceSignedOut();
+    throw new SessionExpiredError();
+  }
+  return r;
+}
+
 async function jsonOrThrow<T>(r: Response): Promise<T> {
   const body = (await r.json().catch(() => ({}))) as T & { error?: string };
   if (!r.ok) throw new Error(body.error ?? `Request failed (${r.status})`);
   return body;
 }
 
-const jsonPost = (url: string, data: unknown) => fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(data) });
+const jsonPost = (url: string, data: unknown) => apiFetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(data) });
 
 export const api = {
-  me: () => fetch('/api/me').then((r) => jsonOrThrow<{ email: string; sub: string; role: Role; complianceApprover: boolean; publicBaseUrl: string; headshotUrl: string | null; savedSender: SavedSender | null }>(r)),
+  me: () => apiFetch('/api/me').then((r) => jsonOrThrow<{ email: string; sub: string; role: Role; complianceApprover: boolean; publicBaseUrl: string; headshotUrl: string | null; savedSender: SavedSender | null }>(r)),
   /** Save the salesperson's contact details so they prefill next time. */
   saveSender: (details: SavedSender) => jsonPost('/api/me/sender', details).then((r) => jsonOrThrow<{ ok: boolean; savedSender: SavedSender }>(r)),
   /** Upload the salesperson's portrait; returns the stored (square) headshot URL. */
   uploadPhoto: (file: File) => {
     const fd = new FormData();
     fd.set('photo', file);
-    return fetch('/api/me/photo', { method: 'POST', body: fd }).then((r) => jsonOrThrow<{ headshotUrl: string }>(r));
+    return apiFetch('/api/me/photo', { method: 'POST', body: fd }).then((r) => jsonOrThrow<{ headshotUrl: string }>(r));
   },
-  deletePhoto: () => fetch('/api/me/photo', { method: 'DELETE' }).then((r) => jsonOrThrow<{ ok: boolean }>(r)),
+  deletePhoto: () => apiFetch('/api/me/photo', { method: 'DELETE' }).then((r) => jsonOrThrow<{ ok: boolean }>(r)),
   lookup: (url: string) => jsonPost('/api/offers/lookup', { url }).then((r) => jsonOrThrow<LookupResponse>(r)),
   preview: (draft: Draft) => jsonPost('/api/campaigns/preview', draft).then((r) => jsonOrThrow<PreviewResponse>(r)),
   create: (draft: Draft) => jsonPost('/api/campaigns', draft).then((r) => jsonOrThrow<CreateResponse>(r)),
   // ---- sending from the salesperson's own mailbox (Phase 1) ----
-  mailStatus: () => fetch('/api/mail/status').then((r) => jsonOrThrow<MailStatus>(r)),
+  mailStatus: () => apiFetch('/api/mail/status').then((r) => jsonOrThrow<MailStatus>(r)),
   /** A full-page navigation, not a fetch: Microsoft's sign-in takes over the window and comes back to the app. */
   connectOutlookUrl: '/api/mail/connect',
   disconnectOutlook: () => jsonPost('/api/mail/disconnect', {}).then((r) => jsonOrThrow<{ connected: false }>(r)),
@@ -201,13 +215,13 @@ export const api = {
     if (r.ok && body.sentAt) return { ok: true, sentAt: body.sentAt };
     return { ok: false, status: r.status, error: body.error ?? `Sending failed (HTTP ${r.status}).`, ...(body.code ? { code: body.code } : {}), ...(body.checks ? { checks: body.checks } : {}) };
   },
-  listCampaigns: () => fetch('/api/campaigns').then((r) => jsonOrThrow<{ campaigns: Campaign[] }>(r)),
-  stats: (id: string) => fetch(`/api/campaigns/${id}/stats`).then((r) => jsonOrThrow<CampaignStats>(r)),
+  listCampaigns: () => apiFetch('/api/campaigns').then((r) => jsonOrThrow<{ campaigns: Campaign[] }>(r)),
+  stats: (id: string) => apiFetch(`/api/campaigns/${id}/stats`).then((r) => jsonOrThrow<CampaignStats>(r)),
   /** Attach a brochure for a vehicle: the stored copy, or a search. Throws only when search is not configured (503). */
   ensureBrochure: (make: string, model: string, force = false) => jsonPost('/api/brochures/ensure', { make, model, ...(force ? { force: true } : {}) }).then((r) => jsonOrThrow<EnsureBrochureResponse>(r)),
   /** The stored current brochure for a vehicle, WITHOUT triggering a search (404 → null). Used to re-attach on copy. */
   currentBrochure: (make: string, model: string): Promise<Brochure | null> =>
-    fetch(`/api/brochures/current?make=${encodeURIComponent(make)}&model=${encodeURIComponent(model)}`).then(async (r) => {
+    apiFetch(`/api/brochures/current?make=${encodeURIComponent(make)}&model=${encodeURIComponent(model)}`).then(async (r) => {
       if (!r.ok) return null;
       const body = (await r.json().catch(() => ({}))) as { brochure?: Brochure | null };
       return body.brochure ?? null;
@@ -222,13 +236,13 @@ export const api = {
       fd.set('model', model);
       fd.set('pdf', opts.file);
       if (opts.url) fd.set('url', opts.url);
-      return fetch('/api/brochures/manual', { method: 'POST', body: fd }).then((r) => jsonOrThrow<{ brochure: Brochure; state: string }>(r));
+      return apiFetch('/api/brochures/manual', { method: 'POST', body: fd }).then((r) => jsonOrThrow<{ brochure: Brochure; state: string }>(r));
     }
     return jsonPost('/api/brochures/manual', { make, model, url: opts.url }).then((r) => jsonOrThrow<{ brochure: Brochure; state: string }>(r));
   },
   // ---- offer library (the curated repository) ----
   saveOffer: (offer: Offer) => jsonPost('/api/offers/library', { offer }).then((r) => jsonOrThrow<{ entry: LibraryEntry; offer: Offer }>(r)),
-  libraryShelves: () => fetch('/api/library/shelves').then((r) => jsonOrThrow<{ shelves: LibraryShelf[] }>(r)),
+  libraryShelves: () => apiFetch('/api/library/shelves').then((r) => jsonOrThrow<{ shelves: LibraryShelf[] }>(r)),
   listLibrary: (p: { scope?: 'personal' | 'shared'; category?: string; q?: string; maxMonthly?: number } = {}) => {
     const qs = new URLSearchParams();
     if (p.scope) qs.set('scope', p.scope);
@@ -236,9 +250,9 @@ export const api = {
     if (p.q) qs.set('q', p.q);
     if (p.maxMonthly) qs.set('maxMonthly', String(p.maxMonthly));
     const s = qs.toString();
-    return fetch(`/api/offers/library${s ? `?${s}` : ''}`).then((r) => jsonOrThrow<{ entries: LibraryEntry[]; offers: Offer[] }>(r));
+    return apiFetch(`/api/offers/library${s ? `?${s}` : ''}`).then((r) => jsonOrThrow<{ entries: LibraryEntry[]; offers: Offer[] }>(r));
   },
-  listArchivedLibrary: (scope: 'personal' | 'shared' = 'personal') => fetch(`/api/offers/library/archived?scope=${scope}`).then((r) => jsonOrThrow<{ entries: LibraryEntry[] }>(r)),
+  listArchivedLibrary: (scope: 'personal' | 'shared' = 'personal') => apiFetch(`/api/offers/library/archived?scope=${scope}`).then((r) => jsonOrThrow<{ entries: LibraryEntry[] }>(r)),
   /** Re-fetch the live price from the source. On a dead URL the Worker answers 409; the caller shows the flag. */
   repriceLibrary: (id: string): Promise<{ ok: true; entry: LibraryEntry; offer: Offer; brochure?: Brochure; message: string } | { ok: false; error: string; entry?: LibraryEntry }> =>
     jsonPost(`/api/offers/library/${id}/reprice`, {}).then(async (r) => {
@@ -248,17 +262,17 @@ export const api = {
   archiveLibrary: (id: string) => jsonPost(`/api/offers/library/${id}/archive`, {}).then((r) => jsonOrThrow<{ entry: LibraryEntry }>(r)),
   unarchiveLibrary: (id: string) => jsonPost(`/api/offers/library/${id}/unarchive`, {}).then((r) => jsonOrThrow<{ entry: LibraryEntry }>(r)),
   promoteLibrary: (id: string, category: string) => jsonPost(`/api/offers/library/${id}/promote`, { category }).then((r) => jsonOrThrow<{ entry: LibraryEntry }>(r)),
-  deleteLibraryOffer: (id: string) => fetch(`/api/offers/library/${id}`, { method: 'DELETE' }).then((r) => jsonOrThrow<{ ok: boolean }>(r)),
-  register: () => fetch('/api/register').then((r) => jsonOrThrow<RegisterData>(r)),
+  deleteLibraryOffer: (id: string) => apiFetch(`/api/offers/library/${id}`, { method: 'DELETE' }).then((r) => jsonOrThrow<{ ok: boolean }>(r)),
+  register: () => apiFetch('/api/register').then((r) => jsonOrThrow<RegisterData>(r)),
   // ---- template admin (master admin only) ----
-  listTemplates: () => fetch('/api/templates').then((r) => jsonOrThrow<{ templates: Template[] }>(r)),
+  listTemplates: () => apiFetch('/api/templates').then((r) => jsonOrThrow<{ templates: Template[] }>(r)),
   createTemplate: (body: TemplateInput) => jsonPost('/api/templates', body).then((r) => jsonOrThrow<{ template: Template }>(r)),
   updateTemplate: (id: string, body: Partial<TemplateInput>) =>
-    fetch(`/api/templates/${id}`, { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }).then((r) => jsonOrThrow<{ template: Template }>(r)),
+    apiFetch(`/api/templates/${id}`, { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }).then((r) => jsonOrThrow<{ template: Template }>(r)),
   publishTemplate: (id: string) => jsonPost(`/api/templates/${id}/publish`, {}).then((r) => jsonOrThrow<{ template: Template }>(r)),
   retireTemplate: (id: string) => jsonPost(`/api/templates/${id}/retire`, {}).then((r) => jsonOrThrow<{ template: Template }>(r)),
   // ---- suppression register (opt-out list) ----
-  listSuppressions: () => fetch('/api/suppressions').then((r) => jsonOrThrow<{ suppressions: Suppression[] }>(r)),
+  listSuppressions: () => apiFetch('/api/suppressions').then((r) => jsonOrThrow<{ suppressions: Suppression[] }>(r)),
   addSuppression: (email: string, note?: string) => jsonPost('/api/suppressions', { email, note }).then((r) => jsonOrThrow<{ ok: boolean }>(r)),
   checkSuppression: (email: string) => jsonPost('/api/suppressions/check', { email }).then((r) => jsonOrThrow<{ suppressed: boolean }>(r)),
   removeSuppression: (email: string) => jsonPost('/api/suppressions/remove', { email }).then((r) => jsonOrThrow<{ ok: boolean }>(r)),

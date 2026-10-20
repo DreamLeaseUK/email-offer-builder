@@ -9,6 +9,7 @@ import { Register } from './Register';
 import { Suppressions } from './Suppressions';
 import { Templates } from './Templates';
 import { pinTipNeeded, pinTipSeen, useInstallApp } from './install';
+import { SESSION_EXPIRED_EVENT, SessionExpiredError } from './session';
 
 const errMsg = (e: unknown): string => (e instanceof Error ? e.message : String(e));
 
@@ -33,6 +34,13 @@ export function App() {
   const { canInstall, justInstalled, install } = useInstallApp();
   const [installedTipClosed, setInstalledTipClosed] = useState(false);
   const [showPinTip, setShowPinTip] = useState(pinTipNeeded);
+  // The Cloudflare Access sign-in has run out (Matt, 20 Oct 2026: the tool left open overnight); see session.ts.
+  const [signedOut, setSignedOut] = useState(false);
+  useEffect(() => {
+    const onExpired = () => setSignedOut(true);
+    window.addEventListener(SESSION_EXPIRED_EVENT, onExpired);
+    return () => window.removeEventListener(SESSION_EXPIRED_EVENT, onExpired);
+  }, []);
   const newCampaign = () => {
     setView('compose');
     setNewCampaignRequest((n) => n + 1);
@@ -48,7 +56,7 @@ export function App() {
         setComplianceApprover(m.complianceApprover);
         setHeadshotUrl(m.headshotUrl);
       })
-      .catch((e) => setMeError(errMsg(e)));
+      .catch((e) => (e instanceof SessionExpiredError ? setSignedOut(true) : setMeError(errMsg(e))));
   }, []);
 
   const addFromLibrary = (o: Offer, brochure?: Brochure) => {
@@ -120,6 +128,14 @@ export function App() {
         </span>
       </header>
 
+      {signedOut && (
+        <div className="app__notice">
+          <Alert tone="warning" title="Your sign-in has expired">
+            This happens when the Offer Mailer has been open for a long time. Reload to sign in again; your email draft is kept.{' '}
+            <Button size="sm" onClick={() => window.location.reload()}>Reload</Button>
+          </Alert>
+        </div>
+      )}
       {justInstalled && !installedTipClosed && (
         <div className="app__notice">
           <Alert tone="success" title="The Offer Mailer is installed">
