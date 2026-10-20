@@ -405,6 +405,7 @@ function plainText(campaign: Campaign, template: Template, cards: CardVM[], comp
     lines.push(`${c.cta.label}: ${c.cta.href}`);
     if (c.viewHref) lines.push(`View this offer: ${c.viewHref}`);
     if (c.brochure) lines.push(`${c.brochure.label}: ${c.brochure.href}`);
+    if (c.brochureNote) lines.push(c.brochureNote);
     if (c.smallPrint) lines.push(c.smallPrint);
     lines.push('');
   }

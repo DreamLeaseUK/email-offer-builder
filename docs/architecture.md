@@ -312,7 +312,7 @@ Edit → HTTP Validation → Save → Refresh (runbook C8, done that way on 6 Oc
   account's credit balance is not visible from here), and since Phase 1 `MAIL_CLIENT_SECRET` (IT's Send app secret,
   expires 30 Sept 2027) and `MAIL_TOKEN_KEY` (B13), all set by Matt. Vars (`wrangler.jsonc`): `PUBLIC_BASE_URL`
   (customer links: `https://offers.dreamlease.co.uk` since 0.7.2), `TOOL_BASE_URL` (the only host serving the web
-  app), `APP_VERSION` (0.7.9 in `main`), `MAIL_TENANT_ID`, `MAIL_CLIENT_ID`, `MAIL_REDIRECT_URI`. Optional: `ADMIN_EMAILS`,
+  app), `APP_VERSION` (0.7.10 in `main`), `MAIL_TENANT_ID`, `MAIL_CLIENT_ID`, `MAIL_REDIRECT_URI`. Optional: `ADMIN_EMAILS`,
   `COMPLIANCE_EMAILS`, `RETENTION_CAMPAIGN_DAYS` (**unset**: Emma sets the period). Locally `.dev.vars`
   (git-ignored, `DEV_USER_EMAIL`).
 
@@ -695,8 +695,8 @@ the EVs shelf while kept on the personal shelf).
 | 7 Template admin, approval, register, suppression | **Done** (register, compliance-approver-only templates since 28 Sept, suppression list) |
 | 8 Stubs & `evolution.md` | Not started (low value) |
 
-**PII plan: complete** (items 1–4). Build-order steps 1–7 done. **Production is v0.7.8 (7 Oct 2026)**; `main` is
-0.7.9, which Matt deploys next. Since the last full update of this section:
+**PII plan: complete** (items 1–4). Build-order steps 1–7 done. **Production is v0.7.9 (20 Oct 2026)**; `main` is
+0.7.10, which Matt deploys next. Since the last full update of this section:
 - **0.6.1 (29 Sept):** live behind Access on `marketingtools.dreamelectric.uk` (`status-2026-09-29.md`).
 - **0.6.2 (30 Sept):** the email no longer states a validity date.
 - **0.7.0 (30 Sept):** Phase 1, Send from the salesperson's own mailbox (B13).
@@ -709,8 +709,12 @@ the EVs shelf while kept on the personal shelf).
 - **0.7.6 (7 Oct):** Compose steps 1–3 start from what was used last (A3).
 - **0.7.7 (7 Oct):** the Install app button and a bold app icon (A3).
 - **0.7.8 (7 Oct):** the button reads "Install app and pin to taskbar" (A3).
-- **0.7.9 (20 Oct, next release):** the DreamFleet logo on BCH emails and their online page; the top link reads "Can't
+- **0.7.9 (20 Oct):** the DreamFleet logo on BCH emails and their online page; the top link reads "Can't
   see images? Click here"; the app recovers from an expired sign-in (A3, B12).
+- **0.7.10 (20 Oct, next release):** a car whose brochure search completed and found nothing says "Brochure
+  unavailable for this vehicle" in small grey text where the brochure link would be, but only when another car in
+  the same email has a brochure (`Offer.noBrochure`, set by Compose on the campaign's copy; B7, deviation h in
+  `cards.ts`).
 
 Each was shipped on Matt's "ship it" and deployed by him. The log is `status-2026-10-06.md`.
 

@@ -170,6 +170,12 @@ export const Offer = z.object({
   validUntil: isoDate,
   /** §5.8. include = the salesperson's toggle. */
   brochure: z.object({ brochureId: uuid, include: z.boolean() }).optional(),
+  /**
+   * Set by Compose on a campaign's copy of the offer when the brochure search completed and verified nothing, and
+   * no brochure is attached (Matt, 20 Oct 2026). render() then says "Brochure unavailable for this vehicle" on this
+   * card, but only when another offer in the same email has a brochure link. Never set on library entries.
+   */
+  noBrochure: z.literal(true).optional(),
   /** Internal, never rendered. */
   notes: z.string().optional(),
   createdBy: email,
