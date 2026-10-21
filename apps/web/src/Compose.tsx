@@ -618,7 +618,7 @@ function SenderPhoto({ base, onChange }: { base: string; onChange?: (url: string
   );
 }
 
-export function Compose({ email, base, items, setItems, seed, onSeedApplied, onHeadshotChange, newCampaignRequest = 0 }: { email: string; base: string; items: Item[]; setItems: React.Dispatch<React.SetStateAction<Item[]>>; seed?: ComposeSeed | null; onSeedApplied?: () => void; onHeadshotChange?: (url: string | null) => void; /** Bumped by the top bar's "+ New campaign". */ newCampaignRequest?: number }) {
+export function Compose({ email, base, items, setItems, seed, onSeedApplied, onHeadshotChange, onAudienceChange, newCampaignRequest = 0 }: { email: string; base: string; items: Item[]; setItems: React.Dispatch<React.SetStateAction<Item[]>>; seed?: ComposeSeed | null; onSeedApplied?: () => void; onHeadshotChange?: (url: string | null) => void; /** The Library follows the audience chosen here (0.7.13). */ onAudienceChange?: (a: Audience) => void; /** Bumped by the top bar's "+ New campaign". */ newCampaignRequest?: number }) {
   // Our-origin asset/link URLs are stamped absolute (the email needs that), but they only resolve on
   // the public origin. For in-app display, strip our origin so they become same-origin (served by the
   // Vite proxy in dev, the Worker in production). The Copy-for-Outlook HTML stays absolute.
@@ -627,6 +627,10 @@ export function Compose({ email, base, items, setItems, seed, onSeedApplied, onH
 
   const [name, setName] = useState(DEFAULT_NAME);
   const [audience, setAudience] = useState<Audience>('personal');
+  useEffect(() => {
+    onAudienceChange?.(audience);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [audience]);
   // Renewal first and by default (Matt, 29 Sept 2026): it is the sales team's main use.
   const [useCase, setUseCase] = useState<UseCase>('renewal');
   const [useCaseNote, setUseCaseNote] = useState('');

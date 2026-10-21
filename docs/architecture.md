@@ -149,6 +149,11 @@ Three audiences / lease products, each with its own compliance wording and terms
   reload loop (`apps/web/src/session.ts`, rules in `session-rules.ts`, tests in `apps/web/test/`).
 - **Library, simplified (29 Sept):** tabs Team offers (first) and My saved offers; Add to email and Remove per card;
   admins see removed offers, restore them and Share with team. Archive / unarchive need the entry's owner or an admin.
+- **Library by audience (0.7.13, 21 Oct 2026, Matt: DreamFleet users rarely send PCH).** The Library shows one
+  audience at a time, the one chosen in Compose's step 1 (remembered per person since 0.7.6), with a PCH / BCH switch
+  to look at the other. `GET /api/offers/library?contractType=` filters on the stored `contract_type` column; a shelf
+  with `audience` in `config/library-shelves.json` shows only for it; Add to email works only for offers of the
+  email's own audience (one campaign is one audience).
 - **Brochure near miss (29 Sept):** when nothing verifies, the panel offers the closest document from the stored trace
   (Open it / Use it anyway via the paste route); wrong models, other continents, manuals, dealer copies, forms and
   non-English files are never offered. An ended offer's link gets "This offer is no longer on the website…".
@@ -321,7 +326,7 @@ Edit → HTTP Validation → Save → Refresh (runbook C8, done that way on 6 Oc
   account's credit balance is not visible from here), and since Phase 1 `MAIL_CLIENT_SECRET` (IT's Send app secret,
   expires 30 Sept 2027) and `MAIL_TOKEN_KEY` (B13), all set by Matt. Vars (`wrangler.jsonc`): `PUBLIC_BASE_URL`
   (customer links: `https://offers.dreamlease.co.uk` since 0.7.2), `TOOL_BASE_URL` (the only host serving the web
-  app), `APP_VERSION` (0.7.12 in `main`), `MAIL_TENANT_ID`, `MAIL_CLIENT_ID`, `MAIL_REDIRECT_URI`. Optional: `ADMIN_EMAILS`,
+  app), `APP_VERSION` (0.7.13 in `main`), `MAIL_TENANT_ID`, `MAIL_CLIENT_ID`, `MAIL_REDIRECT_URI`. Optional: `ADMIN_EMAILS`,
   `COMPLIANCE_EMAILS`, `RETENTION_CAMPAIGN_DAYS` (**unset**: Emma sets the period). Locally `.dev.vars`
   (git-ignored, `DEV_USER_EMAIL`).
 
@@ -460,8 +465,9 @@ longer read the site's fees, and the fixtures, tests and design reference carry 
 hold the old key parse as before (the schema drops unknown keys). The one fee mention left in an email is in Emma's
 approved compliance wording (her personal block of 29 Sept: "A processing fee may apply…"), which only a compliance
 approver can change (rule 3). With no validity date either (since 0.6.2), the small print is the brochure line only,
-so a card without a brochure has no small print and its paragraph is left out (deviation g). **Every card in a multi-offer campaign shows the same, even number of stat
-tiles** (the common count across the offers, floored to even) so the cards read as a matched set — a single
+so a card without a brochure has no small print and its paragraph is left out (deviation g). **Each card in a multi-offer campaign shows up to 4 of its own stat
+tiles** in pairs, its count floored to even (Matt, 21 Oct 2026, 0.7.13: a car with fewer figures no longer pulls
+every card down to 2; until then all cards showed the common count) — a single
 hero keeps its natural count (Matt, 6 Oct: leave it as it is; also left: a tile showing "Ns" when the site gives no
 0–62 figure). A third (21 Sept): when the attached brochure is the manufacturer's **European
 edition** (`Brochure.market === 'eu'`), the small print adds "This is the manufacturer's European brochure;
@@ -650,6 +656,11 @@ same client-side from `GET /api/brochures/current`.
   **admin** curates them (`/promote` and shared-scope deletes are admin-gated; the button only renders for admins).
   Shelves come from `config/library-shelves.json` (admin-extensible): **PCH latest deals, BCH latest deals, EVs**
   (manual), and **Deals under £300 per month** (a **smart** shelf filtered live on the `monthly` facet).
+- **One audience at a time (0.7.13).** `GET /api/offers/library?contractType=personal|business` filters on the
+  `contract_type` column (422 for anything else); the Library sends the audience chosen in Compose, or the one its
+  PCH / BCH switch shows. A shelf's optional `audience` in `config/library-shelves.json` shows it only for that
+  audience; the file is parsed with `LibraryShelvesConfig` (`packages/schema`) when the API loads, so a typo fails
+  the tests instead of hiding a shelf.
 
 **Promote = copy** (not move): promoting a salesperson's entry creates an independent shared entry (a new id, the
 admin as owner); the salesperson keeps their own. Promoting never removes anyone's saved offer.
@@ -670,8 +681,8 @@ place those columns are derived.
 
 **Tests:** `apps/api/test/library.test.ts` — personal vs shared, save/list/delete, archive/unarchive, admin
 promote (copy), the smart shelf's price filter, most-recent-first + search, the dead-URL 409 flag, the 6-month
-purge, entity-decoding on read, and `withStoredBrochure` (UK included, EU unticked, prior choice wins, none
-unchanged). Proven live through the tool (Renault 5 name decoded, Polestar 2 promoted to
+purge, entity-decoding on read, `withStoredBrochure` (UK included, EU unticked, prior choice wins, none
+unchanged), the `?contractType` filter and its 422, and the shelves config parsing with its audiences (0.7.13). Proven live through the tool (Renault 5 name decoded, Polestar 2 promoted to
 the EVs shelf while kept on the personal shelf).
 
 ## B8. External dependencies
@@ -710,7 +721,7 @@ the EVs shelf while kept on the personal shelf).
 | 8 Stubs & `evolution.md` | Not started (low value) |
 
 **PII plan: complete** (items 1–4). Build-order steps 1–7 done. **Production is v0.7.11 (20 Oct 2026)**; `main` is
-0.7.12, which Matt deploys next. Since the last full update of this section:
+0.7.13, which Matt deploys next. Since the last full update of this section:
 - **0.6.1 (29 Sept):** live behind Access on `marketingtools.dreamelectric.uk` (`status-2026-09-29.md`).
 - **0.6.2 (30 Sept):** the email no longer states a validity date.
 - **0.7.0 (30 Sept):** Phase 1, Send from the salesperson's own mailbox (B13).
@@ -732,9 +743,11 @@ the EVs shelf while kept on the personal shelf).
 - **0.7.11 (20 Oct):** Compose finds each car by its own row key, so a brochure found while an earlier
   car was removed lands on the right car, and a term, mileage or initial-payment change keeps the attached brochure
   (A3, `tray.ts`).
-- **0.7.12 (21 Oct, next release):** a sharper DreamFleet logo on BCH emails: the file is 4x (392×128,
+- **0.7.12 (21 Oct):** a sharper DreamFleet logo on BCH emails: the file is 4x (392×128,
   `dreamfleet-logo-4x.png`) in the same 98×32 space, under a new name so mail apps' image caches cannot keep the
   softer 2x copy (B12).
+- **0.7.13 (21 Oct, next release):** the Library shows the audience chosen in Compose (PCH or BCH) with a switch
+  for the other; each card in a multi-offer email shows up to 4 of its own stat tiles (A3, B7).
 
 Each was shipped on Matt's "ship it" and deployed by him. The log is `status-2026-10-06.md`.
 
