@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Alert, Button, OfferCard } from 'dreamlease-design-system';
 import type { Brochure, ContractType, LibraryEntry, Offer } from '@offer-mailer/schema';
 import { api, type LibraryShelf, type Role } from './api';
+import { priceCaption } from './price';
 
 const gbp = (n: number): string => '£' + Math.round(n).toLocaleString('en-GB');
 const errMsg = (e: unknown): string => (e instanceof Error ? e.message : String(e));
@@ -232,6 +233,7 @@ export function Library({ base, role, audience, onAdd }: { base: string; role: R
                   model={o.vehicle.model}
                   derivative={o.vehicle.derivative}
                   monthly={gbp(o.pricing.monthly)}
+                  period={priceCaption(o)}
                   terms={offerTerms(o)}
                   image={o.image ? <img src={sameOrigin(o.image.url)} alt={`${o.vehicle.make} ${o.vehicle.model}`} style={{ width: '100%', display: 'block' }} /> : undefined}
                   badge={o.hotBadge ? { label: o.hotBadge, tone: 'red' } : o.badges[0] ? { label: o.badges[0], tone: 'orange' } : undefined}

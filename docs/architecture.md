@@ -66,7 +66,11 @@ Three audiences / lease products, each with its own compliance wording and terms
 ## A3. Feature inventory (built)
 - **Compose**: URL lookup → re-pricing chips → live preview → create → Copy-for-Outlook + hosted link. The
   first offer **auto-renders the preview**; later edits keep the preview visible but **flag it out-of-date**
-  (the salesperson presses Update preview) rather than blanking it; the Add button stays enabled and reads "Add
+  (the salesperson presses Update preview) rather than blanking it. Since 0.7.14 (21 Oct 2026) any change after the
+  preview was rendered, the text as well as the offers, flags it and makes Update preview pulse (the preview remembers
+  the draft it was rendered from). The tool's offer cards (Compose and the Library) show the email's own caption under
+  the price: "per month ex VAT" for BCH, "per month inc VAT" for PCH (`apps/web/src/price.ts`; before, every card fell
+  back to the design system's "inc. VAT"). The Add button stays enabled and reads "Add
   offer" / "Add another offer". Since 23 Sept there is **no preheader field** (the email's inbox preview is derived
   from the intro — B7) and the **recipient's first name sits above the intro**. The three Compose panels (Campaign,
   Offers, Preview) are **resizable**: two draggable dividers set the Campaign and Offers widths, the preview takes the
@@ -326,7 +330,7 @@ Edit → HTTP Validation → Save → Refresh (runbook C8, done that way on 6 Oc
   account's credit balance is not visible from here), and since Phase 1 `MAIL_CLIENT_SECRET` (IT's Send app secret,
   expires 30 Sept 2027) and `MAIL_TOKEN_KEY` (B13), all set by Matt. Vars (`wrangler.jsonc`): `PUBLIC_BASE_URL`
   (customer links: `https://offers.dreamlease.co.uk` since 0.7.2), `TOOL_BASE_URL` (the only host serving the web
-  app), `APP_VERSION` (0.7.13 in `main`), `MAIL_TENANT_ID`, `MAIL_CLIENT_ID`, `MAIL_REDIRECT_URI`. Optional: `ADMIN_EMAILS`,
+  app), `APP_VERSION` (0.7.14 in `main`), `MAIL_TENANT_ID`, `MAIL_CLIENT_ID`, `MAIL_REDIRECT_URI`. Optional: `ADMIN_EMAILS`,
   `COMPLIANCE_EMAILS`, `RETENTION_CAMPAIGN_DAYS` (**unset**: Emma sets the period). Locally `.dev.vars`
   (git-ignored, `DEV_USER_EMAIL`).
 
@@ -721,7 +725,7 @@ the EVs shelf while kept on the personal shelf).
 | 8 Stubs & `evolution.md` | Not started (low value) |
 
 **PII plan: complete** (items 1–4). Build-order steps 1–7 done. **Production is v0.7.11 (20 Oct 2026)**; `main` is
-0.7.13, which Matt deploys next. Since the last full update of this section:
+0.7.14, which Matt deploys next. Since the last full update of this section:
 - **0.6.1 (29 Sept):** live behind Access on `marketingtools.dreamelectric.uk` (`status-2026-09-29.md`).
 - **0.6.2 (30 Sept):** the email no longer states a validity date.
 - **0.7.0 (30 Sept):** Phase 1, Send from the salesperson's own mailbox (B13).
@@ -746,8 +750,10 @@ the EVs shelf while kept on the personal shelf).
 - **0.7.12 (21 Oct):** a sharper DreamFleet logo on BCH emails: the file is 4x (392×128,
   `dreamfleet-logo-4x.png`) in the same 98×32 space, under a new name so mail apps' image caches cannot keep the
   softer 2x copy (B12).
-- **0.7.13 (21 Oct, next release):** the Library shows the audience chosen in Compose (PCH or BCH) with a switch
+- **0.7.13 (21 Oct):** the Library shows the audience chosen in Compose (PCH or BCH) with a switch
   for the other; each card in a multi-offer email shows up to 4 of its own stat tiles (A3, B7).
+- **0.7.14 (21 Oct, next release):** BCH prices read "ex VAT" on the tool's own offer cards, as they already did in
+  the email; a text edit after a preview now makes Update preview pulse (A3).
 
 Each was shipped on Matt's "ship it" and deployed by him. The log is `status-2026-10-06.md`.
 
@@ -785,7 +791,7 @@ ranked list is in `PICKUP-PROMPT.md` §4):**
   audience; Tawk webchat.
 
 ## B10. Testing & verification
-- `pnpm test` — **325 tests** (20 Oct 2026: schema 23, web 4, render 41, adapters 122, api 135), all run by CI on every pull
+- `pnpm test` — **337 tests** (21 Oct 2026, 0.7.14: schema 23, web 12, render 42, adapters 122, api 138), all run by CI on every pull
   request. What they cover:
   - **Phase 1 (30 Sept):** sending against a stand-in for Microsoft (`m365.test.ts`), token encryption, "only as
     yourself", every pre-send check rule by rule (`presend.test.ts`), Send's reservation and outcomes
@@ -833,7 +839,7 @@ ranked list is in `PICKUP-PROMPT.md` §4):**
   the laptop), and since Phase 1 `mail.ts` (Connect Outlook), `mail-crypto.ts`, `send.ts`, `presend.ts` (the
   pre-send checks); `apps/api/scripts/fix-placeholder-template.sql` (the one-off production correction of 28 Sept)
 - Web: `apps/web/src/App.tsx` (header portrait, `addFromLibrary`), `Compose.tsx` (incl. `repriceCopied`, the resizable
-  columns, Connect Outlook and Send, the `WHATSAPP_LIVE` and `SALSAC_LIVE` switches), `tray.ts` (each tray row's key, 0.7.11), `Campaigns.tsx`, `Library.tsx`, `Register.tsx`, `Suppressions.tsx`, `Templates.tsx`, `install.ts` (Install app), `session.ts` and `session-rules.ts` (an expired sign-in, 0.7.9), `api.ts` (every call through `apiFetch`)
+  columns, Connect Outlook and Send, the `WHATSAPP_LIVE` and `SALSAC_LIVE` switches), `tray.ts` (each tray row's key, 0.7.11), `price.ts` (the cards' VAT caption, 0.7.14), `Campaigns.tsx`, `Library.tsx`, `Register.tsx`, `Suppressions.tsx`, `Templates.tsx`, `install.ts` (Install app), `session.ts` and `session-rules.ts` (an expired sign-in, 0.7.9), `api.ts` (every call through `apiFetch`)
   (incl. `currentBrochure`), `styles.css`; `apps/web/vite.config.ts` (proxy + tunnel `allowedHosts`)
 - Config: `apps/api/wrangler.jsonc`, `config/` (`badges.json`, `admins.json`, `compliance.json`,
   `library-shelves.json`, `mail.json` (who may send, the size limit, the 24-hour offer rule)), `.claude/launch.json` (the dev servers for the desktop app)

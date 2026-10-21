@@ -4,6 +4,7 @@ import { Alert, Badge, Button, Field, Input, OfferCard, Select, Textarea } from 
 import type { Brochure, BrochureSearch, CtaKind, Offer, Sender } from '@offer-mailer/schema';
 import { CTA_DEFAULT_LABELS } from '@offer-mailer/schema';
 import { api, type Audience, type ComposeSeed, type ContactMethod, type CreateResponse, type Draft, type Item, type LayoutChoice, type LeaseOption, type MailStatus, type UseCase } from './api';
+import { priceCaption } from './price';
 import { relooked, trayItem, updateRow } from './tray';
 
 const gbp = (n: number): string => '£' + Math.round(n).toLocaleString('en-GB');
@@ -702,6 +703,7 @@ export function Compose({ email, base, items, setItems, seed, onSeedApplied, onH
   // The draft as it was when the campaign was created. Send and Copy use the STORED campaign, so any later edit
   // (subject, message, CTA, your details, the first name) must invalidate it: create again to send the changes.
   const createdFrom = useRef<string | null>(null);
+  const previewedFrom = useRef<string | null>(null); // the draft the preview on screen was rendered from
   const [changedAfterCreate, setChangedAfterCreate] = useState(false);
   const connectPoll = useRef<number | null>(null);
 
@@ -1255,8 +1257,10 @@ export function Compose({ email, base, items, setItems, seed, onSeedApplied, onH
   async function doPreview() {
     setPreviewing(true);
     setPreviewError('');
+    const from = JSON.stringify(draft); // what this preview is rendered from: an edit made while it renders shows as a change
     try {
       setPreviewHtml(displayHtml((await api.preview(draft)).html));
+      previewedFrom.current = from;
       setPreviewStale(false);
     } catch (err) {
       setPreviewError(errMsg(err));
@@ -1320,6 +1324,7 @@ export function Compose({ email, base, items, setItems, seed, onSeedApplied, onH
       setChangedAfterCreate(false);
       setCreated(res); // res.html stays absolute — Copy-for-Outlook needs it that way
       setPreviewHtml(displayHtml(res.html));
+      previewedFrom.current = createdFrom.current;
       setPreviewStale(false);
     } catch (err) {
       setCreateError(errMsg(err));
@@ -1335,6 +1340,13 @@ export function Compose({ email, base, items, setItems, seed, onSeedApplied, onH
     setCopyProblems([]);
     setRecipientEmail('');
   }, [created]);
+
+  // Any change to the email after the preview on screen was rendered, the text as well as the offers, marks it out of
+  // date, so Update preview pulses (Matt, 21 Oct 2026: a text edit before Create left the button still).
+  useEffect(() => {
+    if (previewing || !previewHtml || previewedFrom.current === null || JSON.stringify(draft) === previewedFrom.current) return;
+    setPreviewStale(true);
+  }, [draft, previewHtml, previewing]);
 
   // An edit after Create would not reach the customer (Send and Copy use the stored campaign): drop it, and say so.
   useEffect(() => {
@@ -1531,7 +1543,7 @@ export function Compose({ email, base, items, setItems, seed, onSeedApplied, onH
                 model={o.vehicle.model}
                 derivative={o.vehicle.derivative}
                 monthly={isSalsac(o) ? (o.pricing.salsac?.net20 ? gbp(o.pricing.salsac.net20) : '—') : gbp(o.pricing.monthly)}
-                period={isSalsac(o) ? 'per month net · 20% taxpayer' : undefined}
+                period={isSalsac(o) ? 'per month net · 20% taxpayer' : priceCaption(o)}
                 terms={offerTerms(o)}
                 image={o.image ? <img src={sameOrigin(o.image.url)} alt={`${o.vehicle.make} ${o.vehicle.model}`} style={{ width: '100%', display: 'block' }} /> : undefined}
                 badge={o.hotBadge ? { label: o.hotBadge, tone: 'red' } : o.badges[0] ? { label: o.badges[0], tone: 'orange' } : undefined}
