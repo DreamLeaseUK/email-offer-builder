@@ -312,6 +312,19 @@ export type BrochureSearch = z.infer<typeof BrochureSearch>;
  */
 export const LibraryScope = z.enum(['personal', 'shared']);
 export type LibraryScope = z.infer<typeof LibraryScope>;
+/**
+ * A shared shelf (config/library-shelves.json, hand-edited by Matt). 'smart' shelves fill from live facts (the price
+ * rule); 'audience' shows a shelf only when the Library shows that audience (0.7.13). Parsed when the API loads, so a
+ * typo (say "audience": "BCH") fails the tests instead of silently hiding a shelf.
+ */
+export const LibraryShelf = z.object({
+  name: z.string().min(1).max(60),
+  kind: z.enum(['manual', 'smart']),
+  rule: z.object({ maxMonthly: z.number().positive().optional() }).optional(),
+  audience: ContractType.optional(),
+});
+export type LibraryShelf = z.infer<typeof LibraryShelf>;
+export const LibraryShelvesConfig = z.object({ _comment: z.string().optional(), shelves: z.array(LibraryShelf).min(1) });
 /** current = in the working repository; archived = kept out of the way, purged after LIBRARY_ARCHIVE_PURGE_DAYS. */
 export const LibraryStatus = z.enum(['current', 'archived']);
 export type LibraryStatus = z.infer<typeof LibraryStatus>;

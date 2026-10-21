@@ -2,15 +2,12 @@
  * Thin client for the Worker API (apps/api). Everything is same-origin: Vite proxies /api, /c, /r,
  * /f, /b and /a to the Worker in dev, and in production the Worker serves the built app too.
  */
-import type { Brochure, BrochureSearch, Campaign, ComplianceBlock, ContractType, LibraryEntry, Offer, Sender, Template } from '@offer-mailer/schema';
+import type { Brochure, BrochureSearch, Campaign, ComplianceBlock, ContractType, LibraryEntry, LibraryShelf, Offer, Sender, Template } from '@offer-mailer/schema';
 import { announceSignedOut, SessionExpiredError, signedOut } from './session';
 
 /** A shared library shelf (config/library-shelves.json). 'smart' shelves filter live, e.g. price under a cap. */
-export interface LibraryShelf {
-  name: string;
-  kind: 'manual' | 'smart';
-  rule?: { maxMonthly?: number };
-}
+/** A shared shelf, as config/library-shelves.json defines it (the schema lives in @offer-mailer/schema). */
+export type { LibraryShelf };
 
 /** The admin-authored parts of a template; identity/version/markupVersion/status are server-owned. */
 export interface TemplateInput {
@@ -247,9 +244,10 @@ export const api = {
   // ---- offer library (the curated repository) ----
   saveOffer: (offer: Offer) => jsonPost('/api/offers/library', { offer }).then((r) => jsonOrThrow<{ entry: LibraryEntry; offer: Offer }>(r)),
   libraryShelves: () => apiFetch('/api/library/shelves').then((r) => jsonOrThrow<{ shelves: LibraryShelf[] }>(r)),
-  listLibrary: (p: { scope?: 'personal' | 'shared'; category?: string; q?: string; maxMonthly?: number } = {}) => {
+  listLibrary: (p: { scope?: 'personal' | 'shared'; category?: string; q?: string; maxMonthly?: number; contractType?: ContractType } = {}) => {
     const qs = new URLSearchParams();
     if (p.scope) qs.set('scope', p.scope);
+    if (p.contractType) qs.set('contractType', p.contractType);
     if (p.category) qs.set('category', p.category);
     if (p.q) qs.set('q', p.q);
     if (p.maxMonthly) qs.set('maxMonthly', String(p.maxMonthly));

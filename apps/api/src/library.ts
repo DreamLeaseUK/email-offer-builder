@@ -10,7 +10,7 @@
  * is a query over them, not a refactor.
  *
  *   POST   /api/offers/library { offer }              save one of the caller's offers to their personal shelf
- *   GET    /api/offers/library?scope=&category=&q=    current entries (personal for the caller, or a shared shelf)
+ *   GET    /api/offers/library?scope=&category=&q=&contractType=    current entries (personal for the caller, or a shared shelf)
  *   GET    /api/offers/library/archived               archived entries (the caller's, or shared for an admin)
  *   POST   /api/offers/library/:id/reprice            re-fetch the live price from the source; flag a dead URL
  *   POST   /api/offers/library/:id/archive | /unarchive
@@ -18,11 +18,11 @@
  *   DELETE /api/offers/library/:id
  */
 import { LookupError, OfferBuildError, OfferPageError, OfferUrlError, PricingError } from '@offer-mailer/adapters';
-import { LIBRARY_ARCHIVE_PURGE_DAYS, LibraryEntry, Offer, assertNoCapId, decodeOfferText, libraryFacets, vehicleKey } from '@offer-mailer/schema';
-import type { Brochure, LibraryEntry as LibraryEntryT, LibraryFacets, Offer as OfferT, UrlHealth } from '@offer-mailer/schema';
+import { ContractType, LIBRARY_ARCHIVE_PURGE_DAYS, LibraryEntry, LibraryShelvesConfig, Offer, assertNoCapId, decodeOfferText, libraryFacets, vehicleKey } from '@offer-mailer/schema';
+import type { Brochure, ContractType as ContractTypeT, LibraryEntry as LibraryEntryT, LibraryFacets, Offer as OfferT, UrlHealth } from '@offer-mailer/schema';
 import { and, desc, eq, like, lt, or } from 'drizzle-orm';
 import { Hono } from 'hono';
-import shelvesConfig from '../../../config/library-shelves.json' with { type: 'json' };
+import shelvesJson from '../../../config/library-shelves.json' with { type: 'json' };
 import { d1BrochureRepo } from './brochures.js';
 import { db } from './db/index.js';
 import { libraryEntries } from './db/schema.js';
@@ -70,9 +70,13 @@ function libraryRepo(env: Env) {
     async get(id: string): Promise<LibraryEntryT | undefined> {
       return parse(await d.select({ data: libraryEntries.data }).from(libraryEntries).where(eq(libraryEntries.id, id)).get());
     },
-    /** Current entries. Personal = the caller's own; shared = the curated shelves (optionally one category). */
-    async listCurrent(o: { scope: 'personal'; owner: string } | { scope: 'shared'; category?: string }, search?: string, maxMonthly?: number): Promise<LibraryEntryT[]> {
+    /**
+     * Current entries. Personal = the caller's own; shared = the curated shelves (optionally one category).
+     * contractType narrows to one audience (0.7.13, Matt: the Library follows the audience chosen in Compose).
+     */
+    async listCurrent(o: { scope: 'personal'; owner: string } | { scope: 'shared'; category?: string }, search?: string, maxMonthly?: number, contractType?: ContractTypeT): Promise<LibraryEntryT[]> {
       const where = [eq(libraryEntries.status, 'current'), eq(libraryEntries.scope, o.scope)];
+      if (contractType) where.push(eq(libraryEntries.contractType, contractType));
       if (o.scope === 'personal') where.push(eq(libraryEntries.addedBy, o.owner));
       else if (o.category) where.push(eq(libraryEntries.category, o.category));
       // the smart "Deals under £300 per month" shelf filters on the last-known price (re-priced live on use)
@@ -146,6 +150,9 @@ libraryApi.post('/offers/library', async (c) => {
 });
 
 /** The shared shelves the tool offers (config/library-shelves.json). Admin-maintained; a 'smart' shelf filters live. */
+/** The shelves config, checked against its schema when the Worker loads (a bad hand edit fails the tests). */
+export const shelvesConfig = LibraryShelvesConfig.parse(shelvesJson);
+
 libraryApi.get('/library/shelves', (c) => c.json({ shelves: shelvesConfig.shelves }));
 
 libraryApi.get('/offers/library', async (c) => {
@@ -155,7 +162,12 @@ libraryApi.get('/offers/library', async (c) => {
   const category = c.req.query('category');
   const maxMonthly = c.req.query('maxMonthly') ? Number(c.req.query('maxMonthly')) : undefined;
   const repo = libraryRepo(c.env);
-  const entries = scope === 'shared' ? await repo.listCurrent({ scope: 'shared', ...(category ? { category } : {}) }, search, maxMonthly) : await repo.listCurrent({ scope: 'personal', owner: email }, search, maxMonthly);
+  // ?contractType=personal|business|salary_sacrifice: one audience only; anything else is refused, not ignored
+  const ct = c.req.query('contractType');
+  const parsedCt = ct === undefined ? undefined : ContractType.safeParse(ct);
+  if (parsedCt && !parsedCt.success) return c.json({ error: 'contractType must be personal, business or salary_sacrifice.' }, 422);
+  const contractType = parsedCt?.data;
+  const entries = scope === 'shared' ? await repo.listCurrent({ scope: 'shared', ...(category ? { category } : {}) }, search, maxMonthly, contractType) : await repo.listCurrent({ scope: 'personal', owner: email }, search, maxMonthly, contractType);
   // `offers` is kept for the current UI until the rich library view lands; new callers read `entries`.
   return c.json({ entries, offers: entries.map((e) => e.offer) });
 });

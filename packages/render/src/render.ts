@@ -26,10 +26,14 @@ export const MARKUP_VERSION = 2;
 
 /** The brand whose logo heads an email. DreamFleet is DreamLease's business brand: every BCH email carries it. */
 export type EmailBrand = 'dreamlease' | 'dreamfleet';
-/** The logo files in apps/api/public/a (both 196×64 on white, shown at LOGO_W × LOGO_H). */
+/**
+ * The logo files in apps/api/public/a, on white, shown at LOGO_W × LOGO_H (98×32). DreamLease is 2x (196×64);
+ * DreamFleet is 4x (392×128, 21 Oct 2026, Matt: sharper) under a new name, so mail apps' image caches cannot keep
+ * serving the softer 2x file (dreamfleet-logo-2x.png stays for emails already sent).
+ */
 const BRAND_LOGO: Record<EmailBrand, { file: string; alt: string }> = {
   dreamlease: { file: 'logo-2x.png', alt: 'DreamLease' },
-  dreamfleet: { file: 'dreamfleet-logo-2x.png', alt: 'DreamFleet' },
+  dreamfleet: { file: 'dreamfleet-logo-4x.png', alt: 'DreamFleet' },
 };
 export const brandFor = (campaign: Campaign): EmailBrand => (campaign.compliance.variant === 'business' ? 'dreamfleet' : 'dreamlease');
 /** The link at the top of the email to its online copy (Matt, 20 Oct 2026). The hosted page itself has none. */

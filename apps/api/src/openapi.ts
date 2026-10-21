@@ -128,7 +128,7 @@ export const OPERATIONS: Operation[] = [
 
   { method: 'post', path: '/api/offers/library', tag: 'Library', summary: "Save an offer to the salesperson's library (201 when new; 200 when re-saving an existing entry)", access: 'signed-in', body: { schema: 'LibrarySaveBody', validatedBy: 'zod' }, returns: 'json-created' },
   { method: 'get', path: '/api/library/shelves', tag: 'Library', summary: 'The shared shelves (from config/library-shelves.json)', access: 'signed-in', returns: 'json' },
-  { method: 'get', path: '/api/offers/library', tag: 'Library', summary: 'Current library entries: personal, or a shared shelf (scope=shared, with category, q search and maxMonthly)', access: 'signed-in', query: q('scope', 'q', 'category', 'maxMonthly'), returns: 'json' },
+  { method: 'get', path: '/api/offers/library', tag: 'Library', summary: 'Current library entries: personal, or a shared shelf (scope=shared, with category, q search, maxMonthly and contractType for one audience)', access: 'signed-in', query: q('scope', 'q', 'category', 'maxMonthly', 'contractType'), returns: 'json' },
   { method: 'get', path: '/api/offers/library/archived', tag: 'Library', summary: 'Archived library entries (scope=shared for admins)', access: 'signed-in', query: q('scope'), returns: 'json' },
   { method: 'post', path: '/api/offers/library/{id}/reprice', tag: 'Library', summary: "Re-price an entry from the live site and re-attach the model's current brochure", access: 'signed-in', returns: 'json' },
   { method: 'post', path: '/api/offers/library/{id}/archive', tag: 'Library', summary: 'Archive an entry', access: 'signed-in', returns: 'json' },
