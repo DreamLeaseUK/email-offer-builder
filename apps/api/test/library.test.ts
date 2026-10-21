@@ -43,6 +43,18 @@ describe('offer library', () => {
     expect((await save(anOffer(), anon)).status).toBe(503);
   });
 
+  it('lists one audience at a time with ?contractType, and refuses an unknown one (0.7.13)', async () => {
+    const pch = anOffer({ id: '1a000000-0000-4000-8000-0000000000c1' });
+    const bch = { ...fixtureCampaign({ offerCount: 1, contractType: 'business' }).campaign.offers[0]!, id: '1a000000-0000-4000-8000-0000000000c2' };
+    expect((await save(pch, authed())).status).toBe(201);
+    expect((await save(bch, authed())).status).toBe(201);
+    const ids = (es: LibraryEntry[]) => es.map((e) => e.id).filter((id) => id === pch.id || id === bch.id);
+    expect(ids(await current(authed(), '?contractType=business'))).toEqual([bch.id]);
+    expect(ids(await current(authed(), '?contractType=personal'))).toEqual([pch.id]);
+    expect(ids(await current(authed())).sort()).toEqual([pch.id, bch.id].sort());
+    expect((await app.request('/api/offers/library?contractType=fleet', {}, authed())).status).toBe(422);
+  });
+
   it('never keeps a campaign\'s "no brochure found" mark on a library entry (0.7.10)', async () => {
     const o = anOffer({ id: '1a000000-0000-4000-8000-0000000000b1', noBrochure: true });
     const res = await save(o, authed());

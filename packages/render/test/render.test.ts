@@ -207,14 +207,20 @@ describe('render()', () => {
     expect(strip(web.html)).toBe(strip(withBrochure({}).html));
   });
 
-  it('shows the same, even number of stat tiles on every card in a multi-offer email', () => {
+  it('shows up to 4 of its own stat tiles on each card of a multi-offer email, in pairs (Matt, 21 Oct 2026)', () => {
     const { campaign, brochures } = fixtureCampaign({ offerCount: 2, layout: 'stack' });
-    campaign.offers[1]!.vehicle.stats = campaign.offers[1]!.vehicle.stats!.slice(0, 2); // one card exposes only two
+    const full = campaign.offers[0]!.vehicle.stats!.slice(0, 4).map((s) => s.label.toUpperCase());
+    expect(full).toHaveLength(4);
+    campaign.offers[1]!.vehicle.stats = campaign.offers[1]!.vehicle.stats!.slice(0, 3); // the other card has three
     const out = render(campaign, fixtureTemplate, { publicBaseUrl: BASE, brochures });
-    // both cards drop to two tiles (no lonely tile), so the 3rd/4th stats disappear from BOTH
-    expect(out.html).not.toContain('BATTERY');
-    expect(out.html).not.toContain('WARRANTY');
-    expect(out.html).toContain('RANGE');
+    const at = out.html.indexOf(campaign.offers[1]!.vehicle.model);
+    // the first card keeps all four of its figures
+    for (const label of full) expect(out.html.slice(0, at)).toContain(label);
+    // the second shows its first two (three floored to even: no lonely tile), not its third
+    const second = campaign.offers[1]!.vehicle.stats!.map((s) => s.label.toUpperCase());
+    expect(out.html.slice(at)).toContain(second[0]!);
+    expect(out.html.slice(at)).toContain(second[1]!);
+    expect(out.html.slice(at)).not.toContain(second[2]!);
   });
 
   it('keeps an odd stat count on a single hero (rendered in one row)', () => {
