@@ -656,6 +656,11 @@ same client-side from `GET /api/brochures/current`.
   **admin** curates them (`/promote` and shared-scope deletes are admin-gated; the button only renders for admins).
   Shelves come from `config/library-shelves.json` (admin-extensible): **PCH latest deals, BCH latest deals, EVs**
   (manual), and **Deals under £300 per month** (a **smart** shelf filtered live on the `monthly` facet).
+- **One audience at a time (0.7.13).** `GET /api/offers/library?contractType=personal|business` filters on the
+  `contract_type` column (422 for anything else); the Library sends the audience chosen in Compose, or the one its
+  PCH / BCH switch shows. A shelf's optional `audience` in `config/library-shelves.json` shows it only for that
+  audience; the file is parsed with `LibraryShelvesConfig` (`packages/schema`) when the API loads, so a typo fails
+  the tests instead of hiding a shelf.
 
 **Promote = copy** (not move): promoting a salesperson's entry creates an independent shared entry (a new id, the
 admin as owner); the salesperson keeps their own. Promoting never removes anyone's saved offer.
@@ -676,8 +681,8 @@ place those columns are derived.
 
 **Tests:** `apps/api/test/library.test.ts` — personal vs shared, save/list/delete, archive/unarchive, admin
 promote (copy), the smart shelf's price filter, most-recent-first + search, the dead-URL 409 flag, the 6-month
-purge, entity-decoding on read, and `withStoredBrochure` (UK included, EU unticked, prior choice wins, none
-unchanged). Proven live through the tool (Renault 5 name decoded, Polestar 2 promoted to
+purge, entity-decoding on read, `withStoredBrochure` (UK included, EU unticked, prior choice wins, none
+unchanged), the `?contractType` filter and its 422, and the shelves config parsing with its audiences (0.7.13). Proven live through the tool (Renault 5 name decoded, Polestar 2 promoted to
 the EVs shelf while kept on the personal shelf).
 
 ## B8. External dependencies

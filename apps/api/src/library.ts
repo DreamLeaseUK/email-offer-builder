@@ -18,11 +18,11 @@
  *   DELETE /api/offers/library/:id
  */
 import { LookupError, OfferBuildError, OfferPageError, OfferUrlError, PricingError } from '@offer-mailer/adapters';
-import { ContractType, LIBRARY_ARCHIVE_PURGE_DAYS, LibraryEntry, Offer, assertNoCapId, decodeOfferText, libraryFacets, vehicleKey } from '@offer-mailer/schema';
+import { ContractType, LIBRARY_ARCHIVE_PURGE_DAYS, LibraryEntry, LibraryShelvesConfig, Offer, assertNoCapId, decodeOfferText, libraryFacets, vehicleKey } from '@offer-mailer/schema';
 import type { Brochure, ContractType as ContractTypeT, LibraryEntry as LibraryEntryT, LibraryFacets, Offer as OfferT, UrlHealth } from '@offer-mailer/schema';
 import { and, desc, eq, like, lt, or } from 'drizzle-orm';
 import { Hono } from 'hono';
-import shelvesConfig from '../../../config/library-shelves.json' with { type: 'json' };
+import shelvesJson from '../../../config/library-shelves.json' with { type: 'json' };
 import { d1BrochureRepo } from './brochures.js';
 import { db } from './db/index.js';
 import { libraryEntries } from './db/schema.js';
@@ -150,6 +150,9 @@ libraryApi.post('/offers/library', async (c) => {
 });
 
 /** The shared shelves the tool offers (config/library-shelves.json). Admin-maintained; a 'smart' shelf filters live. */
+/** The shelves config, checked against its schema when the Worker loads (a bad hand edit fails the tests). */
+export const shelvesConfig = LibraryShelvesConfig.parse(shelvesJson);
+
 libraryApi.get('/library/shelves', (c) => c.json({ shelves: shelvesConfig.shelves }));
 
 libraryApi.get('/offers/library', async (c) => {
@@ -159,7 +162,7 @@ libraryApi.get('/offers/library', async (c) => {
   const category = c.req.query('category');
   const maxMonthly = c.req.query('maxMonthly') ? Number(c.req.query('maxMonthly')) : undefined;
   const repo = libraryRepo(c.env);
-  // ?contractType=personal|business: one audience only; anything else is refused rather than silently ignored
+  // ?contractType=personal|business|salary_sacrifice: one audience only; anything else is refused, not ignored
   const ct = c.req.query('contractType');
   const parsedCt = ct === undefined ? undefined : ContractType.safeParse(ct);
   if (parsedCt && !parsedCt.success) return c.json({ error: 'contractType must be personal, business or salary_sacrifice.' }, 422);

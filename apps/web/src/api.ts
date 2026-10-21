@@ -2,17 +2,12 @@
  * Thin client for the Worker API (apps/api). Everything is same-origin: Vite proxies /api, /c, /r,
  * /f, /b and /a to the Worker in dev, and in production the Worker serves the built app too.
  */
-import type { Brochure, BrochureSearch, Campaign, ComplianceBlock, ContractType, LibraryEntry, Offer, Sender, Template } from '@offer-mailer/schema';
+import type { Brochure, BrochureSearch, Campaign, ComplianceBlock, ContractType, LibraryEntry, LibraryShelf, Offer, Sender, Template } from '@offer-mailer/schema';
 import { announceSignedOut, SessionExpiredError, signedOut } from './session';
 
 /** A shared library shelf (config/library-shelves.json). 'smart' shelves filter live, e.g. price under a cap. */
-export interface LibraryShelf {
-  name: string;
-  kind: 'manual' | 'smart';
-  rule?: { maxMonthly?: number };
-  /** Shown only for this audience (0.7.13); absent = every audience. */
-  audience?: ContractType;
-}
+/** A shared shelf, as config/library-shelves.json defines it (the schema lives in @offer-mailer/schema). */
+export type { LibraryShelf };
 
 /** The admin-authored parts of a template; identity/version/markupVersion/status are server-owned. */
 export interface TemplateInput {

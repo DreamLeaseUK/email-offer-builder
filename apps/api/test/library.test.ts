@@ -4,7 +4,7 @@
  */
 import { env } from 'cloudflare:test';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { LIBRARY_ARCHIVE_PURGE_DAYS, findCapIdLeak, libraryFacets } from '@offer-mailer/schema';
+import { LIBRARY_ARCHIVE_PURGE_DAYS, LibraryShelvesConfig, findCapIdLeak, libraryFacets } from '@offer-mailer/schema';
 import type { LibraryEntry, Offer } from '@offer-mailer/schema';
 import { fixtureCampaign } from '@offer-mailer/render/fixtures';
 import app from '../src/index.js';
@@ -41,6 +41,13 @@ afterEach(() => vi.unstubAllGlobals());
 describe('offer library', () => {
   it('needs a login', async () => {
     expect((await save(anOffer(), anon)).status).toBe(503);
+  });
+
+  it('serves the shelves config, checked against its schema; a bad audience would not parse (0.7.13)', async () => {
+    const r = (await (await app.request('/api/library/shelves', {}, authed())).json()) as { shelves: { name: string; audience?: string }[] };
+    expect(r.shelves.find((s) => s.name === 'PCH latest deals')?.audience).toBe('personal');
+    expect(r.shelves.find((s) => s.name === 'BCH latest deals')?.audience).toBe('business');
+    expect(LibraryShelvesConfig.safeParse({ shelves: [{ name: 'BCH latest deals', kind: 'manual', audience: 'BCH' }] }).success).toBe(false);
   });
 
   it('lists one audience at a time with ?contractType, and refuses an unknown one (0.7.13)', async () => {
