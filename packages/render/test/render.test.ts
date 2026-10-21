@@ -469,10 +469,10 @@ describe('render()', () => {
   });
 
   it('heads BCH emails and their hosted page with the DreamFleet logo; PCH and salary sacrifice keep DreamLease (Matt, 20 Oct 2026)', () => {
-    const logos = (html: string) => [...html.matchAll(/<img src="[^"]*\/a\/((?:dreamfleet-)?logo-2x\.png)"[^>]*alt="([^"]*)"/g)].map((m) => `${m[1]} ${m[2]}`);
+    const logos = (html: string) => [...html.matchAll(/<img src="[^"]*\/a\/((?:dreamfleet-)?logo-[24]x\.png)"[^>]*alt="([^"]*)"/g)].map((m) => `${m[1]} ${m[2]}`);
     for (const contractType of ['personal', 'business', 'salary_sacrifice'] as const) {
       const { out } = r({ contractType });
-      const expected = contractType === 'business' ? 'dreamfleet-logo-2x.png DreamFleet' : 'logo-2x.png DreamLease';
+      const expected = contractType === 'business' ? 'dreamfleet-logo-4x.png DreamFleet' : 'logo-2x.png DreamLease';
       expect(logos(out.html)).toEqual([expected]);
       expect(logos(out.hostedHtml)).toEqual([expected]);
       // The hosted page's browser tab names the same brand.

@@ -321,7 +321,7 @@ Edit → HTTP Validation → Save → Refresh (runbook C8, done that way on 6 Oc
   account's credit balance is not visible from here), and since Phase 1 `MAIL_CLIENT_SECRET` (IT's Send app secret,
   expires 30 Sept 2027) and `MAIL_TOKEN_KEY` (B13), all set by Matt. Vars (`wrangler.jsonc`): `PUBLIC_BASE_URL`
   (customer links: `https://offers.dreamlease.co.uk` since 0.7.2), `TOOL_BASE_URL` (the only host serving the web
-  app), `APP_VERSION` (0.7.11 in `main`), `MAIL_TENANT_ID`, `MAIL_CLIENT_ID`, `MAIL_REDIRECT_URI`. Optional: `ADMIN_EMAILS`,
+  app), `APP_VERSION` (0.7.12 in `main`), `MAIL_TENANT_ID`, `MAIL_CLIENT_ID`, `MAIL_REDIRECT_URI`. Optional: `ADMIN_EMAILS`,
   `COMPLIANCE_EMAILS`, `RETENTION_CAMPAIGN_DAYS` (**unset**: Emma sets the period). Locally `.dev.vars`
   (git-ignored, `DEV_USER_EMAIL`).
 
@@ -709,8 +709,8 @@ the EVs shelf while kept on the personal shelf).
 | 7 Template admin, approval, register, suppression | **Done** (register, compliance-approver-only templates since 28 Sept, suppression list) |
 | 8 Stubs & `evolution.md` | Not started (low value) |
 
-**PII plan: complete** (items 1–4). Build-order steps 1–7 done. **Production is v0.7.9 (20 Oct 2026)**; `main` is
-0.7.11, which Matt deploys next. Since the last full update of this section:
+**PII plan: complete** (items 1–4). Build-order steps 1–7 done. **Production is v0.7.11 (20 Oct 2026)**; `main` is
+0.7.12, which Matt deploys next. Since the last full update of this section:
 - **0.6.1 (29 Sept):** live behind Access on `marketingtools.dreamelectric.uk` (`status-2026-09-29.md`).
 - **0.6.2 (30 Sept):** the email no longer states a validity date.
 - **0.7.0 (30 Sept):** Phase 1, Send from the salesperson's own mailbox (B13).
@@ -729,9 +729,12 @@ the EVs shelf while kept on the personal shelf).
   unavailable for this vehicle" in small grey text where the brochure link would be, but only when another car in
   the same email has a brochure (`Offer.noBrochure`, set by Compose on the campaign's copy; B7, deviation h in
   `cards.ts`).
-- **0.7.11 (20 Oct, next release):** Compose finds each car by its own row key, so a brochure found while an earlier
+- **0.7.11 (20 Oct):** Compose finds each car by its own row key, so a brochure found while an earlier
   car was removed lands on the right car, and a term, mileage or initial-payment change keeps the attached brochure
   (A3, `tray.ts`).
+- **0.7.12 (21 Oct, next release):** a sharper DreamFleet logo on BCH emails: the file is 4x (392×128,
+  `dreamfleet-logo-4x.png`) in the same 98×32 space, under a new name so mail apps' image caches cannot keep the
+  softer 2x copy (B12).
 
 Each was shipped on Matt's "ship it" and deployed by him. The log is `status-2026-10-06.md`.
 
@@ -847,7 +850,9 @@ system, one API, and a UI that only calls the API.
   1. Add it to `packages/schema` as optional (or with a default) so stored JSON snapshots still parse.
   2. D1 changes are additive migrations only (`pnpm db:generate`). Matt applies remote migrations.
   3. Keep `assertNoCapId()` coverage for anything persisted.
-- **Add or change an email brand logo.** Put the PNG in `apps/api/public/a` at 196×64 on white (it shows at 98×32),
+- **Add or change an email brand logo.** Put the PNG in `apps/api/public/a` on white at 2x or more of the 98×32 it
+  shows at (DreamLease is 196×64; DreamFleet 392×128, sharper on phones); give a replaced logo a new file name, as
+  mail apps cache images by address, and keep the old file for emails already sent. Then
   add it to `BRAND_LOGO` and `brandFor` in `packages/render/src/render.ts`, and extend the brand test in
   `render.test.ts`. Today BCH (contract type `business`) carries DreamFleet and everything else DreamLease, in the
   email and on its online page. A visible change like this normally bumps `MARKUP_VERSION` and Emma re-approves; 0.7.9
